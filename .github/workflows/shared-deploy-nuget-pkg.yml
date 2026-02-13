@@ -27,7 +27,7 @@ jobs:
     - name: Authenticate to GitHub Packages
       run: |
         dotnet nuget add source \
-          --username $GITHUB_ACTOR \
+          --username $GITHUB_REPOSITORY_OWNER \
           --password ${{ secrets.GITHUB_TOKEN }} \
           --store-password-in-clear-text \
           --name github "https://nuget.pkg.github.com/amiasea/index.json"
