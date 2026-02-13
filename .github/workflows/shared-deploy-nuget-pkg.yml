@@ -1,0 +1,40 @@
+name: Reusable NuGet Publisher
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ./nupkg
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Authenticate to GitHub Packages
+      run: |
+        dotnet nuget add source \
+          --username $GITHUB_ACTOR \
+          --password ${{ secrets.GITHUB_TOKEN }} \
+          --store-password-in-clear-text \
+          --name github "https://nuget.pkg.github.com/amiasea/index.json"
+
+    - name: Publish to GitHub Packages
+      run: |
+        dotnet nuget push "./nupkg/*.nupkg" \
+          --source "github" \
+          --api-key ${{ secrets.GITHUB_TOKEN }} \
+          --skip-duplicate
