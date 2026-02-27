@@ -36,6 +36,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6" # Specify your required version
+          terraform_wrapper: false   # Recommended for complex 'run' scripts
+
       # 1. PLATFORM
       - name: platform
         run: |
