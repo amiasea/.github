@@ -75,8 +75,7 @@ jobs:
           terraform apply -auto-approve \
             -var="tfe_project_id=$(jq -r '.amiasea_project_id.value' ../platform.json)" \
             -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
-            -var="location=${{ github.event.inputs.location }}" \
-            -var="tenant_id=${{ github.event.inputs.tenant_id }}"
+            -var="location=${{ github.event.inputs.location }}"
           terraform output -json > ../orchestration.json
 
       # 3. AUTHORITY
