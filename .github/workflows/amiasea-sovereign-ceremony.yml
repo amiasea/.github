@@ -1,0 +1,94 @@
+name: "Amiasea: Sovereign Bootstrap (First Manifestation)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      subscription_id:
+        required: true
+      access_token:
+        required: true
+      private_key_pem:
+        required: true
+      hcp_user_id:
+        required: true
+      hcp_pat:
+        required: true
+      resource_group_name:
+        required: true
+      location:
+        required: true
+      dockerhub_username:
+        required: true
+      dockerhub_password:
+        required: true
+      tenant_id:
+        required: true
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+
+    env:
+      ARM_ACCESS_TOKEN: ${{ github.event.inputs.access_token }}
+      ARM_SUBSCRIPTION_ID: ${{ github.event.inputs.subscription_id }}
+      ARM_TENANT_ID: ${{ github.event.inputs.tenant_id }}
+
+      HCP_CLIENT_ID: ${{ github.event.inputs.hcp_user_id }}
+      HCP_CLIENT_SECRET: ${{ github.event.inputs.hcp_pat }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. PLATFORM
+      - name: platform
+        run: |
+          terraform -chdir=platform init
+          terraform -chdir=platform apply -auto-approve
+          terraform -chdir=platform output -json > platform.json
+
+      # 2. ORCHESTRATION
+      - name: orchestration
+        run: |
+          terraform -chdir=orchestration init
+          terraform -chdir=orchestration apply -auto-approve \
+            -var="tfe_project_id=$(jq -r '.amiasea_project_id.value' platform.json)" \
+            -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
+            -var="location=${{ github.event.inputs.location }}" \
+            -var="dockerhub_username=${{ github.event.inputs.dockerhub_username }}" \
+            -var="dockerhub_password=${{ github.event.inputs.dockerhub_password }}" \
+            -var="tenant_id=${{ github.event.inputs.tenant_id }}"
+          terraform -chdir=orchestration output -json > orchestration.json
+
+      # 3. AUTHORITY
+      - name: authority
+        run: |
+          terraform -chdir=authority init
+          terraform -chdir=authority apply -auto-approve \
+            -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
+            -var="location=${{ github.event.inputs.location }}" \
+            -var="dockerhub_username=${{ github.event.inputs.dockerhub_username }}" \
+            -var="dockerhub_password=${{ github.event.inputs.dockerhub_password }}" \
+            -var="tenant_id=${{ github.event.inputs.tenant_id }}"
+          terraform -chdir=authority output -json > authority.json
+
+      # 4. IDENTITY
+      - name: identity
+        run: |
+          terraform -chdir=identity init
+          terraform -chdir=identity apply -auto-approve \
+            -var="tenant_id=${{ github.event.inputs.tenant_id }}" \
+            -var="client_id=$(jq -r '.uami_client_id.value' authority.json)" \
+            -var="principal_object_id=$(jq -r '.uami_principal_id.value' authority.json)"
+
+      # Key Vault import
+      - name: import private key
+        run: |
+          echo "${{ github.event.inputs.private_key_pem }}" > private_key.pem
+          az keyvault key import \
+            --vault-name "kv-amiasea" \
+            --name "amiasea-github-private-key" \
+            --pem-file private_key.pem \
+            --ops sign \
+            --subscription ${{ github.event.inputs.subscription_id }} \
+            --access-token "${{ github.event.inputs.access_token }}"
+          rm private_key.pem

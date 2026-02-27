@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org",
+  "title": "Aviator Substrate Manifest",
+  "description": "The canonical schema for validating Airport Sovereign Intent manifests and GitOps infrastructure declarations.",
+  "type": "object",
+  "required": [
+    "resource"
+  ],
+  "properties": {
+    "resource": {
+      "type": "object",
+      "description": "Container for Aviator Substrate resource definitions.",
+      "properties": {
+        "aviator_airport": {
+          "type": "object",
+          "description": "Conceptual parent container for plane definitions.",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for this Airport (Computed).",
+              "readOnly": true
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable name of the Airport. Note: Changing this requires resource replacement."
+            }
+          }
+        },
+        "aviator_plane": {
+          "type": "object",
+          "description": "Represents a unique sovereign trust domain within an Airport.",
+          "required": [
+            "airport_id",
+            "type"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Deterministic URN (plane:<airport_id>:<type>) (Computed).",
+              "readOnly": true
+            },
+            "airport_id": {
+              "type": "string",
+              "description": "The URN of the parent Airport (e.g., airport:atlanta)."
+            },
+            "type": {
+              "type": "string",
+              "description": "The trust strata (e.g., CONTROL, DATA_PLANE). Unique per Airport. Note: Changing this requires resource replacement."
+            },
+            "description": {
+              "type": "string",
+              "description": "The semantic rationale for this plane's existence."
+            }
+          }
+        },
+        "aviator_signal_surface": {
+          "type": "object",
+          "description": "Defines a unique telemetry or event boundary on a Sovereign Plane.",
+          "required": [
+            "name",
+            "description",
+            "signals"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Deterministic URN (surface:plane_id:name) (Computed).",
+              "readOnly": true
+            },
+            "name": {
+              "type": "string",
+              "description": "Unique name of the signal surface on this specific plane. Note: Changing this requires resource replacement."
+            },
+            "description": {
+              "type": "string",
+              "description": "Mandatory description for this signal surface."
+            },
+            "signals": {
+              "type": "array",
+              "description": "List of signals for this surface. Must have at least one.",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          }
+        },
+        "aviator_domain_authorization": {
+          "type": "object",
+          "description": "Maps a Sovereign Plane to a Signal Surface via a mandatory Rationale.",
+          "required": [
+            "plane_id",
+            "signal_surface_id",
+            "rationale"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Deterministic URN (auth:plane_id:surface_id) (Computed).",
+              "readOnly": true
+            },
+            "plane_id": {
+              "type": "string",
+              "description": "The URN of the Plane being authorized. Note: Changing this requires resource replacement."
+            },
+            "signal_surface_id": {
+              "type": "string",
+              "description": "The URN of the Signal Surface being granted access. Note: Changing this requires resource replacement."
+            },
+            "rationale": {
+              "type": "string",
+              "description": "The mandatory Rationale explaining why this trust boundary is being crossed."
+            }
+          }
+        },
+        "aviator_capability_attestation": {
+          "type": "object",
+          "description": "The physical evidence linking a Domain Authorization to a functional reality.",
+          "required": [
+            "name",
+            "domain_authorization_id",
+            "description"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Deterministic URN (attestation:name:auth_id) (Computed).",
+              "readOnly": true
+            },
+            "name": {
+              "type": "string",
+              "description": "Unique name of the capability being attested. Note: Changing this requires resource replacement."
+            },
+            "domain_authorization_id": {
+              "type": "string",
+              "description": "The URN of the Domain Authorization this attestation satisfies. Note: Changing this requires resource replacement."
+            },
+            "description": {
+              "type": "string",
+              "description": "The mandatory Rationale for this specific attestation."
+            },
+            "base_eval_uri": {
+              "type": "string",
+              "format": "uri",
+              "description": "Base URI for evaluation. If set, the attestation will be evaluated by calling this URI."
+            },
+            "status": {
+              "type": "string",
+              "description": "Status of the attestation: CAPABLE, INCAPABLE, INDETERMINATE, or ERROR (Computed).",
+              "enum": [
+                "CAPABLE",
+                "INCAPABLE",
+                "INDETERMINATE",
+                "ERROR"
+              ],
+              "readOnly": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

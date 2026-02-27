@@ -1,0 +1,6 @@
+@Amiasea.Aviator.API_HostAddress = http://localhost:5209
+
+GET {{Amiasea.Aviator.API_HostAddress}}/airports/
+Accept: application/json
+
+###

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="API/Amiasea.API/Amiasea.API.csproj" Id="6f78117f-d905-4e41-954a-ce8d47c15411" />
+  <Project Path="Data/Amiasea.Data.Access/Amiasea.Data.Access.csproj" />
+  <Project Path="Data/Amiasea.Data.Entity/Amiasea.Data.Entity.csproj" />
+  <Project Path="Data/Amiasea.Data.Service/Amiasea.Data.Service.csproj" Id="4385bdf5-1c05-445b-861d-4ba09e574b3f" />
+</Solution>
