@@ -44,44 +44,48 @@ jobs:
 
       # 1. PLATFORM
       - name: platform
+        working-directory: ./terraform/platform
         run: |
-          terraform -chdir=platform init
-          terraform -chdir=platform apply -auto-approve
-          terraform -chdir=platform output -json > platform.json
+          terraform init
+          terraform apply -auto-approve
+          terraform output -json > ../platform.json
 
       # 2. ORCHESTRATION
       - name: orchestration
+        working-directory: ./terraform/orchestration
         run: |
-          terraform -chdir=orchestration init
-          terraform -chdir=orchestration apply -auto-approve \
-            -var="tfe_project_id=$(jq -r '.amiasea_project_id.value' platform.json)" \
+          terraform init
+          terraform apply -auto-approve \
+            -var="tfe_project_id=$(jq -r '.amiasea_project_id.value' ../platform.json)" \
             -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
             -var="location=${{ github.event.inputs.location }}" \
             -var="dockerhub_username=${{ github.event.inputs.dockerhub_username }}" \
             -var="dockerhub_password=${{ github.event.inputs.dockerhub_password }}" \
             -var="tenant_id=${{ github.event.inputs.tenant_id }}"
-          terraform -chdir=orchestration output -json > orchestration.json
+          terraform output -json > ../orchestration.json
 
       # 3. AUTHORITY
       - name: authority
+        working-directory: ./terraform/authority
         run: |
-          terraform -chdir=authority init
-          terraform -chdir=authority apply -auto-approve \
+          terraform init
+          terraform apply -auto-approve \
             -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
             -var="location=${{ github.event.inputs.location }}" \
             -var="dockerhub_username=${{ github.event.inputs.dockerhub_username }}" \
             -var="dockerhub_password=${{ github.event.inputs.dockerhub_password }}" \
             -var="tenant_id=${{ github.event.inputs.tenant_id }}"
-          terraform -chdir=authority output -json > authority.json
+          terraform output -json > ../authority.json
 
       # 4. IDENTITY
       - name: identity
+        working-directory: ./terraform/identity
         run: |
-          terraform -chdir=identity init
-          terraform -chdir=identity apply -auto-approve \
+          terraform init
+          terraform apply -auto-approve \
             -var="tenant_id=${{ github.event.inputs.tenant_id }}" \
-            -var="client_id=$(jq -r '.uami_client_id.value' authority.json)" \
-            -var="principal_object_id=$(jq -r '.uami_principal_id.value' authority.json)"
+            -var="client_id=$(jq -r '.uami_client_id.value' ../authority.json)" \
+            -var="principal_object_id=$(jq -r '.uami_principal_id.value' ../authority.json)"
 
       # Key Vault import
       - name: import private key
