@@ -76,8 +76,6 @@ jobs:
             -var="tfe_project_id=$(jq -r '.amiasea_project_id.value' ../platform.json)" \
             -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
             -var="location=${{ github.event.inputs.location }}" \
-            -var="dockerhub_username=${{ github.event.inputs.dockerhub_username }}" \
-            -var="dockerhub_password=${{ github.event.inputs.dockerhub_password }}" \
             -var="tenant_id=${{ github.event.inputs.tenant_id }}"
           terraform output -json > ../orchestration.json
 
