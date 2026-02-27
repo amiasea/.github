@@ -5,24 +5,36 @@ on:
     inputs:
       subscription_id:
         required: true
+        default: "da348b35-29b6-4906-85ec-4a097aa5fe04"
       access_token:
         required: true
+        default: "ubWljcm9zb2Z0LmNvbSIsInVwbiI6ImFsZnJlZG8uYmFsbEBhbWlhc2VhLm9ubWljcm9zb2Z0LmNvbSIsInV0aSI6InpidVAtVHUzVVVpWk8wLTJDbS1WQUEiLCJ2ZXIiOiIxLjAiLCJ3aWRzIjpbIjA1MjY3MTZiLTExM2QtNGMxNS1iMmM4LTY4ZTNjMjJiOWY4MCIsIjE1OGMwNDdhLWM5MDctNDU1Ni1iN2VmLTQ0NjU1MWE2YjVmNyIsIjliODk1ZDkyLTJjZDMtNDRjNy05ZDAyLWE2YWMyZDVlYTVjMyIsIjYyZTkwMzk0LTY5ZjUtNDIzNy05MTkwLTAxMjE3NzE0NWUxMCIsImI3OWZiZjRkLTNlZjktNDY4OS04MTQzLTc2YjE5NGU4NTUwOSJdLCJ4bXNfYWN0X2ZjdCI6IjMgNSIsInhtc19mdGQiOiJEVWcwU2M4S0xWWk5sM2FFYS1Xdk9DSVNZa2MzNkxUNWxOLVRzTVRVU1FvQmRYTjNaWE4wTXkxa2MyMXoiLCJ4bXNfaWRyZWwiOiIxIDI0IiwieG1zX3N1Yl9mY3QiOiIzIDYiLCJ4bXNfdGNkdCI6MTc1MzM2Nzg5NH0.m29JmDI2V6lSV42694gmDxSep2KzIjvqWvdtO2br77jisFi7Uq40040k10D04BdJSeauzKhTLfyuROstoVVLz3PNyGRBEL-hCD0Y9-YFqxYCdmIgl7Vkd1YKk4KHd3Vuy52sV-uXRbE-z8Gf4j4Nd5kPTGrWlNY-hB74Ab8LpSObTlguOtLRAkfUliFhW91wYB3yQGrQWADkiaPHE_70Iu91OTuWW9zONLUtUkpyfokfSowmaVCnah0mPA0mbs7CWASKtYpKD6zIAnsZuKX_KXxveq-_c2aWuCNZQXoeFq_wNSGkoc48hvRbU77vttGDI9EWawPqpyqnEtgYSTChZQ"
       private_key_pem:
         required: true
+      tfe_token:
+        required: true
+        default: "EQPWUys6ydNEug.atlasv1.fjVrzQYfktvoql6ldfCFcz1B0YjSnEUeqNf1PJtvyhXUjpMbYV9yculawh8FeQPlXNI"
       hcp_client_id:
         required: true
-      hcp_pat:
+        default: "aeadbab60a0e50e8d4c528ecaf06c418"
+      hcp_client_secret:
         required: true
+        default: "33347ed4c2da8be6381ac32d82d7429bc2cf25db9fd371d51a55b863b70d4193"
       resource_group_name:
         required: true
+        default: "rg-amiasea"
       location:
         required: true
+        default: "centralus"
       dockerhub_username:
         required: true
+        default: "alfredoball"
       dockerhub_password:
         required: true
+        default: "dckr_pat_W0XQ01f0lgIJ0eBmdRy9rR0ZtCA"
       tenant_id:
         required: true
+        default: "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
 
 jobs:
   bootstrap:
@@ -34,7 +46,9 @@ jobs:
       ARM_TENANT_ID: ${{ github.event.inputs.tenant_id }}
 
       HCP_CLIENT_ID: ${{ github.event.inputs.hcp_client_id }}
-      HCP_CLIENT_SECRET: ${{ github.event.inputs.hcp_pat }}
+      HCP_CLIENT_SECRET: ${{ github.event.inputs.hcp_client_secret }}
+
+      TF_TOKEN_app_terraform_io: ${{ github.event.inputs.tfe_token }}
 
     steps:
       - uses: actions/checkout@v4
