@@ -1,11 +1,11 @@
 # Replace with an existing service principal if created ahead of time.
-resource "hcp_service_principal" "deployment_sp" {
+resource "hcp_service_principal" "platform_sp" {
   name = "platform"
 }
 
-resource "hcp_iam_workload_identity_provider" "example" {
+resource "hcp_iam_workload_identity_provider" "wip" {
   name              = "github"
-  service_principal = hcp_service_principal.deployment_sp.resource_name
+  service_principal = hcp_service_principal.platform_sp.resource_name
   description       = "Allow acme-repo deploy workflow to access my-app-deployer service principal"
 
   oidc = {

@@ -4,11 +4,6 @@ variable "tfe_organization" {
   default     = "amiasea"
 }
 
-variable "tfe_project_id" {
-  type        = string
-  description = "Terraform Cloud project ID for these workspaces."
-}
-
 variable "resource_group_name" {
   type        = string
   description = "Resource group for authority-plane resources."

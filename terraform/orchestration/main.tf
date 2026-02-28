@@ -7,13 +7,18 @@ resource "tfe_organization_default_settings" "org_defaults" {
   default_execution_mode = "local"
 }
 
+resource "tfe_project" "amiasea_project" {
+  name         = "amiasea"
+  organization = var.tfe_organization
+}
+
 # -------------------------------------------------------------------
 # AUTHORITY WORKSPACE (ARM plane)
 # -------------------------------------------------------------------
 resource "tfe_workspace" "authority" {
   name         = "amiasea-authority"
   organization = var.tfe_organization
-  project_id   = var.tfe_project_id
+  project_id   = tfe_project.amiasea_project.id
 }
 
 resource "tfe_workspace_settings" "authority_settings" {
@@ -27,7 +32,7 @@ resource "tfe_workspace_settings" "authority_settings" {
 resource "tfe_workspace" "identity" {
   name         = "amiasea-identity"
   organization = var.tfe_organization
-  project_id   = var.tfe_project_id
+  project_id   = tfe_project.amiasea_project.id
 }
 
 resource "tfe_workspace_settings" "identity_settings" {
@@ -35,41 +40,16 @@ resource "tfe_workspace_settings" "identity_settings" {
   execution_mode = "local"
 }
 
-# # -------------------------------------------------------------------
-# # AUTHORITY WORKSPACE VARIABLES
-# # -------------------------------------------------------------------
-# resource "tfe_variable" "authority_resource_group_name" {
-#   workspace_id = tfe_workspace.authority.id
-#   key          = "resource_group_name"
-#   value        = var.resource_group_name
-#   category     = "terraform"
-# }
+# -------------------------------------------------------------------
+# PLATFORM WORKSPACE (Platform plane)
+# -------------------------------------------------------------------
+resource "tfe_workspace" "platform" {
+  name         = "amiasea-platform"
+  organization = var.tfe_organization
+  project_id   = tfe_project.amiasea_project.id
+}
 
-# resource "tfe_variable" "authority_location" {
-#   workspace_id = tfe_workspace.authority.id
-#   key          = "location"
-#   value        = var.location
-#   category     = "terraform"
-# }
-
-# resource "tfe_variable" "authority_dockerhub_username" {
-#   workspace_id = tfe_workspace.authority.id
-#   key          = "dockerhub_username"
-#   value        = var.dockerhub_username
-#   category     = "terraform"
-# }
-
-# resource "tfe_variable" "authority_dockerhub_password" {
-#   workspace_id = tfe_workspace.authority.id
-#   key          = "dockerhub_password"
-#   value        = var.dockerhub_password
-#   category     = "terraform"
-#   sensitive    = true
-# }
-
-# resource "tfe_variable" "authority_tenant_id" {
-#   workspace_id = tfe_workspace.authority.id
-#   key          = "tenant_id"
-#   value        = var.tenant_id
-#   category     = "terraform"
-# }
+resource "tfe_workspace_settings" "platform_settings" {
+  workspace_id   = tfe_workspace.platform.id
+  execution_mode = "local"
+}

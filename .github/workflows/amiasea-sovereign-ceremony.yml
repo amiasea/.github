@@ -3,83 +3,115 @@ name: "Amiasea: Sovereign Bootstrap (First Manifestation)"
 on:
   workflow_dispatch:
     inputs:
-      subscription_id:
-        required: true
-        default: "da348b35-29b6-4906-85ec-4a097aa5fe04"
-      access_token:
-        required: true
-        default: "ubWljcm9zb2Z0LmNvbSIsInVwbiI6ImFsZnJlZG8uYmFsbEBhbWlhc2VhLm9ubWljcm9zb2Z0LmNvbSIsInV0aSI6InpidVAtVHUzVVVpWk8wLTJDbS1WQUEiLCJ2ZXIiOiIxLjAiLCJ3aWRzIjpbIjA1MjY3MTZiLTExM2QtNGMxNS1iMmM4LTY4ZTNjMjJiOWY4MCIsIjE1OGMwNDdhLWM5MDctNDU1Ni1iN2VmLTQ0NjU1MWE2YjVmNyIsIjliODk1ZDkyLTJjZDMtNDRjNy05ZDAyLWE2YWMyZDVlYTVjMyIsIjYyZTkwMzk0LTY5ZjUtNDIzNy05MTkwLTAxMjE3NzE0NWUxMCIsImI3OWZiZjRkLTNlZjktNDY4OS04MTQzLTc2YjE5NGU4NTUwOSJdLCJ4bXNfYWN0X2ZjdCI6IjMgNSIsInhtc19mdGQiOiJEVWcwU2M4S0xWWk5sM2FFYS1Xdk9DSVNZa2MzNkxUNWxOLVRzTVRVU1FvQmRYTjNaWE4wTXkxa2MyMXoiLCJ4bXNfaWRyZWwiOiIxIDI0IiwieG1zX3N1Yl9mY3QiOiIzIDYiLCJ4bXNfdGNkdCI6MTc1MzM2Nzg5NH0.m29JmDI2V6lSV42694gmDxSep2KzIjvqWvdtO2br77jisFi7Uq40040k10D04BdJSeauzKhTLfyuROstoVVLz3PNyGRBEL-hCD0Y9-YFqxYCdmIgl7Vkd1YKk4KHd3Vuy52sV-uXRbE-z8Gf4j4Nd5kPTGrWlNY-hB74Ab8LpSObTlguOtLRAkfUliFhW91wYB3yQGrQWADkiaPHE_70Iu91OTuWW9zONLUtUkpyfokfSowmaVCnah0mPA0mbs7CWASKtYpKD6zIAnsZuKX_KXxveq-_c2aWuCNZQXoeFq_wNSGkoc48hvRbU77vttGDI9EWawPqpyqnEtgYSTChZQ"
-      private_key_pem:
-        required: true
-      tfe_token:
-        required: true
-        default: "EQPWUys6ydNEug.atlasv1.fjVrzQYfktvoql6ldfCFcz1B0YjSnEUeqNf1PJtvyhXUjpMbYV9yculawh8FeQPlXNI"
-      hcp_client_id:
-        required: true
-        default: "aeadbab60a0e50e8d4c528ecaf06c418"
-      hcp_client_secret:
-        required: true
-        default: "33347ed4c2da8be6381ac32d82d7429bc2cf25db9fd371d51a55b863b70d4193"
-      resource_group_name:
-        required: true
-        default: "rg-amiasea"
-      location:
-        required: true
-        default: "centralus"
-      dockerhub_username:
-        required: true
-        default: "alfredoball"
-      dockerhub_password:
-        required: true
-        default: "dckr_pat_W0XQ01f0lgIJ0eBmdRy9rR0ZtCA"
       tenant_id:
         required: true
         default: "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
 
+      subscription_id:
+        required: true
+        default: "da348b35-29b6-4906-85ec-4a097aa5fe04"
+
+      az_arm_access_token:
+        required: true
+        default: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6InNNMV95QXhWOEdWNHlOLUI2ajJ4em1pazVBbyIsImtpZCI6InNNMV95QXhWOEdWNHlOLUI2ajJ4em1pazVBbyJ9.eyJhdWQiOiJodHRwczovL21hbmFnZW1lbnQuYXp1cmUuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvYmY0NTFmZDktZDM4Mi00ZGE4LTljMWEtMTc5YTk2YTRkMmYzLyIsImlhdCI6MTc3MjI4ODMzMSwibmJmIjoxNzcyMjg4MzMxLCJleHAiOjE3NzIyOTMzOTksImFjciI6IjEiLCJhY3JzIjpbInAxIl0sImFpbyI6IkFYUUFpLzhiQUFBQTVYU0N0MjhzKzBuODNuS0s2bk1SMFAyRmhTNjU3NWxHQjhKUzBXL043bXJhTTdJY2U0VWFxdTk5QUV0MDZLd3RTUkhkdzRqZ1d3YkU4L2JEamJHcG8wNEhxSllEZnZHUVZsWkE5a2JESFBtYmlYMzdvdTl3WHBQdng3d0ZuTFlGN1JuRzJDajhkMFYwWWwrLzErUGpOdz09IiwiYW1yIjpbInB3ZCIsInJzYSIsIm1mYSJdLCJhcHBpZCI6IjA0YjA3Nzk1LThkZGItNDYxYS1iYmVlLTAyZjllMWJmN2I0NiIsImFwcGlkYWNyIjoiMCIsImRldmljZWlkIjoiMGNjNWNhYjItNmE2My00NzM3LTk4MTktY2UzYWE1NGNlZjVhIiwiZmFtaWx5X25hbWUiOiJCYWxsIiwiZ2l2ZW5fbmFtZSI6IkFsZnJlZG8iLCJncm91cHMiOlsiMDQ4MWEyMTctYjM0My00MTU3LWIzZDgtNWRlYmFhNGVjNmQyIiwiY2M5YWQyMjQtMmI5Yi00NzVmLTlhZDUtYzkyMDY0NGZjNzQ4IiwiYzU0YWU0M2EtYTljNy00ODRiLWJmNWQtZGNmYjgwZjNjYjNhIiwiYzEwYTM0YTQtYjk2OC00MjE2LWI0NGUtZGM1NWVjYzkyYWVlIl0sImlkdHlwIjoidXNlciIsImlwYWRkciI6IjE3NC4yMC4xMzQuMjkiLCJuYW1lIjoiQWxmcmVkbyBCYWxsIiwib2lkIjoiNTI1MTUzNjgtNGFkNC00YmFlLTkzMTktNjg4NmMyMzRlZTVhIiwicHVpZCI6IjEwMDMyMDA0RUJDMTU3RTciLCJwd2RfdXJsIjoiaHR0cHM6Ly9nby5taWNyb3NvZnQuY29tL2Z3bGluay8_bGlua2lkPTIyMjQxOTgiLCJyaCI6IjEuQVdNQjJSOUZ2NExUcUUyY0doZWFscVRTODBaSWYza0F1dGRQdWtQYXdmajJNQlBKQVVkakFRLiIsInNjcCI6InVzZXJfaW1wZXJzb25hdGlvbiIsInNpZCI6IjAwYjk5M2U5LWM5MmEtN2FkYy1lNjEwLTI3NjhjM2U2MWY3NSIsInN1YiI6IlZsRUEzbXBndkNUTUNPbWdsNzFUWkUzSV8tUjlmaHBMSUZmdFRCOFpXdTAiLCJ0aWQiOiJiZjQ1MWZkOS1kMzgyLTRkYTgtOWMxYS0xNzlhOTZhNGQyZjMiLCJ1bmlxdWVfbmFtZSI6ImFsZnJlZG8uYmFsbEBhbWlhc2VhLm9ubWljcm9zb2Z0LmNvbSIsInVwbiI6ImFsZnJlZG8uYmFsbEBhbWlhc2VhLm9ubWljcm9zb2Z0LmNvbSIsInV0aSI6IkxaX0RNSV9PWDAtNmx0RG91UE14QUEiLCJ2ZXIiOiIxLjAiLCJ3aWRzIjpbIjA1MjY3MTZiLTExM2QtNGMxNS1iMmM4LTY4ZTNjMjJiOWY4MCIsIjE1OGMwNDdhLWM5MDctNDU1Ni1iN2VmLTQ0NjU1MWE2YjVmNyIsIjliODk1ZDkyLTJjZDMtNDRjNy05ZDAyLWE2YWMyZDVlYTVjMyIsIjYyZTkwMzk0LTY5ZjUtNDIzNy05MTkwLTAxMjE3NzE0NWUxMCIsImI3OWZiZjRkLTNlZjktNDY4OS04MTQzLTc2YjE5NGU4NTUwOSJdLCJ4bXNfYWN0X2ZjdCI6IjMgNSIsInhtc19mdGQiOiI4V3h6WU9jVGhramFQWVVZQ0dLYk1pSGxneUdPSWtDRXJicC1POG45TzJRQmRYTjNaWE4wTXkxa2MyMXoiLCJ4bXNfaWRyZWwiOiIxIDQiLCJ4bXNfc3ViX2ZjdCI6IjE2IDMiLCJ4bXNfdGNkdCI6MTc1MzM2Nzg5NH0.GenFJFn1CPCs-uA-cgqPzCPwQ2nl2PxiLtZtkNZrU0J129sLJrxdXzO2yKDsCXiSM5FhCvDUGP857R-6Argd6kE7EXyh-7MWSuNwaXE7n8aidjTDgOYs7F53Dut_cfdi2AqOzxrYMLBreXm0sexwos3ZdsfCNC5-7mV1VB9jrsnnIRw0i1WEfgbiWXrs5H3YFsNyv5wgJMGMOaisZ8cygII9LESR0QMQQCcUwIdvPWLRt8S1wNWKP1X_NfyQKi7Zx-1y-69eERUOqt3JCEoGFUcolIqU4Qy7OX-a2y11RGiEQsuBFgQjiKXwXg4ghjVIB98s-a61Kxi9LqtcuNzXtQ"
+
+      private_key_pem:
+        required: true
+
+      burner_tfe_token:
+        required: true
+        default: "EQPWUys6ydNEug.atlasv1.fjVrzQYfktvoql6ldfCFcz1B0YjSnEUeqNf1PJtvyhXUjpMbYV9yculawh8FeQPlXNI"
+
+      burner_hcp_client_id:
+        required: true
+        default: "f3ae94c694ace464b3d2457f46444ab8"
+
+      burner_hcp_client_secret:
+        required: true
+        default: "68e5dd09c6f53c7247b8c90f45dfa2183981c1972f2ffabb9fcf8f715e378709"
+
+      resource_group_name:
+        required: true
+        default: "rg-amiasea"
+
+      location:
+        required: true
+        default: "centralus"
+
+      dockerhub_username:
+        required: true
+        default: "alfredoball"
+
+      dockerhub_password:
+        required: true
+        default: "dckr_pat_W0XQ01f0lgIJ0eBmdRy9rR0ZtCA"
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
-  bootstrap:
+
+  orchestration:
     runs-on: ubuntu-latest
-
     env:
-      ARM_ACCESS_TOKEN: ${{ github.event.inputs.access_token }}
-      ARM_SUBSCRIPTION_ID: ${{ github.event.inputs.subscription_id }}
-      ARM_TENANT_ID: ${{ github.event.inputs.tenant_id }}
-
-      HCP_CLIENT_ID: ${{ github.event.inputs.hcp_client_id }}
-      HCP_CLIENT_SECRET: ${{ github.event.inputs.hcp_client_secret }}
-
-      TF_TOKEN_app_terraform_io: ${{ github.event.inputs.tfe_token }}
-
+      TF_TOKEN_app_terraform_io: ${{ github.event.inputs.burner_tfe_token }}
+    outputs:
+      orch_json: ${{ steps.orch.outputs.orch_json }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.14.6" # Specify your required version
-          terraform_wrapper: false   # Recommended for complex 'run' scripts
+          terraform_version: "1.14.6"
+          terraform_wrapper: false
+      - id: orch
+        working-directory: ./terraform/orchestration
+        run: |
+          terraform init
+          terraform apply -auto-approve
+          echo "orch_json=$(terraform output -json | tr -d '\n')" >> $GITHUB_OUTPUT
 
-      # 1. PLATFORM
-      - name: platform
+  platform:
+    needs: orchestration
+    runs-on: ubuntu-latest
+    env:
+      HCP_CLIENT_ID: ${{ github.event.inputs.burner_hcp_client_id }}
+      HCP_CLIENT_SECRET: ${{ github.event.inputs.burner_hcp_client_secret }}
+    outputs:
+      wip_name: ${{ steps.plat.outputs.wip_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+          terraform_wrapper: false
+      - id: plat
         working-directory: ./terraform/platform
         run: |
           terraform init
           terraform apply -auto-approve
-          terraform output -json > ../platform.json
+          echo "wip_name=$(terraform output -raw wip_name)" >> $GITHUB_OUTPUT
 
-      # 2. ORCHESTRATION
-      - name: orchestration
-        working-directory: ./terraform/orchestration
-        run: |
-          terraform init
-          terraform apply -auto-approve \
-            -var="tfe_project_id=$(jq -r '.amiasea_project_id.value' ../platform.json)" \
-            -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
-            -var="location=${{ github.event.inputs.location }}"
-          terraform output -json > ../orchestration.json
-
-      # 3. AUTHORITY
-      - name: authority
+  authority:
+    needs: platform
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      uami_client_id: ${{ steps.out.outputs.uami_client_id }}
+      uami_principal_id: ${{ steps.out.outputs.uami_principal_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate to HCP
+        uses: hashicorp/hcp-auth-action@v0.1.0
+        with:
+          workload_identity_provider: ${{ needs.platform.outputs.wip_name }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+          terraform_wrapper: false
+      - id: out
         working-directory: ./terraform/authority
         run: |
           terraform init
@@ -89,27 +121,47 @@ jobs:
             -var="dockerhub_username=${{ github.event.inputs.dockerhub_username }}" \
             -var="dockerhub_password=${{ github.event.inputs.dockerhub_password }}" \
             -var="tenant_id=${{ github.event.inputs.tenant_id }}"
-          terraform output -json > ../authority.json
+          echo "uami_client_id=$(terraform output -raw uami_client_id)" >> $GITHUB_OUTPUT
+          echo "uami_principal_id=$(terraform output -raw uami_principal_id)" >> $GITHUB_OUTPUT
 
-      # 4. IDENTITY
-      - name: identity
+  identity:
+    needs: [authority, platform]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate to HCP
+        uses: hashicorp/hcp-auth-action@v0.1.0
+        with:
+          workload_identity_provider: ${{ needs.platform.outputs.wip_name }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+          terraform_wrapper: false
+      - name: Run identity
         working-directory: ./terraform/identity
         run: |
           terraform init
           terraform apply -auto-approve \
             -var="tenant_id=${{ github.event.inputs.tenant_id }}" \
-            -var="client_id=$(jq -r '.uami_client_id.value' ../authority.json)" \
-            -var="principal_object_id=$(jq -r '.uami_principal_id.value' ../authority.json)"
+            -var="client_id=${{ needs.authority.outputs.uami_client_id }}" \
+            -var="principal_object_id=${{ needs.authority.outputs.uami_principal_id }}"
 
-      # Key Vault import
-      - name: import private key
+  key_import:
+    needs: identity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import private key
+        env:
+          ARM_ACCESS_TOKEN: ${{ github.event.inputs.az_arm_access_token }}
         run: |
           echo "${{ github.event.inputs.private_key_pem }}" > private_key.pem
           az keyvault key import \
             --vault-name "kv-amiasea" \
             --name "amiasea-github-private-key" \
             --pem-file private_key.pem \
-            --ops sign \
             --subscription ${{ github.event.inputs.subscription_id }} \
-            --access-token "${{ github.event.inputs.access_token }}"
+            --access-token "${{ env.ARM_ACCESS_TOKEN }}"
           rm private_key.pem
