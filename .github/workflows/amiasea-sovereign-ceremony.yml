@@ -38,6 +38,8 @@ jobs:
           TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           # Injects the token directly for the AzureRM provider
           ARM_ACCESS_TOKEN: ${{ inputs.arm_access_token }}
+          ARM_TENANT_ID: ${{ inputs.tenant_id }}
+          ARM_SUBSCRIPTION_ID: ${{ inputs.subscription_id }}
         run: |
           terraform init
           terraform apply -auto-approve
