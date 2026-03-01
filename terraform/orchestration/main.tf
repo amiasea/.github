@@ -13,6 +13,20 @@ resource "tfe_project" "amiasea_project" {
 }
 
 # -------------------------------------------------------------------
+# SOVEREIGN WORKSPACE (Sovereign plane)
+# -------------------------------------------------------------------
+resource "tfe_workspace" "sovereign" {
+  name         = "amiasea-sovereign"
+  organization = var.tfe_organization
+  project_id   = tfe_project.amiasea_project.id
+}
+
+resource "tfe_workspace_settings" "sovereign_settings" {
+  workspace_id   = tfe_workspace.sovereign.id
+  execution_mode = "local"
+}
+
+# -------------------------------------------------------------------
 # AUTHORITY WORKSPACE (ARM plane)
 # -------------------------------------------------------------------
 resource "tfe_workspace" "authority" {

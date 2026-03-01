@@ -8,13 +8,32 @@ variable "location" {
   description = "Azure region."
 }
 
-variable "dockerhub_username" {
+# variable "sovereign_tfe_token" {
+#   type        = string
+#   description = "Terraform Cloud token with permissions to the sovereign workspace."
+# }
+
+variable "umai_read_id" {
   type        = string
-  description = "Docker Hub username for pulling the API image."
+  description = "ID of the user-assigned managed identity with read permissions."
 }
 
-variable "dockerhub_password" {
+variable "uami_read_principal_id" {
   type        = string
-  sensitive   = true
-  description = "Docker Hub password for pulling the API image."
+  description = "Object ID of the user-assigned managed identity with read permissions."
+}
+
+variable "umai_write_id" {
+  type        = string
+  description = "ID of the user-assigned managed identity with write permissions."
+}
+
+variable "tenant_id" {
+  type        = string
+  description = "Azure tenant ID for the authority resources."
+}
+
+variable "subscription_id" {
+  type        = string
+  description = "Azure subscription ID for the authority resources."
 }

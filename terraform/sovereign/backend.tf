@@ -4,7 +4,7 @@ terraform {
 
     workspaces {
       project = "amiasea"
-      name    = "amiasea-platform"
+      name    = "amiasea-sovereign"
     }
   }
 }
