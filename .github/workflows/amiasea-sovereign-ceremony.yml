@@ -6,7 +6,7 @@ on:
       tenant_id: { required: true }
       subscription_id: { required: true }
       client_id: { required: true } # The Provisioner UAMI Client ID
-      github_wip: { required: true } # HCP Workload Identity Provider path
+      # github_wip: { required: true } # HCP Workload Identity Provider path
       tfe_token: { required: true } # Terraform Cloud token with permissions to the sovereign workspace
       private_key_pem: { required: true }
       resource_group_name:
