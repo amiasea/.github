@@ -42,7 +42,7 @@ jobs:
         working-directory: ./terraform/orchestration
         env:
           # Only this step consumes the HCP token for the TFE provider
-          TFE_TOKEN: ${{ inputs.tfe_token }}
+          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
         run: |
           terraform init
           terraform apply -auto-approve
