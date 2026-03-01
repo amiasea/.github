@@ -50,8 +50,6 @@ jobs:
           TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
           TF_VAR_location: ${{ inputs.location }}
-          TF_VAR_uami_read_id: ${{ inputs.uami_read_id }}
-          TF_VAR_uami_read_client_id: ${{ inputs.uami_read_client_id }}
           TF_VAR_uami_read_principal_id: ${{ inputs.uami_read_principal_id }}
           TF_VAR_uami_write_principal_id: ${{ inputs.uami_write_principal_id }}
           TF_VAR_tenant_id: ${{ inputs.tenant_id }}
