@@ -40,7 +40,7 @@ resource "azurerm_container_app" "aviator_api" {
 
     container {
       name   = "amiasea-api"
-      image  = "://mcr.microsoft.com"
+      image  = "docker.io/library/alpine:latest"
       cpu    = 0.25
       memory = "0.5Gi"
 
