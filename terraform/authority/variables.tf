@@ -13,6 +13,11 @@ variable "uami_read_id" {
   description = "ID of the user-assigned managed identity with read permissions."
 }
 
+variable "uami_read_client_id" {
+  type        = string
+  description = "Client ID of the user-assigned managed identity with read permissions."
+}
+
 variable "uami_read_principal_id" {
   type        = string
   description = "Object ID of the user-assigned managed identity with read permissions."

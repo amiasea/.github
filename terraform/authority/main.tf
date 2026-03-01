@@ -20,7 +20,7 @@ resource "azurerm_container_app" "aviator_api" {
   secret {
     name                = "ghcr-pat"
     key_vault_secret_id = "https://kv-amiasea.vault.azure.net" # Use versionless URL for latest
-    identity            = var.uami_read_id
+    identity            = var.uami_read_client_id
   }
 
   registry {
@@ -44,10 +44,10 @@ resource "azurerm_container_app" "aviator_api" {
       cpu    = 0.25
       memory = "0.5Gi"
 
-      # env {
-      #   name  = "AZURE_CLIENT_ID"
-      #   value = var.uami_read_client_id
-      # }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = var.uami_read_client_id
+      }
     }
   }
 
