@@ -1,7 +1,6 @@
 # --- APP REGISTRATION ---
 resource "azuread_application" "aviator_api" {
   display_name     = "Amiasea Aviator Service"
-  identifier_uris = ["api://${azuread_application.aviator_api.client_id}"]
   sign_in_audience = "AzureADMyOrg"
 
   api {
@@ -27,4 +26,9 @@ resource "azuread_application" "aviator_api" {
 
 resource "azuread_service_principal" "aviator_api_sp" {
   client_id = azuread_application.aviator_api.client_id
+}
+
+resource "azuread_application_identifier_uri" "aviator_api_uri" {
+  application_id = azuread_application.aviator_api.id
+  identifier_uri = "api://${azuread_application.aviator_api.client_id}"
 }
