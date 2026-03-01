@@ -11,17 +11,6 @@ resource "hcp_project" "sovereign_project" {
   description = "Managed by GitHub OIDC automation"
 }
 
-# # 1. Locate the existing Owners team
-# data "tfe_team" "owners" {
-#   name         = "owners"
-#   organization = var.tfe_organization
-# }
-
-# # This token inherits full administrative rights over the entire Org
-# resource "tfe_team_token" "sovereign_token" {
-#   team_id = data.tfe_team.owners.id
-# }
-
 # 3. Create the HCP Service Principal for Cloud Identity
 resource "hcp_service_principal" "sovereign_sp" {
   name = "amiasea-sovereign"

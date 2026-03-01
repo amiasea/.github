@@ -7,6 +7,7 @@ on:
       subscription_id: { required: true }
       client_id: { required: true } # The Provisioner UAMI Client ID
       github_wip: { required: true } # HCP Workload Identity Provider path
+      tfe_token: { required: true } # Terraform Cloud token with permissions to the sovereign workspace
       private_key_pem: { required: true }
       resource_group_name:
         required: true
@@ -51,9 +52,9 @@ jobs:
 
       - name: Orchestration
         working-directory: ./terraform/orchestration
-        # env:
-        #   # Only this step consumes the HCP token for the TFE provider
-        #   TFE_TOKEN: ${{ steps.hcp_auth.outputs.access_token }}
+        env:
+          # Only this step consumes the HCP token for the TFE provider
+          TFE_TOKEN: ${{ inputs.tfe_token }}
         run: |
           terraform init
           terraform apply -auto-approve
