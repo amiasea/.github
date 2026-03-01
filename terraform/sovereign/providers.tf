@@ -29,3 +29,7 @@ provider "azurerm" {
   # Ensure the provider respects the OIDC session
   use_oidc = true
 }
+
+provider "azuread" {
+  use_oidc  = true
+}

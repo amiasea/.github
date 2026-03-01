@@ -20,8 +20,3 @@ resource "azurerm_role_assignment" "vault_writer" {
   role_definition_name = "Key Vault Secrets Officer"
   principal_id         = var.uami_write_principal_id
 }
-
-resource "azuread_directory_role_assignment" "write_uami_app_admin" {
-  role_id             = "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3" # Application Administrator
-  principal_object_id = var.uami_write_principal_id
-}

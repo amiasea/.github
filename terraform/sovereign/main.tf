@@ -37,3 +37,8 @@ resource "azurerm_role_assignment" "owner" {
   role_definition_name = "Owner"
   principal_id         = azurerm_user_assigned_identity.write.principal_id
 }
+
+resource "azuread_directory_role_assignment" "write_uami_app_admin" {
+  role_id             = "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3" # Application Administrator
+  principal_object_id = azurerm_user_assigned_identity.write.principal_id
+}
