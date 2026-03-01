@@ -14,13 +14,13 @@ resource "azurerm_container_app" "aviator_api" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.umai_read_id]
+    identity_ids = [var.uami_read_client_id]
   }
 
   secret {
     name                = "ghcr-pat"
     key_vault_secret_id = "https://kv-amiasea.vault.azure.net" # Use versionless URL for latest
-    identity            = var.umai_read_id
+    identity            = var.uami_read_client_id
   }
 
   registry {
@@ -46,7 +46,7 @@ resource "azurerm_container_app" "aviator_api" {
 
       env {
         name  = "AZURE_CLIENT_ID"
-        value = var.umai_read_id
+        value = var.uami_read_client_id
       }
     }
   }

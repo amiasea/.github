@@ -8,7 +8,7 @@ variable "location" {
   description = "Azure region."
 }
 
-variable "umai_read_id" {
+variable "uami_read_client_id" {
   type        = string
   description = "ID of the user-assigned managed identity with read permissions."
 }
