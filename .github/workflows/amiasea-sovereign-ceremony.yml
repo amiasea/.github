@@ -9,8 +9,10 @@ on:
       uami_read_client_id: { required: true } # The Read UAMI Client ID
       uami_read_id: { required: true } # The Read UAMI ID
       uami_read_principal_id: { required: true } # The Read UAMI Principal ID (for role assignment)
+      uami_write_principal_id: { required: true } # The Write UAMI Principal ID (for role assignment)
       tfe_token: { required: true } # Terraform Cloud token with permissions to the sovereign workspace
       private_key_pem: { required: true }
+      ghcr_pat: { required: true }
       resource_group_name:
         required: true
         default: "rg-amiasea"
@@ -51,6 +53,7 @@ jobs:
           TF_VAR_uami_read_id: ${{ inputs.uami_read_id }}
           TF_VAR_uami_read_client_id: ${{ inputs.uami_read_client_id }}
           TF_VAR_uami_read_principal_id: ${{ inputs.uami_read_principal_id }}
+          TF_VAR_uami_write_principal_id: ${{ inputs.uami_write_principal_id }}
           TF_VAR_tenant_id: ${{ inputs.tenant_id }}
         run: |
           terraform init
@@ -77,6 +80,12 @@ jobs:
       #       --pem-file private_key.pem
       #     rm private_key.pem
 
+      - name: Import Private Key to Vault
+        run: |
+          az keyvault secret set \
+            --vault-name kv-amiasea \
+            --name ghcr-pat \
+            --value "${{ inputs.ghcr_pat }}"
 
 
 

@@ -20,4 +20,8 @@ output "uami_read_principal_id" {
 
 output "uami_write_client_id" {
   value = azurerm_user_assigned_identity.write.client_id
-}   
+}
+
+output "uami_write_principal_id" {
+  value = azurerm_user_assigned_identity.write.principal_id
+}

@@ -19,7 +19,7 @@ resource "azurerm_container_app" "aviator_api" {
 
   secret {
     name                = "ghcr-pat"
-    key_vault_secret_id = "https://kv-amiasea.vault.azure.net" # Use versionless URL for latest
+    key_vault_secret_id = "https://kv-amiasea.vault.azure.net/secrets/ghcr-pat" # Use versionless URL for latest
     identity            = var.uami_read_client_id
   }
 
@@ -87,4 +87,10 @@ resource "azurerm_role_assignment" "vault_reader" {
   scope                = azurerm_key_vault.vault.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = var.uami_read_principal_id
+}
+
+resource "azurerm_role_assignment" "vault_writer" {
+  scope                = azurerm_key_vault.vault.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = var.uami_write_principal_id
 }
