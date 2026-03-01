@@ -1,7 +1,7 @@
 # --- APP REGISTRATION ---
 resource "azuread_application" "aviator_api" {
   display_name     = "Amiasea Aviator Service"
-  identifier_uris  = ["api://amiasea-authority"]
+  identifier_uris = ["api://${azuread_application.aviator_api.client_id}"]
   sign_in_audience = "AzureADMyOrg"
 
   api {
