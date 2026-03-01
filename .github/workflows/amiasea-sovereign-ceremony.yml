@@ -43,6 +43,8 @@ jobs:
         env:
           # Only this step consumes the HCP token for the TFE provider
           TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
+          TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
+          TF_VAR_location: ${{ inputs.location }}
         run: |
           terraform init
           terraform apply -auto-approve
