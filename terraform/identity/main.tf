@@ -9,6 +9,7 @@ resource "azuread_application" "aviator_api" {
       id                         = "561e1276-8809-4099-a681-42861e69a001"
       value                      = var.api_scope
       admin_consent_display_name = "Control Amiasea"
+      admin_consent_description  = "Allows the caller to control Amiasea."
       enabled                    = true
       type                       = "User"
     }

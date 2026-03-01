@@ -50,7 +50,6 @@ jobs:
         id: authority
         working-directory: ./terraform/authority
         env:
-          # TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
           TF_VAR_location: ${{ inputs.location }}
           TF_VAR_uami_read_principal_id: ${{ inputs.uami_read_principal_id }}
@@ -69,8 +68,6 @@ jobs:
 
       - name: Identity
         working-directory: ./terraform/identity
-        env:
-          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
         run: |
           terraform init
           terraform apply -auto-approve
@@ -79,7 +76,6 @@ jobs:
         id: runtime
         working-directory: ./terraform/runtime
         env:
-          # TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
           TF_VAR_location: ${{ inputs.location }}
           TF_VAR_uami_read_id: ${{ inputs.uami_read_id }}
