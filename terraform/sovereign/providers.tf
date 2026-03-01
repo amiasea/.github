@@ -26,20 +26,6 @@ provider "azurerm" {
       recover_soft_deleted_key_vaults = true
     }
   }
-  
   # Ensure the provider respects the OIDC session
   use_oidc = true
-}
-
-# --- HCP Provider ---
-# Manages Projects, Service Principals, and Workload Identity
-# Uses the TFE_TOKEN (or HCP_ACCESS_TOKEN) from hcp-auth-action
-provider "hcp" {}
-
-# --- TFE Provider ---
-# Specifically for generating the Sovereign Team Token
-# This relies on the TFE_TOKEN environment variable mapped in your workflow
-provider "tfe" {
-  hostname     = "app.terraform.io"
-  organization = var.tfe_organization
 }
