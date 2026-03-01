@@ -17,18 +17,6 @@ resource "azurerm_container_app" "aviator_api" {
     identity_ids = [var.uami_read_id]
   }
 
-  secret {
-    name                = "ghcr-pat"
-    key_vault_secret_id = "https://kv-amiasea.vault.azure.net/secrets/ghcr-pat" # Use versionless URL for latest
-    identity            = var.uami_read_client_id
-  }
-
-  registry {
-    server               = "ghcr.io"
-    username             = "AlfredoBall"
-    password_secret_name = "ghcr-pat"
-  }
-
   template {
     min_replicas = 0
     max_replicas = 1
@@ -49,6 +37,18 @@ resource "azurerm_container_app" "aviator_api" {
         value = var.uami_read_client_id
       }
     }
+  }
+
+  secret {
+    name                = "ghcr-pat"
+    key_vault_secret_id = "https://kv-amiasea.vault.azure.net/secrets/ghcr-pat" # Use versionless URL for latest
+    identity            = var.uami_read_client_id
+  }
+
+  registry {
+    server               = "ghcr.io"
+    username             = "AlfredoBall"
+    password_secret_name = "ghcr-pat"
   }
 
   ingress {
