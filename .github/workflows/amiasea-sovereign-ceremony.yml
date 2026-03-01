@@ -45,14 +45,15 @@ jobs:
         with:
           terraform_version: "1.14.6"
           terraform_wrapper: false
+          cli_config_credentials_token: ${{ steps.hcp_auth.outputs.access_token }}
 
       # --- EXECUTION PHASE ---
 
       - name: Orchestration
         working-directory: ./terraform/orchestration
-        env:
-          # Only this step consumes the HCP token for the TFE provider
-          TFE_TOKEN: ${{ steps.hcp_auth.outputs.access_token }}
+        # env:
+        #   # Only this step consumes the HCP token for the TFE provider
+        #   TFE_TOKEN: ${{ steps.hcp_auth.outputs.access_token }}
         run: |
           terraform init
           terraform apply -auto-approve
