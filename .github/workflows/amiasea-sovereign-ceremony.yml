@@ -27,6 +27,9 @@ permissions:
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: true # Signals Terraform to use non-interactive output mode
+      TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,7 +50,7 @@ jobs:
         id: authority
         working-directory: ./terraform/authority
         env:
-          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
+          # TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
           TF_VAR_location: ${{ inputs.location }}
           TF_VAR_uami_read_principal_id: ${{ inputs.uami_read_principal_id }}
@@ -64,11 +67,19 @@ jobs:
             --name ghcr-pat \
             --value "${{ inputs.ghcr_pat }}"
 
+      - name: Identity
+        working-directory: ./terraform/identity
+        env:
+          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
       - name: Runtime
         id: runtime
         working-directory: ./terraform/runtime
         env:
-          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
+          # TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
           TF_VAR_location: ${{ inputs.location }}
           TF_VAR_uami_read_id: ${{ inputs.uami_read_id }}
@@ -76,17 +87,6 @@ jobs:
         run: |
           terraform init
           terraform apply -auto-approve
-
-      # - name: Identity
-      #   working-directory: ./terraform/identity
-      #   env:
-      #     ARM_USE_OIDC: "true"
-      #   run: |
-      #     terraform init
-      #     terraform apply -auto-approve \
-      #       -var="tenant_id=${{ github.event.inputs.tenant_id }}" \
-      #       -var="client_id=${{ env.uami_client_id }}" \
-      #       -var="principal_object_id=${{ env.uami_principal_id }}"
 
       # - name: Import Private Key to Vault
       #   run: |

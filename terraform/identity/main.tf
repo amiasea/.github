@@ -27,9 +27,3 @@ resource "azuread_application" "aviator_api" {
 resource "azuread_service_principal" "aviator_api_sp" {
   client_id = azuread_application.aviator_api.client_id
 }
-
-# --- DIRECTORY ROLE ASSIGNMENT (App Admin) ---
-resource "azuread_directory_role_assignment" "uami_id_power" {
-  role_id             = "9b89c207-bcdd-4731-b404-20a50955b11a"
-  principal_object_id = var.principal_object_id
-}
