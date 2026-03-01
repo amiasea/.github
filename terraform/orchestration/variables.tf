@@ -13,3 +13,9 @@ variable "location" {
   type        = string
   description = "Azure region for authority-plane resources."
 }
+
+variable "tfe_token" {
+  type      = string
+  sensitive = true
+  description = "Terraform Cloud token with permissions to the sovereign workspace."
+}
