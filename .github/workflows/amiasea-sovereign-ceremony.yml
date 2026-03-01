@@ -5,7 +5,7 @@ on:
     inputs:
       tenant_id: { required: true }
       subscription_id: { required: true }
-      client_id: { required: true } # The Provisioner UAMI Client ID
+      # client_id: { required: true } # The Provisioner UAMI Client ID
       tfe_token: { required: true } # Terraform Cloud token with permissions to the sovereign workspace
       private_key_pem: { required: true }
       arm_access_token: { required: true }
