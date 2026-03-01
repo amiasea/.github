@@ -7,11 +7,6 @@ resource "tfe_organization_default_settings" "org_defaults" {
   default_execution_mode = "local"
 }
 
-resource "tfe_project" "amiasea_project" {
-  name         = "amiasea"
-  organization = var.tfe_organization
-}
-
 # -------------------------------------------------------------------
 # SOVEREIGN WORKSPACE (Sovereign plane)
 # -------------------------------------------------------------------

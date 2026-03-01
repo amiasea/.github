@@ -15,9 +15,3 @@ variable "location" {
   description = "Azure region."
   default = "centralus"
 }
-
-variable "access_token" {
-  type      = string
-  sensitive = true
-  default   = null
-}

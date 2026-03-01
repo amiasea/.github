@@ -6,6 +6,7 @@ on:
       tenant_id: { required: true }
       subscription_id: { required: true }
       client_id: { required: true } # The Provisioner UAMI Client ID
+      uami_write_principal_id: { required: true } # The Provisioner UAMI Principal ID (for role assignment)
       tfe_token: { required: true } # Terraform Cloud token with permissions to the sovereign workspace
       private_key_pem: { required: true }
       resource_group_name:
@@ -38,32 +39,31 @@ jobs:
           tenant-id: ${{ inputs.tenant_id }}
           subscription-id: ${{ inputs.subscription_id }}
 
-      - name: Orchestration
-        working-directory: ./terraform/orchestration
+      # - name: Orchestration
+      #   working-directory: ./terraform/orchestration
+      #   env:
+      #     # Only this step consumes the HCP token for the TFE provider
+      #     # TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
+      #     TF_VAR_tfe_token: ${{ inputs.tfe_token }}
+      #     TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
+      #     TF_VAR_location: ${{ inputs.location }}
+      #   run: |
+      #     terraform init
+      #     terraform apply -auto-approve
+
+      - name: Authority
+        id: auth_tf
+        working-directory: ./terraform/authority
         env:
-          # Only this step consumes the HCP token for the TFE provider
-          # TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
-          TF_VAR_tfe_token: ${{ inputs.tfe_token }}
+          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
           TF_VAR_location: ${{ inputs.location }}
+          TF_VAR_umai_read_id: ${{ inputs.client_id }}
+          TF_VAR_uami_write_principal_id: ${{ inputs.uami_write_principal_id }}
+          TF_VAR_tenant_id: ${{ inputs.tenant_id }}
         run: |
           terraform init
           terraform apply -auto-approve
-
-      # - name: Authority
-      #   id: auth_tf
-      #   working-directory: ./terraform/authority
-      #   env:
-      #     ARM_USE_OIDC: "true"
-      #   run: |
-      #     terraform init
-      #     terraform apply -auto-approve \
-      #       -var="resource_group_name=${{ github.event.inputs.resource_group_name }}" \
-      #       -var="location=${{ github.event.inputs.location }}" \
-      #       -var="tenant_id=${{ github.event.inputs.tenant_id }}"
-      #     # Capture outputs for the next step in the same runner session
-      #     echo "uami_client_id=$(terraform output -raw uami_client_id)" >> $GITHUB_ENV
-      #     echo "uami_principal_id=$(terraform output -raw uami_principal_id)" >> $GITHUB_ENV
 
       # - name: Identity
       #   working-directory: ./terraform/identity

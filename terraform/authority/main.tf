@@ -46,7 +46,7 @@ resource "azurerm_container_app" "aviator_api" {
 
       env {
         name  = "AZURE_CLIENT_ID"
-        value = azurerm_user_assigned_identity.read.client_id
+        value = var.umai_read_id
       }
     }
   }
