@@ -44,7 +44,7 @@ jobs:
           subscription-id: ${{ inputs.subscription_id }}
 
       - name: Authority
-        id: auth_tf
+        id: authority
         working-directory: ./terraform/authority
         env:
           TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
@@ -55,6 +55,26 @@ jobs:
           TF_VAR_uami_read_principal_id: ${{ inputs.uami_read_principal_id }}
           TF_VAR_uami_write_principal_id: ${{ inputs.uami_write_principal_id }}
           TF_VAR_tenant_id: ${{ inputs.tenant_id }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Set GHCR PAT to Vault
+        run: |
+          az keyvault secret set \
+            --vault-name kv-amiasea \
+            --name ghcr-pat \
+            --value "${{ inputs.ghcr_pat }}"
+
+      - name: Runtime
+        id: runtime
+        working-directory: ./terraform/runtime
+        env:
+          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
+          TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
+          TF_VAR_location: ${{ inputs.location }}
+          TF_VAR_uami_read_id: ${{ inputs.uami_read_id }}
+          TF_VAR_uami_read_client_id: ${{ inputs.uami_read_client_id }}
         run: |
           terraform init
           terraform apply -auto-approve
@@ -79,13 +99,6 @@ jobs:
       #       --name "amiasea-github-private-key" \
       #       --pem-file private_key.pem
       #     rm private_key.pem
-
-      - name: Import Private Key to Vault
-        run: |
-          az keyvault secret set \
-            --vault-name kv-amiasea \
-            --name ghcr-pat \
-            --value "${{ inputs.ghcr_pat }}"
 
 
 
