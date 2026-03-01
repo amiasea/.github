@@ -35,7 +35,7 @@ jobs:
         id: sovereign_step
         working-directory: ./terraform/sovereign
         env:
-          TFE_TOKEN: ${{ inputs.tfe_token }}
+          TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
           # Injects the token directly for the AzureRM provider
           ARM_ACCESS_TOKEN: ${{ inputs.arm_access_token }}
         run: |
