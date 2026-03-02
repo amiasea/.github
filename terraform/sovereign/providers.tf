@@ -6,9 +6,9 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0" # Version 4.x has improved OIDC stability
     }
-    hcp = {
-      source  = "hashicorp/hcp"
-      version = "~> 0.100.0" 
+    github = {
+      source  = "hashicorp/github"
+      version = "~> 6.0"
     }
     tfe = {
       source  = "hashicorp/tfe"
@@ -32,4 +32,8 @@ provider "azurerm" {
 
 provider "azuread" {
   use_oidc  = true
+}
+
+provider "github" {
+  owner = "amiasea"
 }

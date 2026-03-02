@@ -1,5 +1,9 @@
 data "azurerm_client_config" "current" {}
 
+data "github_repository" "repo" {
+  full_name = "amiasea/.github"
+}
+
 resource "azurerm_resource_group" "rg_amiasea" {
   name     = var.resource_group_name
   location = var.location
@@ -41,4 +45,58 @@ resource "azurerm_role_assignment" "owner" {
 resource "azuread_directory_role_assignment" "write_uami_app_admin" {
   role_id             = "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3" # Application Administrator
   principal_object_id = azurerm_user_assigned_identity.write.principal_id
+}
+
+# ---------------------------------------------------------
+# Write sovereign facts into GitHub Variables
+# These are NOT secrets — they are stable infra facts.
+# ---------------------------------------------------------
+
+resource "github_actions_organization_variable" "tenant_id" {
+  variable_name           = "TENANT_ID"
+  value                   = data.azurerm_client_config.current.tenant_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "subscription_id" {
+  variable_name           = "SUBSCRIPTION_ID"
+  value                   = data.azurerm_client_config.current.subscription_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "uami_read_id" {
+  variable_name           = "UAMI_READ_ID"
+  value                   = azurerm_user_assigned_identity.read.id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "uami_read_client_id" {
+  variable_name           = "UAMI_READ_CLIENT_ID"
+  value                   = azurerm_user_assigned_identity.read.client_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "uami_read_principal_id" {
+  variable_name           = "UAMI_READ_PRINCIPAL_ID"
+  value                   = azurerm_user_assigned_identity.read.principal_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "uami_write_client_id" {
+  variable_name           = "UAMI_WRITE_CLIENT_ID"
+  value                   = azurerm_user_assigned_identity.write.client_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "uami_write_principal_id" {
+  variable_name           = "UAMI_WRITE_PRINCIPAL_ID"
+  value                   = azurerm_user_assigned_identity.write.principal_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
 }
