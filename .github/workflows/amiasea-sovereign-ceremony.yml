@@ -84,17 +84,17 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      - name: Import Private Key to Vault
-        run: |
-          echo "${{ github.event.inputs.private_key_pem }}" > key-pkcs1.pem
+        - name: Import Private Key to Vault
+          run: |
+            printf "%s" "${{ github.event.inputs.private_key_pem }}" | sed 's/\\n/\n/g' > key-pkcs1.pem
 
-          # Convert PKCS#1 → PKCS#8 (required by Azure Key Vault)
-          openssl pkcs8 -topk8 -nocrypt \
-            -in key-pkcs1.pem \
-            -out key-pkcs8.pem
+            openssl pkcs8 -topk8 -nocrypt \
+              -in key-pkcs1.pem \
+              -out key-pkcs8.pem
 
-          az keyvault key import \
-            --vault-name "kv-amiasea" \
-            --name "amiasea-github-private-key" \
-            --pem-file key-pkcs8.pem
-          rm key-pkcs1.pem key-pkcs8.pem
+            az keyvault key import \
+              --vault-name "kv-amiasea" \
+              --name "amiasea-github-private-key" \
+              --pem-file key-pkcs8.pem
+
+            rm key-pkcs1.pem key-pkcs8.pem
