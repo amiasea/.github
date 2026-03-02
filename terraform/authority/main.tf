@@ -9,14 +9,26 @@ resource "azurerm_key_vault" "vault" {
   sku_name                    = "standard"
 }
 
-resource "azurerm_role_assignment" "vault_reader" {
+resource "azurerm_role_assignment" "vault_secrets_user" {
   scope                = azurerm_key_vault.vault.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = var.uami_read_principal_id
 }
 
-resource "azurerm_role_assignment" "vault_writer" {
+resource "azurerm_role_assignment" "vault_crypto_user" {
+  scope                = azurerm_key_vault.vault.id
+  role_definition_name = "Key Vault Crypto User"
+  principal_id         = var.uami_read_principal_id
+}
+
+resource "azurerm_role_assignment" "vault_secrets_officer" {
   scope                = azurerm_key_vault.vault.id
   role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = var.uami_write_principal_id
+}
+
+resource "azurerm_role_assignment" "vault_crypto_officer" {
+  scope                = azurerm_key_vault.vault.id
+  role_definition_name = "Key Vault Crypto Officer"
   principal_id         = var.uami_write_principal_id
 }

@@ -84,34 +84,11 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      # - name: Import Private Key to Vault
-      #   run: |
-      #     echo "${{ github.event.inputs.private_key_pem }}" > private_key.pem
-      #     # Uses the existing 'azure/login' session
-      #     az keyvault key import \
-      #       --vault-name "kv-amiasea" \
-      #       --name "amiasea-github-private-key" \
-      #       --pem-file private_key.pem
-      #     rm private_key.pem
-
-
-
-
-
-
-
-
-
-
-
-            # - name: Orchestration
-      #   working-directory: ./terraform/orchestration
-      #   env:
-      #     # Only this step consumes the HCP token for the TFE provider
-      #     # TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
-      #     TF_VAR_tfe_token: ${{ inputs.tfe_token }}
-      #     TF_VAR_resource_group_name: ${{ inputs.resource_group_name }}
-      #     TF_VAR_location: ${{ inputs.location }}
-      #   run: |
-      #     terraform init
-      #     terraform apply -auto-approve
+      - name: Import Private Key to Vault
+        run: |
+          echo "${{ github.event.inputs.private_key_pem }}" > private_key.pem
+          az keyvault key import \
+            --vault-name "kv-amiasea" \
+            --name "amiasea-github-private-key" \
+            --pem-file private_key.pem
+          rm private_key.pem
