@@ -11,7 +11,6 @@ on:
       uami_read_principal_id: { required: true } # The Read UAMI Principal ID (for role assignment)
       uami_write_principal_id: { required: true } # The Write UAMI Principal ID (for role assignment)
       tfe_token: { required: true } # Terraform Cloud token with permissions to the sovereign workspace
-      private_key_pem: { required: true }
       ghcr_pat: { required: true }
       resource_group_name:
         required: true
