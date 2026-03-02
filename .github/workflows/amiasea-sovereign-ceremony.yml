@@ -5,8 +5,6 @@ on:
     inputs:
       TFE_TOKEN: { required: true }
       GHCR_PAT: { required: true }
-      RESOURCE_GROUP_NAME: { required: true, default: "rg-amiasea" }
-      LOCATION: { required: true, default: "centralus" }
 
 permissions:
   id-token: write
@@ -22,10 +20,8 @@ jobs:
       # Sovereign facts from GitHub Variables
       TF_VAR_tenant_id: ${{ vars.TENANT_ID }}
       TF_VAR_subscription_id: ${{ vars.SUBSCRIPTION_ID }}
-      TF_VAR_resource_group_name: ${{ inputs.RESOURCE_GROUP_NAME }}
-      TF_VAR_location: ${{ inputs.LOCATION }}
-      TF_VAR_uami_read_id: ${{ vars.UAMI_READ_ID }}
-      TF_VAR_uami_read_client_id: ${{ vars.UAMI_READ_CLIENT_ID }}
+      TF_VAR_resource_group_name: ${{ vars.RESOURCE_GROUP_NAME }}
+      TF_VAR_location: ${{ vars.LOCATION }}
       TF_VAR_uami_read_principal_id: ${{ vars.UAMI_READ_PRINCIPAL_ID }}
       TF_VAR_uami_write_client_id: ${{ vars.UAMI_WRITE_CLIENT_ID }}
       TF_VAR_uami_write_principal_id: ${{ vars.UAMI_WRITE_PRINCIPAL_ID }}
@@ -63,9 +59,3 @@ jobs:
         run: |
           terraform init
           terraform apply -auto-approve
-
-      - name: Runtime
-        working-directory: ./terraform/runtime
-        run: |
-          terraform init
-          terraform destroy -auto-approve

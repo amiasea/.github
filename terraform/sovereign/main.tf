@@ -100,3 +100,17 @@ resource "github_actions_organization_variable" "uami_write_principal_id" {
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
+
+resource "github_actions_organization_variable" "resource_group_name" {
+  variable_name           = "RESOURCE_GROUP_NAME"
+  value                   = var.resource_group_name
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "location" {
+  variable_name           = "LOCATION"
+  value                   = var.location
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
