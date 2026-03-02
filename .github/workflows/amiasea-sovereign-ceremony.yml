@@ -3,8 +3,10 @@ name: "Amiasea: Sovereign Bootstrap (First Manifestation)"
 on:
   workflow_dispatch:
     inputs:
-      tfe_token: { required: true }
-      ghcr_pat: { required: true }
+      TFE_TOKEN: { required: true }
+      GHCR_PAT: { required: true }
+      RESOURCE_GROUP_NAME: { required: true, default: "rg-amiasea" }
+      LOCATION: { required: true, default: "centralus" }
 
 permissions:
   id-token: write
@@ -15,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TF_IN_AUTOMATION: true
-      TF_TOKEN_app_terraform_io: ${{ inputs.tfe_token }}
+      TF_TOKEN_app_terraform_io: ${{ inputs.TFE_TOKEN }}
 
       # Sovereign facts from GitHub Variables
       TF_VAR_tenant_id: ${{ vars.TENANT_ID }}
       TF_VAR_subscription_id: ${{ vars.SUBSCRIPTION_ID }}
-      TF_VAR_resource_group_name: ${{ vars.RESOURCE_GROUP_NAME }}
-      TF_VAR_location: ${{ vars.LOCATION }}
+      TF_VAR_resource_group_name: ${{ inputs.RESOURCE_GROUP_NAME }}
+      TF_VAR_location: ${{ inputs.LOCATION }}
       TF_VAR_uami_read_id: ${{ vars.UAMI_READ_ID }}
       TF_VAR_uami_read_client_id: ${{ vars.UAMI_READ_CLIENT_ID }}
       TF_VAR_uami_read_principal_id: ${{ vars.UAMI_READ_PRINCIPAL_ID }}
