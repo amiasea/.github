@@ -83,21 +83,3 @@ jobs:
         run: |
           terraform init
           terraform apply -auto-approve
-
-      - name: Import Private Key to Vault
-        run: |
-          # Reconstruct PEM with real newlines
-          printf "%b" "${{ github.event.inputs.private_key_pem }}" > key-pkcs1.pem
-
-          # Convert PKCS#1 → PKCS#8
-          openssl pkcs8 -topk8 -nocrypt \
-            -in key-pkcs1.pem \
-            -out key-pkcs8.pem
-
-          # Import into Key Vault
-          az keyvault key import \
-            --vault-name "kv-amiasea" \
-            --name "amiasea-github-private-key" \
-            --pem-file key-pkcs8.pem
-
-          rm key-pkcs1.pem key-pkcs8.pem
