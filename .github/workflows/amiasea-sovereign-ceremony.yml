@@ -86,12 +86,15 @@ jobs:
 
       - name: Import Private Key to Vault
         run: |
-          printf "%s" "${{ github.event.inputs.private_key_pem }}" | sed 's/\\n/\n/g' > key-pkcs1.pem
+          # Reconstruct PEM with real newlines
+          printf "%b" "${{ github.event.inputs.private_key_pem }}" > key-pkcs1.pem
 
+          # Convert PKCS#1 → PKCS#8
           openssl pkcs8 -topk8 -nocrypt \
             -in key-pkcs1.pem \
             -out key-pkcs8.pem
 
+          # Import into Key Vault
           az keyvault key import \
             --vault-name "kv-amiasea" \
             --name "amiasea-github-private-key" \
