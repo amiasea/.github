@@ -22,6 +22,8 @@ jobs:
       TF_VAR_subscription_id: ${{ vars.SUBSCRIPTION_ID }}
       TF_VAR_resource_group_name: ${{ vars.RESOURCE_GROUP_NAME }}
       TF_VAR_location: ${{ vars.LOCATION }}
+      TF_VAR_key_vault_name: ${{ vars.KEY_VAULT_NAME }}
+      TF_VAR_uami_read_client_id: ${{ vars.UAMI_READ_CLIENT_ID }}
       TF_VAR_uami_read_principal_id: ${{ vars.UAMI_READ_PRINCIPAL_ID }}
       TF_VAR_uami_write_client_id: ${{ vars.UAMI_WRITE_CLIENT_ID }}
       TF_VAR_uami_write_principal_id: ${{ vars.UAMI_WRITE_PRINCIPAL_ID }}
@@ -59,3 +61,43 @@ jobs:
         run: |
           terraform init
           terraform apply -auto-approve
+
+      # 1. Authenticate with the READ principal to fetch the key
+      - name: Azure Login (Read-Only)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.UAMI_READ_CLIENT_ID }}
+          tenant-id: ${{ vars.TENANT_ID }}
+          subscription-id: ${{ vars.SUBSCRIPTION_ID }}
+
+      - name: Fetch Private Key from Azure
+        id: fetch-key
+        run: |
+          # Use the Org Var for the secret name to get the PEM content
+          PEM_VALUE=$(az keyvault secret show \
+            --vault-name "${{ vars.KEY_VAULT_NAME }}" \
+            --name "${{ vars.AVIATOR_PRIVATE_KEY_NAME }}" \
+            --query value -o tsv)
+          
+          # Mask the content in logs and set it to GITHUB_ENV
+          echo "::add-mask::$PEM_VALUE"
+          echo "GH_APP_PEM<<EOF" >> $GITHUB_ENV
+          echo "$PEM_VALUE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Mint Sovereign Installation Token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.AVIATOR_GH_APP_ID }}
+          private-key: ${{ env.GH_APP_PEM }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Provision TFE_TOKEN (State-Free)
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh secret set TFE_TOKEN \
+            --org "${{ github.repository_owner }}" \
+            --visibility private \
+            --body "${{ inputs.TFE_TOKEN }}"

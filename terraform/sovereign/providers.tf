@@ -2,6 +2,10 @@ terraform {
   required_version = ">= 1.0"
 
   required_providers {
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 3.0"
+    }
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.0" # Version 4.x has improved OIDC stability
@@ -9,10 +13,6 @@ terraform {
     github = {
       source  = "hashicorp/github"
       version = "~> 6.0"
-    }
-    tfe = {
-      source  = "hashicorp/tfe"
-      version = "~> 0.60.0"
     }
   }
 }

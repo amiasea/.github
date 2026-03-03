@@ -8,6 +8,11 @@ variable "location" {
   description = "Azure region."
 }
 
+variable "key_vault_name" {
+  type        = string
+  description = "Name of the Key Vault to create for the authority."
+}
+
 variable "uami_read_principal_id" {
   type        = string
   description = "Object ID of the user-assigned managed identity with read permissions."

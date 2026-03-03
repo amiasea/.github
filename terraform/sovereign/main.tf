@@ -114,3 +114,24 @@ resource "github_actions_organization_variable" "location" {
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
+
+resource "github_actions_organization_variable" "key_vault_name" {
+  variable_name           = "KEY_VAULT_NAME"
+  value                   = var.key_vault_name
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "aviator_gh_app_id" {
+  variable_name           = "AVIATOR_GH_APP_ID"
+  value                   = var.aviator_gh_app_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "aviator_private_key_name" {
+  variable_name           = "AVIATOR_PRIVATE_KEY_NAME"
+  value                   = var.aviator_private_key_name
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
