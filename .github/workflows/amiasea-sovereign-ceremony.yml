@@ -76,78 +76,216 @@ jobs:
           set -euo pipefail
           IFS=$'\n\t'
 
+          # --- Config (inputs / vars)
+          KV_NAME="${{ vars.KEY_VAULT_NAME }}"
+          KEY_NAME="${{ vars.AVIATOR_PRIVATE_KEY_NAME }}"
+          APP_ID="${{ vars.AVIATOR_GH_APP_ID }}"
+          OWNER="${{ github.repository_owner }}"
+
           # --- 1) timestamps (single source of truth)
           NOW=$(date +%s)
           IAT=$NOW
-          EXP=$((NOW + 600))
+          EXP=$((NOW + 600))   # GitHub requires <= 10 minutes
 
           # --- 2) header & payload (base64url, no padding)
-          HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=')
-          PAYLOAD=$(printf '{"iat":%s,"exp":%s,"iss":"%s"}' "$IAT" "$EXP" "${{ vars.AVIATOR_GH_APP_ID }}" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+          HEADER_JSON='{"alg":"RS256","typ":"JWT"}'
+          HEADER=$(echo -n "$HEADER_JSON" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+
+          PAYLOAD_JSON=$(printf '{"iat":%s,"exp":%s,"iss":"%s"}' "$IAT" "$EXP" "$APP_ID")
+          PAYLOAD=$(echo -n "$PAYLOAD_JSON" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+
           RAW_JWT="${HEADER}.${PAYLOAD}"
 
-          # --- 3) digest: raw SHA256 bytes, then standard base64 (what az expects)
+          # --- 3) digest: raw SHA256 bytes then standard base64 (what az expects)
           DIGEST=$(echo -n "$RAW_JWT" | openssl dgst -sha256 -binary | openssl base64 -A)
 
-          # --- 4) sign via Azure Key Vault
-          SIGNATURE_BASE64=$(az keyvault key sign \
-            --vault-name "${{ vars.KEY_VAULT_NAME }}" \
-            --name "${{ vars.AVIATOR_PRIVATE_KEY_NAME }}" \
+          # --- 4) sign via Azure Key Vault (capture az stdout/stderr)
+          set +e
+          AZ_OUT=$(az keyvault key sign \
+            --vault-name "$KV_NAME" \
+            --name "$KEY_NAME" \
             --algorithm RS256 \
-            --digest "$DIGEST" \
-            --query result -o tsv)
+            --digest "$DIGEST" 2>&1)
+          AZ_EXIT=$?
+          set -e
 
-          # --- 5) normalize signature to base64url (detect whether az returned standard base64 or already base64url)
-          # If result contains '+' or '/' treat as standard base64 and convert; if contains '-' or '_' treat as base64url and just strip padding.
+          if [ $AZ_EXIT -ne 0 ]; then
+            echo "::error::az keyvault key sign failed (exit $AZ_EXIT). az output:"
+            echo "$AZ_OUT"
+            # Save az output for offline debugging
+            echo "$AZ_OUT" > debug_az_sign_output.txt
+            exit 1
+          fi
+
+          # --- 5) extract signature result robustly
+          SIGNATURE_BASE64=$(echo "$AZ_OUT" | jq -r '.result // empty' 2>/dev/null || true)
+          if [ -z "$SIGNATURE_BASE64" ]; then
+            # fallback: try to extract a long base64-like token from az output
+            SIGNATURE_BASE64=$(echo "$AZ_OUT" | tr -d '\r\n' | sed -n 's/.*\([A-Za-z0-9+/=_-]\{40,\}\).*/\1/p' || true)
+          fi
+
+          if [ -z "$SIGNATURE_BASE64" ]; then
+            echo "::error::Could not extract signature from az output. az output:"
+            echo "$AZ_OUT"
+            echo "$AZ_OUT" > debug_az_sign_output.txt
+            exit 1
+          fi
+
+          # --- 6) debug previews (safe: do not print JWT or full signature)
+          echo "=== DEBUG: header (decoded) ==="
+          echo "$HEADER" | tr '_-' '/+' | base64 -d || echo "::warning::header decode failed"
+          echo "=== DEBUG: payload (decoded) ==="
+          echo "$PAYLOAD" | tr '_-' '/+' | base64 -d || echo "::warning::payload decode failed"
+
+          echo "Digest (base64 of SHA256):"
+          echo "$DIGEST"
+
+          echo "az sign returned length: ${#SIGNATURE_BASE64}"
+          echo "az sign preview (first 80 chars): $(echo "$SIGNATURE_BASE64" | cut -c1-80)..."
+          if echo -n "$SIGNATURE_BASE64" | grep -q '[+/]'; then
+            echo "az returned standard base64 (contains + or /). Will convert to base64url."
+          elif echo -n "$SIGNATURE_BASE64" | grep -q '[-_]'; then
+            echo "az returned base64url (contains - or _). Will strip padding only."
+          else
+            echo "::warning::Signature contains unexpected characters; inspect az output above."
+          fi
+
+          # --- 7) normalize signature to base64url (no padding) and build JWT
           if echo -n "$SIGNATURE_BASE64" | grep -q '[+/]'; then
             SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '+/' '-_' | tr -d '=')
           else
             SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr -d '=')
           fi
 
+          # short fingerprint for correlation (first8+last8)
+          SIG_FINGERPRINT="$(echo -n "$SIGNATURE" | cut -c1-8)$(echo -n "$SIGNATURE" | rev | cut -c1-8 | rev)"
+          echo "Signature fingerprint (first8+last8): ${SIG_FINGERPRINT}"
+
           JWT="${RAW_JWT}.${SIGNATURE}"
 
-          # --- 6) request installations (correct endpoint) and robustly separate body and status
-          INSTALLATIONS_URL="https://api.github.com/app/installations"
-          RESPONSE=$(curl -sS -w "\n%{http_code}" -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" "$INSTALLATIONS_URL")
-          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
+          # --- 8) best-effort local verification using Key Vault public key (optional, non-secret)
+          set +e
+          JWK_JSON=$(az keyvault key show --vault-name "$KV_NAME" --name "$KEY_NAME" -o json 2>/dev/null) || true
+          set -e
 
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "::error::GitHub rejected the JWT. Status: $HTTP_STATUS Body: $BODY"
-            exit 1
-          fi
+          if [ -n "$JWK_JSON" ]; then
+            N=$(echo "$JWK_JSON" | jq -r '.key.n // empty')
+            E=$(echo "$JWK_JSON" | jq -r '.key.e // empty')
+            if [ -n "$N" ] && [ -n "$E" ]; then
+              # convert JWK -> PEM (requires python3 + cryptography). If not available, skip verification.
+              if command -v python3 >/dev/null 2>&1; then
+                python3 - <<PY > /tmp/pubkey.pem
+            import base64, json, sys
+            from cryptography.hazmat.primitives.asymmetric import rsa
+            from cryptography.hazmat.primitives import serialization
+            j = json.loads(sys.stdin.read())
+            def b64url_decode(s):
+                s += '=' * ((4 - len(s) % 4) % 4)
+                return base64.urlsafe_b64decode(s)
+            nb = b64url_decode(j['n'])
+            eb = b64url_decode(j['e'])
+            N = int.from_bytes(nb, 'big')
+            E = int.from_bytes(eb, 'big')
+            pub = rsa.RSAPublicNumbers(E, N).public_key()
+            pem = pub.public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+            sys.stdout.buffer.write(pem)
+            PY <<EOF
+            {"n":"$N","e":"$E"}
+            EOF
+                      # prepare signature binary for verification
+                      SIG_STD=$(echo -n "$SIGNATURE" | tr '-_' '+/')
+                      PAD=$(( (4 - ${#SIG_STD} % 4) % 4 ))
+                      for i in $(seq 1 $PAD); do SIG_STD="${SIG_STD}="; done
+                      echo -n "$SIG_STD" | base64 -d > /tmp/signature.bin
+                      echo -n "$RAW_JWT" > /tmp/message.bin
 
-          # --- 7) find installation id for the repository owner (take first match)
-          INSTALL_ID=$(echo "$BODY" | jq -r --arg owner "${{ github.repository_owner }}" 'map(select(.account.login==$owner)) | .[0].id // empty')
-          if [ -z "$INSTALL_ID" ]; then
-            echo "::error::Could not find App Installation for ${{ github.repository_owner }}. Body: $BODY"
-            exit 1
-          fi
+                      if openssl dgst -sha256 -verify /tmp/pubkey.pem -signature /tmp/signature.bin /tmp/message.bin >/dev/null 2>&1; then
+                        echo "Signature verification: Verified OK (Key Vault signature matches header.payload)"
+                      else
+                        echo "::error::Signature verification FAILED (Key Vault signature did not verify)"
+                        openssl dgst -sha256 -verify /tmp/pubkey.pem -signature /tmp/signature.bin /tmp/message.bin || true
+                        # continue to attempt GitHub call for full diagnostics
+                      fi
+                    else
+                      echo "::warning::python3 not available; skipping local signature verification."
+                    fi
+                  else
+                    echo "::warning::Could not extract n/e from JWK; skipping local verification."
+                  fi
+                else
+                  echo "::warning::Could not fetch JWK from Key Vault; skipping local verification."
+                fi
 
-          # --- 8) exchange installation id for an installation access token
-          TOKEN_RESPONSE=$(curl -sS -X POST -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" "https://api.github.com/app/installations/$INSTALL_ID/access_tokens")
-          TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token // empty')
+                # --- 9) Request installations (correct endpoint) and robustly separate body and status
+                INSTALLATIONS_URL="https://api.github.com/app/installations"
+                # write curl verbose output to a debug file (stderr)
+                RESPONSE=$(curl -sS -w "\n%{http_code}" -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" "$INSTALLATIONS_URL" 2>curl_installations_debug.log)
+                HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+                BODY=$(echo "$RESPONSE" | sed '$d')
 
-          if [ -z "$TOKEN" ]; then
-            echo "::error::Token minting failed. Response: $TOKEN_RESPONSE"
-            exit 1
-          fi
+                echo "Curl debug (installations) preview:"
+                tail -n +1 curl_installations_debug.log | sed -n '1,200p'
 
-          # --- 9) mask and export token
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+                echo "GitHub API Status: $HTTP_STATUS"
+                echo "GitHub API Body preview (first 800 chars):"
+                echo "$BODY" | head -c 800
+                echo
 
-      - name: Provision TFE_TOKEN (State-Free)
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          IFS=$'\n\t'
+                if [ "$HTTP_STATUS" -ne 200 ]; then
+                  echo "::error::GitHub rejected the JWT when listing installations. Status: $HTTP_STATUS"
+                  echo "::error::Full response body (truncated to 4000 chars):"
+                  echo "$BODY" | head -c 4000
+                  # Save debug artifacts for offline inspection (do not include private key)
+                  echo "$HEADER_JSON" > debug_header.json
+                  echo "$PAYLOAD_JSON" > debug_payload.json
+                  echo "$DIGEST" > debug_digest.txt
+                  echo "$SIGNATURE_BASE64" > debug_signature_base64.txt
+                  echo "curl_installations_debug.log:"
+                  tail -n +1 curl_installations_debug.log | sed -n '1,200p'
+                  exit 1
+                fi
 
-          # Use the minted installation token (GH_TOKEN) to push a secret into the org secret store.
-          # Ensure the GH CLI is authenticated via GH_TOKEN in the environment.
-          gh secret set TFE_TOKEN \
-            --org "${{ github.repository_owner }}" \
-            --visibility private \
-            --body "$GH_TOKEN"
+                # --- 10) find installation id for the repository owner (take first match)
+                INSTALL_ID=$(echo "$BODY" | jq -r --arg owner "$OWNER" 'map(select(.account.login==$owner)) | .[0].id // empty')
+                if [ -z "$INSTALL_ID" ]; then
+                  echo "::error::Could not find App Installation for $OWNER. Body preview:"
+                  echo "$BODY" | head -c 2000
+                  exit 1
+                fi
+                echo "Found Installation ID: $INSTALL_ID"
+
+                # --- 11) exchange installation id for an installation access token (MUST include Authorization: Bearer $JWT)
+                TOKEN_URL="https://api.github.com/app/installations/$INSTALL_ID/access_tokens"
+                TOKEN_RESPONSE=$(curl -sS -X POST \
+                  -H "Authorization: Bearer $JWT" \
+                  -H "Accept: application/vnd.github+json" \
+                  "$TOKEN_URL" 2>curl_token_debug.log)
+                echo "Curl debug (token exchange) preview:"
+                tail -n +1 curl_token_debug.log | sed -n '1,200p'
+
+                TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token // empty')
+
+                if [ -z "$TOKEN" ]; then
+                  echo "::error::Token minting failed. Response body (truncated):"
+                  echo "$TOKEN_RESPONSE" | head -c 4000
+                  # Save debug artifacts
+                  echo "$TOKEN_RESPONSE" > debug_token_response.txt
+                  exit 1
+                fi
+
+                # --- 12) mask and export token
+                echo "::add-mask::$TOKEN"
+                echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+            - name: Provision TFE_TOKEN (State-Free)
+              env:
+                GH_TOKEN: ${{ steps.app-token.outputs.token }}
+              run: |
+                set -euo pipefail
+                IFS=$'\n\t'
+
+                # Use the minted installation token (GH_TOKEN) to push a secret into the org secret store.
+                gh secret set TFE_TOKEN \
+                  --org "${{ github.repository_owner }}" \
+                  --visibility private \
+                  --body "$GH_TOKEN"
