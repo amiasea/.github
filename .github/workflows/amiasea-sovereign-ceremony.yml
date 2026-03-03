@@ -76,20 +76,20 @@ jobs:
           set -euo pipefail
           IFS=$'\n\t'
 
-          # 1. timestamps
+          # --- 1) timestamps (single source of truth)
           NOW=$(date +%s)
           IAT=$NOW
           EXP=$((NOW + 600))
 
-          # 2. header & payload (base64url)
+          # --- 2) header & payload (base64url, no padding)
           HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=')
           PAYLOAD=$(printf '{"iat":%s,"exp":%s,"iss":"%s"}' "$IAT" "$EXP" "${{ vars.AVIATOR_GH_APP_ID }}" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
           RAW_JWT="${HEADER}.${PAYLOAD}"
 
-          # 3. digest (raw SHA256, base64)
+          # --- 3) digest: raw SHA256 bytes, then standard base64 (what az expects)
           DIGEST=$(echo -n "$RAW_JWT" | openssl dgst -sha256 -binary | openssl base64 -A)
 
-          # 4. sign via Key Vault
+          # --- 4) sign via Azure Key Vault
           SIGNATURE_BASE64=$(az keyvault key sign \
             --vault-name "${{ vars.KEY_VAULT_NAME }}" \
             --name "${{ vars.AVIATOR_PRIVATE_KEY_NAME }}" \
@@ -97,10 +97,17 @@ jobs:
             --digest "$DIGEST" \
             --query result -o tsv)
 
-          SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '+/' '-_' | tr -d '=')
+          # --- 5) normalize signature to base64url (detect whether az returned standard base64 or already base64url)
+          # If result contains '+' or '/' treat as standard base64 and convert; if contains '-' or '_' treat as base64url and just strip padding.
+          if echo -n "$SIGNATURE_BASE64" | grep -q '[+/]'; then
+            SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '+/' '-_' | tr -d '=')
+          else
+            SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr -d '=')
+          fi
+
           JWT="${RAW_JWT}.${SIGNATURE}"
 
-          # 5. Request installations (use correct endpoint)
+          # --- 6) request installations (correct endpoint) and robustly separate body and status
           INSTALLATIONS_URL="https://api.github.com/app/installations"
           RESPONSE=$(curl -sS -w "\n%{http_code}" -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" "$INSTALLATIONS_URL")
           HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
@@ -111,31 +118,36 @@ jobs:
             exit 1
           fi
 
+          # --- 7) find installation id for the repository owner (take first match)
           INSTALL_ID=$(echo "$BODY" | jq -r --arg owner "${{ github.repository_owner }}" 'map(select(.account.login==$owner)) | .[0].id // empty')
           if [ -z "$INSTALL_ID" ]; then
             echo "::error::Could not find App Installation for ${{ github.repository_owner }}. Body: $BODY"
             exit 1
           fi
 
-          # 6. Exchange for access token
+          # --- 8) exchange installation id for an installation access token
           TOKEN_RESPONSE=$(curl -sS -X POST -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" "https://api.github.com/app/installations/$INSTALL_ID/access_tokens")
           TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token // empty')
+
           if [ -z "$TOKEN" ]; then
             echo "::error::Token minting failed. Response: $TOKEN_RESPONSE"
             exit 1
           fi
 
-          # 7. Mask and export
+          # --- 9) mask and export token
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
-
 
       - name: Provision TFE_TOKEN (State-Free)
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          # Push the secret directly to the GitHub Org Store
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          # Use the minted installation token (GH_TOKEN) to push a secret into the org secret store.
+          # Ensure the GH CLI is authenticated via GH_TOKEN in the environment.
           gh secret set TFE_TOKEN \
             --org "${{ github.repository_owner }}" \
             --visibility private \
-            --body "${{ inputs.TFE_TOKEN }}"
+            --body "$GH_TOKEN"
