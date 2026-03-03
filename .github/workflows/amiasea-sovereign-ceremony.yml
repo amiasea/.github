@@ -92,24 +92,24 @@ jobs:
           SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '/+' '_-' | tr -d '=')
           JWT="${RAW_JWT}.${SIGNATURE}"
 
-          # 3. Find the Installation ID for your Organization
+          # 3. Find the Installation ID (Fixed Endpoint: /app/installations)
           echo "Looking up installation for: ${{ github.repository_owner }}"
           
           INSTALLATIONS_RESPONSE=$(curl -s -S -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com")
           
+          # Verify we got an array back to prevent jq indexing errors
           INSTALL_ID=$(echo "$INSTALLATIONS_RESPONSE" | \
-            jq -r ".[] | select(.account.login==\"${{ github.repository_owner }}\") | .id")
+            jq -r ".[]? | select(.account.login==\"${{ github.repository_owner }}\") | .id")
           
           if [ "$INSTALL_ID" == "null" ] || [ -z "$INSTALL_ID" ]; then
-            echo "::error::Could not find App Installation for ${{ github.repository_owner }}. Response: $INSTALLATIONS_RESPONSE"
+            echo "::error::Could not find App Installation. Response: $INSTALLATIONS_RESPONSE"
             exit 1
           fi
           echo "Found Installation ID: $INSTALL_ID"
 
-          # 4. Exchange JWT for Installation Access Token
-          # Corrected Endpoint: /app/installations/{id}/access_tokens
+          # 4. Exchange JWT for Token (Fixed Endpoint: /app/installations/{id}/access_tokens)
           TOKEN_RESPONSE=$(curl -s -S -X POST -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/$INSTALL_ID/access_tokens")
@@ -129,7 +129,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          # The TFE_TOKEN moves from input to GH secret without touching Terraform State
+          # Push the secret directly to the GitHub Org Store
           gh secret set TFE_TOKEN \
             --org "${{ github.repository_owner }}" \
             --visibility private \
