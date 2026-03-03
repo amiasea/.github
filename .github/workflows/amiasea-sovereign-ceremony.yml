@@ -70,34 +70,51 @@ jobs:
           tenant-id: ${{ vars.TENANT_ID }}
           subscription-id: ${{ vars.SUBSCRIPTION_ID }}
 
-      - name: Fetch Private Key from Azure
-        id: fetch-key
+      - name: Sovereign Identity Signing (Key Vault)
+        id: app-token
         run: |
-          # Use the Org Var for the secret name to get the PEM content
-          PEM_VALUE=$(az keyvault secret show \
+          # 1. Construct JWT Header and Payload (RS256)
+          # 'iss' is your GitHub App ID
+          HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -e -A | tr -d '=' | tr '/+' '_-')
+          PAYLOAD=$(echo -n "{\"iat\":$(date +%s),\"exp\":$(($(date +%s)+600)),\"iss\":\"${{ vars.AVIATOR_GH_APP_ID }}\"}" | openssl base64 -e -A | tr -d '=' | tr '/+' '_-')
+          RAW_JWT="${HEADER}.${PAYLOAD}"
+
+          # 2. Hash the JWT content and send to Azure Key Vault for SIGNING
+          # The Private Key remains inside the Vault HSM/Software boundary.
+          HASH=$(echo -n "$RAW_JWT" | openssl dgst -sha256 -binary | openssl base64 -e -A)
+          
+          SIGNATURE=$(az keyvault key sign \
             --vault-name "${{ vars.KEY_VAULT_NAME }}" \
             --name "${{ vars.AVIATOR_PRIVATE_KEY_NAME }}" \
-            --query value -o tsv)
-          
-          # Mask the content in logs and set it to GITHUB_ENV
-          echo "::add-mask::$PEM_VALUE"
-          echo "GH_APP_PEM<<EOF" >> $GITHUB_ENV
-          echo "$PEM_VALUE" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+            --algorithm RS256 \
+            --value "$HASH" \
+            --query result -o tsv)
 
-      - name: Mint Sovereign Installation Token
-        id: generate-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.AVIATOR_GH_APP_ID }}
-          private-key: ${{ env.GH_APP_PEM }}
-          owner: ${{ github.repository_owner }}
+          # 3. Assemble the final signed JWT
+          JWT="${RAW_JWT}.${SIGNATURE}"
+
+          # 4. Exchange JWT for a GitHub Installation Access Token
+          # First, get the Installation ID for your Organization
+          INSTALL_ID=$(curl -s -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com" | jq -r ".[] | select(.account.login==\"${{ github.repository_owner }}\") | .id")
+
+          # Second, generate the temporary token
+          TOKEN=$(curl -s -X POST -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/$INSTALL_ID/access_tokens" | jq -r '.token')
+
+          # 5. Mask and Export
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
       - name: Provision TFE_TOKEN (State-Free)
         env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          # Use the token minted via Remote Signing
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh secret set TFE_TOKEN \
             --org "${{ github.repository_owner }}" \
             --visibility private \
             --body "${{ inputs.TFE_TOKEN }}"
+

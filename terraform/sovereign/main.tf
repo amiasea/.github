@@ -26,10 +26,17 @@ resource "azurerm_user_assigned_identity" "read" {
 }
 
 # --- FEDERATED CREDENTIAL (GitHub → UAMI) ---
-resource "azurerm_federated_identity_credential" "github" {
-  resource_group_name = azurerm_resource_group.rg_amiasea.name
-  name                = "amiasea-github"
+resource "azurerm_federated_identity_credential" "github_write" {
+  name                = "amiasea-github-write"
   parent_id           = azurerm_user_assigned_identity.write.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = "https://token.actions.githubusercontent.com"
+  subject             = "repo:amiasea/.github:ref:refs/heads/main"
+}
+
+resource "azurerm_federated_identity_credential" "github_read" {
+  name                = "amiasea-github-read"
+  parent_id           = azurerm_user_assigned_identity.read.id
   audience            = ["api://AzureADTokenExchange"]
   issuer              = "https://token.actions.githubusercontent.com"
   subject             = "repo:amiasea/.github:ref:refs/heads/main"
