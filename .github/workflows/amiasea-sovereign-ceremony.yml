@@ -78,7 +78,7 @@ jobs:
           PAYLOAD=$(echo -n "{\"iat\":$(date +%s),\"exp\":$(($(date +%s)+600)),\"iss\":\"${{ vars.AVIATOR_GH_APP_ID }}\"}" | openssl base64 -e -A | tr -d '=' | tr '/+' '_-')
           RAW_JWT="${HEADER}.${PAYLOAD}"
 
-          # 2. Generate SHA-256 Digest and Sign in Vault (Private Key never leaves Azure)
+          # 2. Generate SHA-256 Digest and Sign in Vault
           DIGEST=$(echo -n "$RAW_JWT" | openssl dgst -sha256 -binary | openssl base64 -A)
           
           SIGNATURE_BASE64=$(az keyvault key sign \
@@ -88,29 +88,43 @@ jobs:
             --digest "$DIGEST" \
             --query result -o tsv)
           
-          # Convert Signature to Base64URL
+          # Ensure Signature is Base64URL
           SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '/+' '_-' | tr -d '=')
           JWT="${RAW_JWT}.${SIGNATURE}"
 
-          # 3. Find the Installation ID (Fixed Endpoint: /app/installations)
-          echo "Looking up installation for: ${{ github.repository_owner }}"
-          
-          INSTALLATIONS_RESPONSE=$(curl -s -S -H "Authorization: Bearer $JWT" \
+          # 3. DEBUG: Check JWT Format (Header and Payload only)
+          echo "JWT Header: $HEADER"
+          echo "JWT Payload: $PAYLOAD"
+
+          # 4. Find the Installation ID (CRITICAL: URL must end in /app/installations)
+          echo "Step 4: Requesting App Installations..."
+          INSTALLATIONS_RESPONSE=$(curl -i -s -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com")
           
-          # Verify we got an array back to prevent jq indexing errors
-          INSTALL_ID=$(echo "$INSTALLATIONS_RESPONSE" | \
-            jq -r ".[]? | select(.account.login==\"${{ github.repository_owner }}\") | .id")
+          # Separate HTTP Status from Body for logging
+          HTTP_STATUS=$(echo "$INSTALLATIONS_RESPONSE" | grep HTTP | tail -n 1)
+          BODY=$(echo "$INSTALLATIONS_RESPONSE" | sed '1,/^\r$/d')
+
+          echo "GitHub API Status: $HTTP_STATUS"
+          
+          if [[ "$HTTP_STATUS" != *"200"* ]]; then
+             echo "::error::GitHub rejected the JWT. Response Body: $BODY"
+             exit 1
+          fi
+
+          # Use jq safely to find the ID
+          INSTALL_ID=$(echo "$BODY" | jq -r ".[]? | select(.account.login==\"${{ github.repository_owner }}\") | .id")
           
           if [ "$INSTALL_ID" == "null" ] || [ -z "$INSTALL_ID" ]; then
-            echo "::error::Could not find App Installation. Response: $INSTALLATIONS_RESPONSE"
+            echo "::error::Could not find App Installation for ${{ github.repository_owner }}. Body: $BODY"
             exit 1
           fi
-          echo "Found Installation ID: $INSTALL_ID"
+          echo "Step 4 Success: Found Installation ID: $INSTALL_ID"
 
-          # 4. Exchange JWT for Token (Fixed Endpoint: /app/installations/{id}/access_tokens)
-          TOKEN_RESPONSE=$(curl -s -S -X POST -H "Authorization: Bearer $JWT" \
+          # 5. Exchange JWT for Token
+          echo "Step 5: Requesting Access Token..."
+          TOKEN_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/$INSTALL_ID/access_tokens")
 
@@ -121,9 +135,10 @@ jobs:
             exit 1
           fi
           
-          # 5. Mask and Export to next step
+          # 6. Mask and Export
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
 
       - name: Provision TFE_TOKEN (State-Free)
         env:
