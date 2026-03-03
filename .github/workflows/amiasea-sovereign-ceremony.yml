@@ -73,69 +73,59 @@ jobs:
       - name: Sovereign Identity Signing (Key Vault)
         id: app-token
         run: |
-          # 1. Construct JWT Header and Payload
-          HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -e -A | tr -d '=' | tr '/+' '_-')
-          PAYLOAD=$(echo -n "{\"iat\":$(date +%s),\"exp\":$(($(date +%s)+600)),\"iss\":\"${{ vars.AVIATOR_GH_APP_ID }}\"}" | openssl base64 -e -A | tr -d '=' | tr '/+' '_-')
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          # 1. timestamps
+          NOW=$(date +%s)
+          IAT=$NOW
+          EXP=$((NOW + 600))
+
+          # 2. header & payload (base64url)
+          HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+          PAYLOAD=$(printf '{"iat":%s,"exp":%s,"iss":"%s"}' "$IAT" "$EXP" "${{ vars.AVIATOR_GH_APP_ID }}" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
           RAW_JWT="${HEADER}.${PAYLOAD}"
 
-          # 2. Generate SHA-256 Digest and Sign in Vault
+          # 3. digest (raw SHA256, base64)
           DIGEST=$(echo -n "$RAW_JWT" | openssl dgst -sha256 -binary | openssl base64 -A)
-          
+
+          # 4. sign via Key Vault
           SIGNATURE_BASE64=$(az keyvault key sign \
             --vault-name "${{ vars.KEY_VAULT_NAME }}" \
             --name "${{ vars.AVIATOR_PRIVATE_KEY_NAME }}" \
             --algorithm RS256 \
             --digest "$DIGEST" \
             --query result -o tsv)
-          
-          # Ensure Signature is Base64URL
-          SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '/+' '_-' | tr -d '=')
+
+          SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '+/' '-_' | tr -d '=')
           JWT="${RAW_JWT}.${SIGNATURE}"
 
-          # 3. DEBUG: Check JWT Format (Header and Payload only)
-          echo "JWT Header: $HEADER"
-          echo "JWT Payload: $PAYLOAD"
+          # 5. Request installations (use correct endpoint)
+          INSTALLATIONS_URL="https://api.github.com/app/installations"
+          RESPONSE=$(curl -sS -w "\n%{http_code}" -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" "$INSTALLATIONS_URL")
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
 
-          # 4. Find the Installation ID (CRITICAL: URL must end in /app/installations)
-          echo "Step 4: Requesting App Installations..."
-          INSTALLATIONS_RESPONSE=$(curl -i -s -H "Authorization: Bearer $JWT" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com")
-          
-          # Separate HTTP Status from Body for logging
-          HTTP_STATUS=$(echo "$INSTALLATIONS_RESPONSE" | grep HTTP | tail -n 1)
-          BODY=$(echo "$INSTALLATIONS_RESPONSE" | sed '1,/^\r$/d')
-
-          echo "GitHub API Status: $HTTP_STATUS"
-          
-          if [[ "$HTTP_STATUS" != *"200"* ]]; then
-             echo "::error::GitHub rejected the JWT. Response Body: $BODY"
-             exit 1
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "::error::GitHub rejected the JWT. Status: $HTTP_STATUS Body: $BODY"
+            exit 1
           fi
 
-          # Use jq safely to find the ID
-          INSTALL_ID=$(echo "$BODY" | jq -r ".[]? | select(.account.login==\"${{ github.repository_owner }}\") | .id")
-          
-          if [ "$INSTALL_ID" == "null" ] || [ -z "$INSTALL_ID" ]; then
+          INSTALL_ID=$(echo "$BODY" | jq -r --arg owner "${{ github.repository_owner }}" 'map(select(.account.login==$owner)) | .[0].id // empty')
+          if [ -z "$INSTALL_ID" ]; then
             echo "::error::Could not find App Installation for ${{ github.repository_owner }}. Body: $BODY"
             exit 1
           fi
-          echo "Step 4 Success: Found Installation ID: $INSTALL_ID"
 
-          # 5. Exchange JWT for Token
-          echo "Step 5: Requesting Access Token..."
-          TOKEN_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $JWT" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/$INSTALL_ID/access_tokens")
-
-          TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token')
-
-          if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
-            echo "::error::Token Minting Failed. Response: $TOKEN_RESPONSE"
+          # 6. Exchange for access token
+          TOKEN_RESPONSE=$(curl -sS -X POST -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" "https://api.github.com/app/installations/$INSTALL_ID/access_tokens")
+          TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token // empty')
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Token minting failed. Response: $TOKEN_RESPONSE"
             exit 1
           fi
-          
-          # 6. Mask and Export
+
+          # 7. Mask and export
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
