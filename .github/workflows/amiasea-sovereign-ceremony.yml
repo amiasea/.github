@@ -73,48 +73,64 @@ jobs:
       - name: Sovereign Identity Signing (Key Vault)
         id: app-token
         run: |
-          # 1. Construct JWT Header and Payload (RS256)
-          # 'iss' is your GitHub App ID
+          # 1. Construct JWT Header and Payload
           HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -e -A | tr -d '=' | tr '/+' '_-')
           PAYLOAD=$(echo -n "{\"iat\":$(date +%s),\"exp\":$(($(date +%s)+600)),\"iss\":\"${{ vars.AVIATOR_GH_APP_ID }}\"}" | openssl base64 -e -A | tr -d '=' | tr '/+' '_-')
           RAW_JWT="${HEADER}.${PAYLOAD}"
 
-          # 2. Hash the JWT content and send to Azure Key Vault for SIGNING
-          # The Private Key remains inside the Vault HSM/Software boundary.
-          HASH=$(echo -n "$RAW_JWT" | openssl dgst -sha256 -binary | openssl base64 -e -A)
+          # 2. Generate SHA-256 Digest and Sign in Vault (Private Key never leaves Azure)
+          DIGEST=$(echo -n "$RAW_JWT" | openssl dgst -sha256 -binary | openssl base64 -A)
           
-          SIGNATURE=$(az keyvault key sign \
+          SIGNATURE_BASE64=$(az keyvault key sign \
             --vault-name "${{ vars.KEY_VAULT_NAME }}" \
             --name "${{ vars.AVIATOR_PRIVATE_KEY_NAME }}" \
             --algorithm RS256 \
-            --value "$HASH" \
+            --digest "$DIGEST" \
             --query result -o tsv)
-
-          # 3. Assemble the final signed JWT
+          
+          # Convert Signature to Base64URL
+          SIGNATURE=$(echo -n "$SIGNATURE_BASE64" | tr '/+' '_-' | tr -d '=')
           JWT="${RAW_JWT}.${SIGNATURE}"
 
-          # 4. Exchange JWT for a GitHub Installation Access Token
-          # First, get the Installation ID for your Organization
-          INSTALL_ID=$(curl -s -H "Authorization: Bearer $JWT" \
+          # 3. Find the Installation ID for your Organization
+          echo "Looking up installation for: ${{ github.repository_owner }}"
+          
+          INSTALLATIONS_RESPONSE=$(curl -s -S -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com" | jq -r ".[] | select(.account.login==\"${{ github.repository_owner }}\") | .id")
+            "https://api.github.com")
+          
+          INSTALL_ID=$(echo "$INSTALLATIONS_RESPONSE" | \
+            jq -r ".[] | select(.account.login==\"${{ github.repository_owner }}\") | .id")
+          
+          if [ "$INSTALL_ID" == "null" ] || [ -z "$INSTALL_ID" ]; then
+            echo "::error::Could not find App Installation for ${{ github.repository_owner }}. Response: $INSTALLATIONS_RESPONSE"
+            exit 1
+          fi
+          echo "Found Installation ID: $INSTALL_ID"
 
-          # Second, generate the temporary token
-          TOKEN=$(curl -s -X POST -H "Authorization: Bearer $JWT" \
+          # 4. Exchange JWT for Installation Access Token
+          # Corrected Endpoint: /app/installations/{id}/access_tokens
+          TOKEN_RESPONSE=$(curl -s -S -X POST -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/$INSTALL_ID/access_tokens" | jq -r '.token')
+            "https://api.github.com/$INSTALL_ID/access_tokens")
 
-          # 5. Mask and Export
+          TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token')
+
+          if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
+            echo "::error::Token Minting Failed. Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+          
+          # 5. Mask and Export to next step
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
       - name: Provision TFE_TOKEN (State-Free)
         env:
-          # Use the token minted via Remote Signing
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          # The TFE_TOKEN moves from input to GH secret without touching Terraform State
           gh secret set TFE_TOKEN \
             --org "${{ github.repository_owner }}" \
             --visibility private \
             --body "${{ inputs.TFE_TOKEN }}"
-
