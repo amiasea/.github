@@ -27,6 +27,7 @@ jobs:
       TF_VAR_uami_read_principal_id: ${{ vars.UAMI_READ_PRINCIPAL_ID }}
       TF_VAR_uami_write_client_id: ${{ vars.UAMI_WRITE_CLIENT_ID }}
       TF_VAR_uami_write_principal_id: ${{ vars.UAMI_WRITE_PRINCIPAL_ID }}
+      TF_VAR_amiasea_db_admins_group_id: ${{ vars.AMIASEA_DB_ADMINS_GROUP_ID }}
 
     steps:
       - uses: actions/checkout@v4

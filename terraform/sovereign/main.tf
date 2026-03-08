@@ -55,7 +55,7 @@ resource "azuread_directory_role_assignment" "write_uami_app_admin" {
 }
 
 # 1. Create the Admin Group
-resource "azuread_group" "amiasea_admins" {
+resource "azuread_group" "amiasea_db_admins" {
   display_name     = "Amiasea-SQL-Admins"
   owners           = [data.azuread_client_config.current.object_id]
   security_enabled = true
@@ -63,7 +63,7 @@ resource "azuread_group" "amiasea_admins" {
 
 # 2. Add YOU to the Group
 resource "azuread_group_member" "admin_me" {
-  group_object_id  = azuread_group.amiasea_admins.id
+  group_object_id  = azuread_group.amiasea_db_admins.id
   member_object_id = data.azuread_client_config.current.object_id
 }
 
@@ -72,9 +72,9 @@ resource "azuread_group_member" "admin_me" {
 # These are NOT secrets — they are stable infra facts.
 # ---------------------------------------------------------
 
-resource "github_actions_organization_variable" "amiasea_admins_group_id" {
-  variable_name           = "AMIASEA_ADMINS_GROUP_ID"
-  value                   = azuread_group.amiasea_admins.id
+resource "github_actions_organization_variable" "amiasea_db_admins_group_id" {
+  variable_name           = "AMIASEA_DB_ADMINS_GROUP_ID"
+  value                   = azuread_group.amiasea_db_admins.id
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
