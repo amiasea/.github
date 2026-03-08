@@ -76,7 +76,7 @@ resource "azuread_group_member" "admin_me" {
 
 resource "github_actions_organization_variable" "amiasea_db_admins_group_id" {
   variable_name           = "AMIASEA_DB_ADMINS_GROUP_ID"
-  value                   = azuread_group.amiasea_db_admins.id
+  value                   = azuread_group.amiasea_db_admins.object_id
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
