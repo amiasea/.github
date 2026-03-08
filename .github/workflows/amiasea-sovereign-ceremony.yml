@@ -36,7 +36,7 @@ jobs:
           terraform_version: "1.14.6"
           terraform_wrapper: false
 
-      - name: Authenticate to Azure (OIDC)
+      - name: Authenticate to Azure (Write OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ vars.UAMI_WRITE_CLIENT_ID }}
@@ -63,7 +63,7 @@ jobs:
           terraform apply -auto-approve
 
       # 1. Authenticate with the READ principal to fetch the key
-      - name: Azure Login (Read-Only)
+      - name: Azure Login (Read OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ vars.UAMI_READ_CLIENT_ID }}

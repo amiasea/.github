@@ -1,0 +1,43 @@
+name: Runtime Environment (Terraform)
+
+on:
+  workflow_call:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: true
+      TF_TOKEN_app_terraform_io: ${{ secrets.TFE_TOKEN }}
+      TF_VAR_tenant_id: ${{ vars.TENANT_ID }}
+      TF_VAR_subscription_id: ${{ vars.SUBSCRIPTION_ID }}
+      TF_VAR_resource_group_name: ${{ vars.RESOURCE_GROUP_NAME }}
+      TF_VAR_location: ${{ vars.LOCATION }}
+      TF_VAR_uami_read_id: ${{ vars.UAMI_READ_ID }}
+      TF_VAR_uami_read_client_id: ${{ vars.UAMI_READ_CLIENT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+          terraform_wrapper: false
+
+      - name: Authenticate to Azure (Write OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.UAMI_WRITE_CLIENT_ID }}
+          tenant-id: ${{ vars.TENANT_ID }}
+          subscription-id: ${{ vars.SUBSCRIPTION_ID }}
+
+      - name: Terraform init
+        working-directory: ./terraform/runtime
+        run: |
+          terraform init
+          terraform apply -auto-approve

@@ -54,10 +54,30 @@ resource "azuread_directory_role_assignment" "write_uami_app_admin" {
   principal_object_id = azurerm_user_assigned_identity.write.principal_id
 }
 
+# 1. Create the Admin Group
+resource "azuread_group" "amiasea_admins" {
+  display_name     = "Amiasea-SQL-Admins"
+  owners           = [data.azuread_client_config.current.object_id]
+  security_enabled = true
+}
+
+# 2. Add YOU to the Group
+resource "azuread_group_member" "admin_me" {
+  group_object_id  = azuread_group.amiasea_admins.id
+  member_object_id = data.azuread_client_config.current.object_id
+}
+
 # ---------------------------------------------------------
 # Write sovereign facts into GitHub Variables
 # These are NOT secrets — they are stable infra facts.
 # ---------------------------------------------------------
+
+resource "github_actions_organization_variable" "amiasea_admins_group_id" {
+  variable_name           = "AMIASEA_ADMINS_GROUP_ID"
+  value                   = azuread_group.amiasea_admins.id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
 
 resource "github_actions_organization_variable" "tenant_id" {
   variable_name           = "TENANT_ID"

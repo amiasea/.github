@@ -1,0 +1,38 @@
+name: Runtime Orchestration
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  runtime-environment:
+    uses: ./.github/workflows/runtime-environment.yml
+    with:
+      uami_read_client_id: ${{ vars.UAMI_READ_CLIENT_ID }}
+      uami_read_id:        ${{ vars.UAMI_READ_ID }}
+      resource_group_name: ${{ vars.RESOURCE_GROUP_NAME }}
+      location:            ${{ vars.LOCATION }}
+    secrets:
+      # Provide any secrets the called workflow needs, for example:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
+  runtime-build:
+    needs: runtime-environment
+    uses: ./.github/workflows/runtime-build.yml
+    with:
+      # If build needs variables, pass them here (examples)
+      registry: ghcr.io
+      image_namespace: amiasea
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+
+  runtime-deploy:
+    needs: runtime-build
+    uses: ./.github/workflows/runtime-deploy.yml
+    with:
+      resource_group_name: ${{ vars.RESOURCE_GROUP_NAME }}
+      location:            ${{ vars.LOCATION }}
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
