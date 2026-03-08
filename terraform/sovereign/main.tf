@@ -1,5 +1,7 @@
 data "azurerm_client_config" "current" {}
 
+data "azuread_client_config" "current" {}
+
 data "github_repository" "repo" {
   full_name = "amiasea/.github"
 }
@@ -63,7 +65,7 @@ resource "azuread_group" "amiasea_db_admins" {
 
 # 2. Add YOU to the Group
 resource "azuread_group_member" "admin_me" {
-  group_object_id  = azuread_group.amiasea_db_admins.id
+  group_object_id  = azuread_group.amiasea_db_admins.object_id
   member_object_id = data.azuread_client_config.current.object_id
 }
 
