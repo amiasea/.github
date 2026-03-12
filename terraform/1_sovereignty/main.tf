@@ -128,3 +128,39 @@ resource "azuread_group" "sql_admins" {
   security_enabled = true
   description      = "Members of this group are AD Admins for all vended SQL environments."
 }
+
+
+# 1. Create the App Registration (The Identity Container)
+resource "azuread_application" "delegated_permissions" {
+  display_name = "Amiasea-Delegated-Permissions-App"
+}
+
+# 2. Create the Service Principal (The 'Login' instance in your tenant)
+resource "azuread_service_principal" "delegated_permissions_sp" {
+  client_id = azuread_application.delegated_permissions.client_id
+}
+
+# 3. Create the Flexible OIDC Credential via Graph API
+resource "azapi_resource" "sovereign_flexible_credential" {
+  # Format: Microsoft.Graph/applications/<OBJECT_ID>/federatedIdentityCredentials@v1.0
+  type      = "Microsoft.Graph/applications/federatedIdentityCredentials@v1.0"
+  name      = "vending-machine-lock"
+  parent_id = "applications/${azuread_application.delegated_permissions.object_id}"
+
+  # AzAPI 2.0: No jsonencode, fields are at the top level for Graph
+  body = {
+    name      = "vending-machine-only"
+    issuer    = "https://token.actions.githubusercontent.com"
+    audiences = ["api://AzureADTokenExchange"]
+    
+    # This works for App Regs!
+    claimsMatchingExpression = "claims['job_workflow_ref'] matches 'amiasea/.github/.github/workflows/vending-machine.yml@refs/heads/main'"
+  }
+}
+
+# 4. Assign Roles to the Service Principal (NOT the App Reg directly)
+resource "azurerm_role_assignment" "sp_contributor" {
+  scope                = data.azurerm_subscription.amiasea.id
+  role_definition_name = "Contributor"
+  principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
+}
