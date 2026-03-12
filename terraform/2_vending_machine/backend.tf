@@ -4,7 +4,6 @@ terraform {
 
     workspaces {
       project = "amiasea"
-      name = "amiasea-identity"
     }
   }
 }

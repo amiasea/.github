@@ -1,0 +1,42 @@
+name: 'Get Aviator App Token'
+description: 'Fetches PEM from Key Vault and generates a GitHub App Token'
+inputs:
+  key_vault_name:
+    description: 'Name of the Sovereign Key Vault'
+    required: true
+  private_key_name:
+    description: 'Name of the secret in Key Vault'
+    required: true
+  gh_app_id:
+    description: 'The GitHub App ID'
+    required: true
+outputs:
+  token:
+    description: 'The generated GitHub App Installation Token'
+    value: ${{ steps.app-token.outputs.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Fetch Sovereign Private Key
+      shell: bash
+      run: |
+        PEM_VALUE=$(az keyvault secret show \
+          --vault-name "${{ inputs.key_vault_name }}" \
+          --name "${{ inputs.private_key_name }}" \
+          --query value -o tsv)
+        
+        echo "::add-mask::$PEM_VALUE"
+
+        # Save to environment for the next step in this composite action
+        echo "GH_APP_PEM<<EOF" >> $GITHUB_ENV
+        echo "$PEM_VALUE" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Generate App Token
+      id: app-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ inputs.gh_app_id }}
+        private-key: ${{ env.GH_APP_PEM }}
+        owner: ${{ github.repository_owner }}

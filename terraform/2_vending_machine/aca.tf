@@ -1,19 +1,23 @@
 resource "azurerm_container_app_environment" "main" {
-  name                = "cae-amiasea-aviator"
+  name                = "amiasea-env"
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.rg.name
+
+  infrastructure_subnet_id   = azurerm_subnet.subnet.id
+  internal_load_balancer_enabled = false 
 }
 
 resource "azurerm_container_app" "aviator_api" {
   name                         = "ca-amiasea-aviator-api"
   container_app_environment_id = azurerm_container_app_environment.main.id
-  resource_group_name          = var.resource_group_name
+  resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.uami_read_id]
+    identity_ids = [azurerm_user_assigned_identity.uami.id]
   }
+
 
   template {
     min_replicas = 0
@@ -30,23 +34,40 @@ resource "azurerm_container_app" "aviator_api" {
       cpu    = 0.25
       memory = "0.5Gi"
 
+      # Setting 1: DB Connection
+      env {
+        name  = "SQL_CONNECTION_STRING"
+        secret_name = "sql-conn" # References the secret above
+      }
+
+      # Setting 2: Verifiable Credentials Authority
+      env {
+        name  = "VC_AUTHORITY_DID"
+        value = "did:ion:your-organization-did-here"
+      }
+
       env {
         name  = "AZURE_CLIENT_ID"
-        value = var.uami_read_client_id
+        value = azurerm_user_assigned_identity.uami.client_id
       }
     }
-  }
-
-  secret {
-    name                = "ghcr-pat"
-    key_vault_secret_id = "https://kv-amiasea.vault.azure.net/secrets/ghcr-pat" # Use versionless URL for latest
-    identity            = var.uami_read_id
   }
 
   registry {
     server               = "ghcr.io"
     username             = "AlfredoBall"
     password_secret_name = "ghcr-pat"
+  }
+
+  secret {
+    name  = "sql-conn"
+    value = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Database=${azurerm_mssql_database.db.name};Authentication=Active Directory Managed Identity;"
+  }
+
+  secret {
+    name                = "ghcr-pat"
+    key_vault_secret_id = var.ghcr_pat_versionless_id
+    identity            = azurerm_user_assigned_identity.uami.id
   }
 
   ingress {
@@ -68,14 +89,14 @@ resource "azurerm_container_app" "aviator_api" {
 }
 
 resource "azurerm_container_app" "aviator_ui" {
-  name                         = "ca-amiasea-aviator-ui"
+  name                         = "ca-${var.prefix}-ui-${var.env}"
   container_app_environment_id = azurerm_container_app_environment.main.id
-  resource_group_name          = var.resource_group_name
+  resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.uami_read_id]
+    identity_ids = [azurerm_user_assigned_identity.uami.id]
   }
 
   template {
@@ -95,15 +116,15 @@ resource "azurerm_container_app" "aviator_ui" {
 
       env {
         name  = "AZURE_CLIENT_ID"
-        value = var.uami_read_client_id
+        value = azurerm_user_assigned_identity.uami.client_id
       }
     }
   }
 
   secret {
     name                = "ghcr-pat"
-    key_vault_secret_id = "https://kv-amiasea.vault.azure.net/secrets/ghcr-pat" # Use versionless URL for latest
-    identity            = var.uami_read_id
+    key_vault_secret_id = "https://${azurerm_key_vault.vault.name}.vault.azure.net/secrets/ghcr-pat" # Use versionless URL for latest
+    identity            = azurerm_user_assigned_identity.uami.id
   }
 
   registry {

@@ -4,30 +4,38 @@ terraform {
   required_providers {
     azuread = {
       source  = "hashicorp/azuread"
-      version = "~> 3.0"
+      version = "~> 3.8.0"
     }
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.0" # Version 4.x has improved OIDC stability
+      version = "~> 4.63.0" # Version 4.x has improved OIDC stability
     }
     github = {
       source  = "hashicorp/github"
       version = "~> 6.0"
     }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.8.0"
+    }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
+    }
   }
 }
 
-# --- Azure Provider ---
-# Uses OIDC from the azure/login@v2 action via ARM_USE_OIDC=true
 provider "azurerm" {
+  subscription_id = var.subscription_id
   features {
+    subscription {
+      prevent_cancellation_on_destroy = true
+    }
     key_vault {
       purge_soft_delete_on_destroy    = true
       recover_soft_deleted_key_vaults = true
     }
   }
-  # Ensure the provider respects the OIDC session
-  use_oidc = true
 }
 
 provider "azuread" {
@@ -36,4 +44,9 @@ provider "azuread" {
 
 provider "github" {
   owner = "amiasea"
+}
+
+provider "azapi" {
+  subscription_id = var.subscription_id
+  skip_provider_registration = false
 }
