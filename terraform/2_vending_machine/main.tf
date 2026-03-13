@@ -25,11 +25,3 @@ resource "azurerm_user_assigned_identity" "uami" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
 }
-
-# resource "azurerm_federated_identity_credential" "github_credential" {
-#   name                = "github-${var.prefix}-${var.env}"
-#   parent_id           = azurerm_user_assigned_identity.uami.id
-#   audience            = ["api://AzureADTokenExchange"]
-#   issuer              = "https://token.actions.githubusercontent.com"
-#   subject             = "repo:amiasea/.github:ref:refs/heads/main"
-# }

@@ -6,6 +6,7 @@ variable "location" {
 variable "prefix" {
   type        = string
   description = "Prefix"
+  default = "amiasea"
 }
 
 variable "env" {

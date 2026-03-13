@@ -61,3 +61,23 @@ variable "subscription_id" {
   type = string
   description = "Subscription ID."
 }
+
+variable "ghcr_pat" {
+  type      = string
+  ephemeral = true
+}
+
+variable "tf_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "amiasea_github_private_key" {
+  type      = string
+  ephemeral = true
+}
+
+variable "local_ip" {
+  type = string
+  sensitive = true
+}

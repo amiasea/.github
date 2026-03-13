@@ -37,24 +37,9 @@ resource "github_actions_organization_variable" "location" {
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
 
-# resource "github_actions_organization_variable" "delegated_permissions_client_id" {
-#   # Updated naming to be accurate (it's an App ID now, not a UAMI)
-#   variable_name           = "AZURE_CLIENT_ID" 
-  
-#   # Point to the App Registration's client_id
-#   value                   = azurerm_user_assigned_identity.delegated_permissions.client_id
-  
-#   visibility              = "selected"
-#   selected_repository_ids = [data.github_repository.repo.repo_id]
-# }
-
 resource "github_actions_organization_variable" "delegated_permissions_client_id" {
-  # Updated naming to be accurate (it's an App ID now, not a UAMI)
   variable_name           = "AZURE_CLIENT_ID" 
-  
-  # Point to the App Registration's client_id
   value                   = azuread_service_principal.delegated_permissions_sp.client_id
-  
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }

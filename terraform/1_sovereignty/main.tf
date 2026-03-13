@@ -49,6 +49,29 @@ resource "azurerm_role_assignment" "uami_user_access_admin" {
   principal_id         = azurerm_user_assigned_identity.delegated_permissions.principal_id
 }
 
+resource "azurerm_role_assignment" "sp_contributor" {
+  scope                = data.azurerm_subscription.amiasea.id
+  role_definition_name = "Contributor"
+  principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
+}
+
+resource "azuread_group" "sql_admins" {
+  display_name     = "Amiasea-SQL-Admins"
+  owners           = [data.azuread_client_config.current.object_id]
+  security_enabled = true
+  description      = "Members of this group are AD Admins for all vended SQL environments."
+}
+
+# 1. Create the App Registration (The Identity Container)
+resource "azuread_application" "delegated_permissions" {
+  display_name = "Amiasea-Delegated-Permissions-App"
+}
+
+# 2. Create the Service Principal (The 'Login' instance in your tenant)
+resource "azuread_service_principal" "delegated_permissions_sp" {
+  client_id = azuread_application.delegated_permissions.client_id
+}
+
 resource "github_actions_organization_oidc_subject_claim_customization_template" "main" {
   # This tells GitHub to pack these specific pieces of data into the 'sub' claim
   include_claim_keys = [
@@ -56,6 +79,28 @@ resource "github_actions_organization_oidc_subject_claim_customization_template"
     "job_workflow_ref",
     "context"
   ]
+}
+
+resource "github_actions_repository_oidc_subject_claim_customization_template" "sovereign" {
+  repository  = ".github"
+  use_default = false
+  
+  # Use the Organization's template, 
+  # Leave include_claim_keys empty to inherit it.
+  include_claim_keys = [
+    "job_workflow_ref",
+  ]
+}
+
+resource "azuread_application_flexible_federated_identity_credential" "sovereign" {
+  application_id = azuread_application.delegated_permissions.id
+  display_name   = "vending-machine-lock"
+  description    = "Flexible OIDC for GitHub Actions"
+  
+  issuer    = "https://token.actions.githubusercontent.com"
+  audience = "api://AzureADTokenExchange"
+  
+  claims_matching_expression = "claims['sub'] matches '*job_workflow_ref:amiasea/.github/.github/workflows/vending-machine.yml@refs/heads/main*'"
 }
 
 # --- KEY VAULT ---
@@ -68,6 +113,22 @@ resource "azurerm_key_vault" "vault" {
   purge_protection_enabled    = false
   sku_name                    = "standard"
   rbac_authorization_enabled  = true
+
+  network_acls {
+    default_action = "Deny"
+    # Replace with your local machine's public IP
+    ip_rules       = [var.local_ip]
+    bypass         = "AzureServices"
+  }
+
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    secret_permissions = [
+      "Get",
+    ]
+  }
 }
 
 resource "azurerm_role_assignment" "terraform_kv_admin" {
@@ -76,69 +137,55 @@ resource "azurerm_role_assignment" "terraform_kv_admin" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
-# resource "azurerm_key_vault_secret" "ghcr_pat" {
-#   depends_on   = [azurerm_role_assignment.terraform_kv_admin]
-#   name         = "ghcr-pat"
-#   value        = ""
-#   key_vault_id = azurerm_key_vault.vault.id
-# }
-
-# resource "azurerm_key_vault_secret" "tf_token" {
-#   depends_on   = [azurerm_role_assignment.terraform_kv_admin]
-#   name         = "tf-token"
-#   value        = ""
-#   key_vault_id = azurerm_key_vault.vault.id
-# }
-
-# resource "azurerm_key_vault_secret" "amiasea_github_private_key" {
-#   depends_on   = [azurerm_role_assignment.terraform_kv_admin]
-#   name         = "amiasea-github-private-key"
-#   value        = ""
-#   key_vault_id = azurerm_key_vault.vault.id
-# }
-
-resource "azuread_group" "sql_admins" {
-  display_name     = "Amiasea-SQL-Admins"
-  owners           = [data.azuread_client_config.current.object_id]
-  security_enabled = true
-  description      = "Members of this group are AD Admins for all vended SQL environments."
-}
-
-
-# 1. Create the App Registration (The Identity Container)
-resource "azuread_application" "delegated_permissions" {
-  display_name = "Amiasea-Delegated-Permissions-App"
-}
-
-# 2. Create the Service Principal (The 'Login' instance in your tenant)
-resource "azuread_service_principal" "delegated_permissions_sp" {
-  client_id = azuread_application.delegated_permissions.client_id
-}
-
-resource "github_actions_repository_oidc_subject_claim_customization_template" "sovereign" {
-  repository  = "amiasea/.github"
-  use_default = false
-  
-  # Use the Organization's template, 
-  # Leave include_claim_keys empty to inherit it.
-  include_claim_keys = []
-}
-
-resource "azuread_application_flexible_federated_identity_credential" "sovereign" {
-  application_id = azuread_application.delegated_permissions.id
-  display_name   = "vending-machine-lock"
-  description    = "Flexible OIDC for GitHub Actions"
-  
-  issuer    = "https://token.actions.githubusercontent.com"
-  audience = "api://AzureADTokenExchange"
-  
-  # Note: language_version defaults to 1 if not provided
-  claims_matching_expression = "claims['sub'] matches '*job_workflow_ref:amiasea/.github/.github/workflows/vending-machine.yml@refs/heads/main*'"
-}
-
-# 4. Assign Roles to the Service Principal (NOT the App Reg directly)
-resource "azurerm_role_assignment" "sp_contributor" {
+resource "azurerm_role_assignment" "vending_secrets_power" {
   scope                = data.azurerm_subscription.amiasea.id
-  role_definition_name = "Contributor"
-  principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_key_vault_secret" "ghcr_pat" {
+  depends_on   = [azurerm_role_assignment.terraform_kv_admin]
+  name         = "ghcr-pat"
+  value_wo     = var.ghcr_pat
+  value_wo_version = 1
+  key_vault_id = azurerm_key_vault.vault.id
+}
+
+resource "azurerm_key_vault_secret" "tf_token" {
+  depends_on   = [azurerm_role_assignment.terraform_kv_admin]
+  name         = "tf-token"
+  value_wo     = var.tf_token
+  value_wo_version = 1
+  key_vault_id = azurerm_key_vault.vault.id
+}
+
+resource "azurerm_key_vault_secret" "amiasea_github_private_key" {
+  depends_on   = [azurerm_role_assignment.terraform_kv_admin]
+  name         = "amiasea-github-private-key"
+  value_wo     = var.amiasea_github_private_key
+  value_wo_version = 1
+  key_vault_id = azurerm_key_vault.vault.id
+}
+
+resource "azapi_update_resource" "close_firewall" {
+  type        = "Microsoft.KeyVault/vaults@2023-07-01"
+  resource_id = azurerm_key_vault.vault.id
+
+  # This forces the "closure" AFTER the secret is safely inside
+  depends_on = [
+    azurerm_key_vault_secret.ghcr_pat,
+    azurerm_key_vault_secret.tf_token,
+    azurerm_key_vault_secret.amiasea_github_private_key
+    ]
+
+  body = {
+    properties = {
+      network_acls {
+        default_action = "Deny"
+        # Replace with your local machine's public IP
+        ip_rules       = []
+        bypass         = "AzureServices"
+      }
+    }
+  }
 }

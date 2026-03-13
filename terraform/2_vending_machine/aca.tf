@@ -123,7 +123,7 @@ resource "azurerm_container_app" "aviator_ui" {
 
   secret {
     name                = "ghcr-pat"
-    key_vault_secret_id = "https://${azurerm_key_vault.vault.name}.vault.azure.net/secrets/ghcr-pat" # Use versionless URL for latest
+    key_vault_secret_id = var.ghcr_pat_versionless_id
     identity            = azurerm_user_assigned_identity.uami.id
   }
 
