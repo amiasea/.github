@@ -116,11 +116,9 @@ resource "azurerm_key_vault" "vault" {
 
   network_acls {
     default_action = "Deny"
-    # Replace with your local machine's public IP
     ip_rules       = [var.local_ip]
     bypass         = "AzureServices"
   }
-
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azurerm_client_config.current.object_id
@@ -167,25 +165,19 @@ resource "azurerm_key_vault_secret" "amiasea_github_private_key" {
   key_vault_id = azurerm_key_vault.vault.id
 }
 
-resource "azapi_update_resource" "close_firewall" {
-  type        = "Microsoft.KeyVault/vaults@2023-07-01"
-  resource_id = azurerm_key_vault.vault.id
+resource "terraform_data" "clear_kv_ips" {
+  triggers_replace = [
+    timestamp() # Always triggers an update
+  ]
 
-  # This forces the "closure" AFTER the secret is safely inside
   depends_on = [
+    azurerm_key_vault.vault,
     azurerm_key_vault_secret.ghcr_pat,
     azurerm_key_vault_secret.tf_token,
     azurerm_key_vault_secret.amiasea_github_private_key
     ]
 
-  body = {
-    properties = {
-      network_acls {
-        default_action = "Deny"
-        # Replace with your local machine's public IP
-        ip_rules       = []
-        bypass         = "AzureServices"
-      }
-    }
+  provisioner "local-exec" {
+    command = "az keyvault update --name ${azurerm_key_vault.vault.name} --resource-group ${azurerm_resource_group.rg.name}--set properties.networkAcls.ipRules=[]"
   }
 }

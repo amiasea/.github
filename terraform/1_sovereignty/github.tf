@@ -44,30 +44,30 @@ resource "github_actions_organization_variable" "delegated_permissions_client_id
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
 
-# resource "github_actions_organization_variable" "aviator_gh_app_id" {
-#   variable_name           = "AMIASEA_GH_APP_ID"
-#   value                   = "2670685"
-#   visibility              = "selected"
-#   selected_repository_ids = [data.github_repository.repo.repo_id]
-# }
+resource "github_actions_organization_variable" "aviator_gh_app_id" {
+  variable_name           = "AMIASEA_GH_APP_ID"
+  value                   = "2670685"
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
 
-# resource "github_actions_organization_variable" "amiasea_private_key_versionless_id" {
-#   variable_name           = "AMIASEA_PRIVATE_KEY_VERSIONLESS_ID"
-#   value                   = azurerm_key_vault_secret.amiasea_github_private_key.versionless_id
-#   visibility              = "selected"
-#   selected_repository_ids = [data.github_repository.repo.repo_id]
-# }
+resource "github_actions_organization_variable" "amiasea_private_key_versionless_id" {
+  variable_name           = "AMIASEA_PRIVATE_KEY_VERSIONLESS_ID"
+  value                   = azurerm_key_vault_secret.amiasea_github_private_key.versionless_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
 
-# resource "github_actions_organization_variable" "tf_token_versionless_id" {
-#   variable_name           = "TF_TOKEN_VERSIONLESS_ID"
-#   value                   = azurerm_key_vault_secret.tf_token.versionless_id
-#   visibility              = "selected"
-#   selected_repository_ids = [data.github_repository.repo.repo_id]
-# }
+resource "github_actions_organization_variable" "tf_token_versionless_id" {
+  variable_name           = "TF_TOKEN_VERSIONLESS_ID"
+  value                   = azurerm_key_vault_secret.tf_token.versionless_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
 
-# resource "github_actions_organization_variable" "ghcr_pat_versionless_id" {
-#   variable_name           = "GHCR_PAT_VERSIONLESS_ID"
-#   value                   = azurerm_key_vault_secret.ghcr_pat.versionless_id
-#   visibility              = "selected"
-#   selected_repository_ids = [data.github_repository.repo.repo_id]
-# }
+resource "github_actions_organization_variable" "ghcr_pat_versionless_id" {
+  variable_name           = "GHCR_PAT_VERSIONLESS_ID"
+  value                   = azurerm_key_vault_secret.ghcr_pat.versionless_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
