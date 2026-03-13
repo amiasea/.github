@@ -58,31 +58,6 @@ resource "github_actions_organization_oidc_subject_claim_customization_template"
   ]
 }
 
-resource "azapi_resource" "sovereign_flexible_credential" {
-  depends_on = [ github_actions_organization_oidc_subject_claim_customization_template.main ]
-  # Path uses the Application Object ID
-  type      = "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2025-01-31-preview"
-  name      = "vending-machine-lock"
-  parent_id = azurerm_user_assigned_identity.delegated_permissions.id
-  location = var.location
-
-  body = {
-    properties = {
-      issuer                   = "https://token.actions.githubusercontent.com"
-      audiences                = ["api://AzureADTokenExchange"]
-      # You cannot provide both 'subject' and 'claimsMatchingExpression'. 
-      # Use the expression for your wildcards.
-      claimsMatchingExpression = {
-        languageVersion = 1
-        value = "claims['sub'] matches '*job_workflow_ref:amiasea/.github/.github/workflows/vending-machine.yml@refs/heads/main*'"
-        # value = "claims['sub'] matches 'repo:amiasea/.github:ref:refs/heads/*'"
-      }
-    }
-  }
-  schema_validation_enabled = false
-  response_export_values    = ["*"]
-}
-
 # --- KEY VAULT ---
 resource "azurerm_key_vault" "vault" {
   name                        = var.key_vault_name
@@ -140,22 +115,25 @@ resource "azuread_service_principal" "delegated_permissions_sp" {
   client_id = azuread_application.delegated_permissions.client_id
 }
 
-# 3. Create the Flexible OIDC Credential via Graph API
-resource "azapi_resource" "sovereign_flexible_credential" {
-  # Format: Microsoft.Graph/applications/<OBJECT_ID>/federatedIdentityCredentials@v1.0
-  type      = "Microsoft.Graph/applications/federatedIdentityCredentials@v1.0"
-  name      = "vending-machine-lock"
-  parent_id = "applications/${azuread_application.delegated_permissions.object_id}"
+resource "github_actions_repository_oidc_subject_claim_customization_template" "sovereign" {
+  repository  = "amiasea/.github"
+  use_default = false
+  
+  # Use the Organization's template, 
+  # Leave include_claim_keys empty to inherit it.
+  include_claim_keys = []
+}
 
-  # AzAPI 2.0: No jsonencode, fields are at the top level for Graph
-  body = {
-    name      = "vending-machine-only"
-    issuer    = "https://token.actions.githubusercontent.com"
-    audiences = ["api://AzureADTokenExchange"]
-    
-    # This works for App Regs!
-    claimsMatchingExpression = "claims['job_workflow_ref'] matches 'amiasea/.github/.github/workflows/vending-machine.yml@refs/heads/main'"
-  }
+resource "azuread_application_flexible_federated_identity_credential" "sovereign" {
+  application_id = azuread_application.delegated_permissions.id
+  display_name   = "vending-machine-lock"
+  description    = "Flexible OIDC for GitHub Actions"
+  
+  issuer    = "https://token.actions.githubusercontent.com"
+  audience = "api://AzureADTokenExchange"
+  
+  # Note: language_version defaults to 1 if not provided
+  claims_matching_expression = "claims['sub'] matches '*job_workflow_ref:amiasea/.github/.github/workflows/vending-machine.yml@refs/heads/main*'"
 }
 
 # 4. Assign Roles to the Service Principal (NOT the App Reg directly)
