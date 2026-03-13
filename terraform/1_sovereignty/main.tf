@@ -72,6 +72,12 @@ resource "azuread_service_principal" "delegated_permissions_sp" {
   client_id = azuread_application.delegated_permissions.client_id
 }
 
+resource "azurerm_role_assignment" "delegated_permissions_app_kv_secrets_user" {
+  scope                = azurerm_key_vault.vault.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
+}
+
 resource "github_actions_organization_oidc_subject_claim_customization_template" "main" {
   # This tells GitHub to pack these specific pieces of data into the 'sub' claim
   include_claim_keys = [
@@ -115,7 +121,8 @@ resource "azurerm_key_vault" "vault" {
   rbac_authorization_enabled  = true
 
   network_acls {
-    default_action = "Deny"
+    # Poor Option
+    default_action = "Allow"
     ip_rules       = [var.local_ip]
     bypass         = "AzureServices"
   }
@@ -178,6 +185,6 @@ resource "terraform_data" "clear_kv_ips" {
     ]
 
   provisioner "local-exec" {
-    command = "az keyvault update --name ${azurerm_key_vault.vault.name} --resource-group ${azurerm_resource_group.rg.name}--set properties.networkAcls.ipRules=[]"
+    command = "az keyvault update --name ${azurerm_key_vault.vault.name} --resource-group ${azurerm_resource_group.rg.name} --set properties.networkAcls.ipRules=[]"
   }
 }

@@ -10,9 +10,15 @@ permissions:
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
+    strategy:
+      # fail-fast: false # Allows prod to run even if dev fails
+      max-parallel: 1
+      matrix:
+        env: ["dev", "prod"]
     env:
       TF_IN_AUTOMATION: true
-      TF_WORKSPACE: ${{ github.event.inputs.env }}
+      TF_WORKSPACE: "amiasea-${{ matrix.env }}"
+      TF_VAR_env: ${{ matrix.env }}
 
       TF_VAR_tenant_id: ${{ vars.TENANT_ID }}
       TF_VAR_subscription_id: ${{ vars.SUBSCRIPTION_ID }}
@@ -20,7 +26,6 @@ jobs:
       TF_VAR_location: ${{ vars.LOCATION }}
       TF_VAR_amiasea_db_admins_group_id: ${{ vars.AMIASEA_DB_ADMINS_GROUP_ID }}
       TF_VAR_ghcr_pat_versionless_id: ${{ vars.GHCR_PAT_VERSIONLESS_ID }}
-      TF_VAR_env: "dev"
 
     steps:
       - uses: actions/checkout@v4
