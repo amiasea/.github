@@ -1,3 +1,5 @@
+name: Vending Machine
+
 on:
   workflow_dispatch:
 
