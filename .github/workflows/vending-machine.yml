@@ -64,6 +64,5 @@ jobs:
       - name: Vending Machine
         working-directory: ./terraform/2_vending_machine
         run: |
-          terraform init -input=false
-          terraform workspace select -or-create "amiasea-${{ matrix.env }}"
+          terraform init
           terraform apply -auto-approve
