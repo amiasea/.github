@@ -10,6 +10,12 @@ data "azurerm_subscription" "amiasea" {
   subscription_id = var.subscription_id
 }
 
+data "azurerm_billing_mca_account_scope" "billing_scope" {
+  billing_account_name = var.billing_account_id
+  billing_profile_name = var.billing_profile_id
+  invoice_section_name = var.billing_profile_invoice_section_id
+}
+
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location

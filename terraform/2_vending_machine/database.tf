@@ -8,7 +8,7 @@ resource "azurerm_mssql_server" "sql" {
     login_username              = "Entra Admin Group"
     object_id                   = var.sql_admins_group_id
     azuread_authentication_only = true # DISABLES SQL passwords
-    tenant_id = azurerm_client_config.current.tenant_id
+    tenant_id = data.azurerm_client_config.current.tenant_id
   }
 }
 

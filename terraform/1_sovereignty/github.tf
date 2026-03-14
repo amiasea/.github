@@ -10,14 +10,14 @@ resource "github_actions_organization_variable" "sql_admins_group_id" {
 }
 
 resource "github_actions_organization_variable" "tenant_id" {
-  variable_name           = "TENANT_ID"
+  variable_name           = "AZURE_TENANT_ID"
   value                   = data.azurerm_client_config.current.tenant_id
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
 
 resource "github_actions_organization_variable" "subscription_id" {
-  variable_name           = "SUBSCRIPTION_ID"
+  variable_name           = "AZURE_SUBSCRIPTION_ID"
   value                   = data.azurerm_client_config.current.subscription_id
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
@@ -40,6 +40,13 @@ resource "github_actions_organization_variable" "location" {
 resource "github_actions_organization_variable" "delegated_permissions_client_id" {
   variable_name           = "AZURE_CLIENT_ID" 
   value                   = azuread_service_principal.delegated_permissions_sp.client_id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}
+
+resource "github_actions_organization_variable" "sovereign_billing_scope_id" {
+  variable_name           = "SOVEREIGN_BILLING_SCOPE_ID"
+  value                   = data.azurerm_billing_mca_account_scope.billing_scope.id
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
