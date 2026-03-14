@@ -21,9 +21,3 @@ resource "azurerm_role_assignment" "vault_crypto_user" {
   role_definition_name = "Key Vault Crypto User"
   principal_id         = azurerm_user_assigned_identity.uami.principal_id
 }
-
-resource "azurerm_role_assignment" "vault_secrets_user" {
-  scope                = data.azurerm_key_vault_secret.ghcr_pat.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_user_assigned_identity.uami.principal_id
-}
