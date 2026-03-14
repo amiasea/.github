@@ -33,11 +33,3 @@ resource "azurerm_mssql_virtual_network_rule" "sql_vnet_rule" {
   server_id = azurerm_mssql_server.sql.id
   subnet_id = azurerm_subnet.subnet.id
 }
-
-# Key Vault: Only allow the ACA Subnet
-resource "azurerm_key_vault_network_acl" "kv_acl" {
-  key_vault_id           = var.key_vault_id
-  default_action         = "Deny"
-  bypass                 = "AzureServices"
-  virtual_network_subnet_ids = [azurerm_subnet.subnet.id]
-}

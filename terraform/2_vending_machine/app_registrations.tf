@@ -54,21 +54,6 @@ resource "azuread_app_role_assignment" "vc_consent" {
   resource_object_id  = azuread_service_principal.vc_service.object_id
 }
 
-resource "azuread_token_lifetime_policy" "amiasea_api_policy" {
-  definition = [jsonencode({
-    TokenLifetimePolicy = {
-      Version             = 1
-      AccessTokenLifetime = formatdate("hh:mm:ss", timeadd("2000-01-01T00:00:00Z", "${var.session_timeout_seconds}s"))
-    }
-  })]
-}
-
-# 2. The Assignment (Tying it to the App Registration)
-resource "azuread_application_token_lifetime_policy_assignment" "amiasea_api_assignment" {
-  application_id           = azuread_application.aviator_api_sp.id
-  token_lifetime_policy_id = azuread_token_lifetime_policy.amiasea_api_policy.id
-}
-
 ###############################################################
 
 # --- Frontend SPA Registration ---
@@ -88,7 +73,7 @@ resource "azuread_application" "aviator_frontend" {
 
     resource_access {
       # This MUST match the ID of the oauth2_permission_scope in the API
-      id   = [tolist(azuread_application.aviator_api.api[0].oauth2_permission_scope)[0].id]
+      id   = tolist(azuread_application.aviator_api.api[0].oauth2_permission_scope)[0].id
       type = "Scope"
     }
   }

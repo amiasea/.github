@@ -8,6 +8,12 @@ resource "azurerm_key_vault" "vault" {
   purge_protection_enabled    = false
   sku_name                    = "standard"
   rbac_authorization_enabled  = true
+
+  network_acls {
+    default_action             = "Deny"
+    bypass                     = "AzureServices"
+    virtual_network_subnet_ids = [azurerm_subnet.subnet.id]
+  }
 }
 
 resource "azurerm_role_assignment" "vault_secrets_user" {
