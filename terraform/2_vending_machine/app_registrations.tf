@@ -42,15 +42,17 @@ resource "azuread_service_principal" "aviator_api_sp" {
   depends_on = [azuread_application_identifier_uri.aviator_api_uri]
 }
 
-# 2. Get the Service Principal for the Verifiable Credentials API
+# Use the official Microsoft App ID for the VC Request service
 data "azuread_service_principal" "vc_service" {
-  client_id = "6a8b4b39-c021-437c-b060-5a14a3fd65f3"
+  client_id = "49645851-6783-490b-8038-f996d9263654"
 }
 
-# 3. Automatically apply admin consent via role assignment
 resource "azuread_app_role_assignment" "vc_consent" {
-  app_role_id         = "0efca039-bc61-49cc-9366-89689f506859" # VerifiableCredential.Create.All
+  # Role: VerifiableCredential.Create.All
+  app_role_id         = "949ebb93-18f8-41b4-b677-c2bfea940027" # Correct ID from registry
   principal_object_id = azuread_service_principal.aviator_api_sp.object_id
+  
+  # This MUST be the Service Principal's Object ID
   resource_object_id  = data.azuread_service_principal.vc_service.object_id
 }
 

@@ -15,10 +15,6 @@ resource "time_sleep" "wait_for_sub" {
 resource "azurerm_resource_provider_registration" "essential" {
   for_each = toset([
     "Microsoft.App",                 # Container Apps
-    "Microsoft.Sql",                 # SQL Server
-    "Microsoft.KeyVault",            # Secrets
-    "Microsoft.Network",              # VNets / IPs
-    "Microsoft.ManagedIdentity",
   ])
 
   provider = azurerm.sub
