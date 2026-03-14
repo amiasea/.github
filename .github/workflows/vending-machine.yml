@@ -23,7 +23,7 @@ jobs:
 
       TF_VAR_resource_group_name: ${{ vars.RESOURCE_GROUP_NAME }}
       TF_VAR_location: ${{ vars.LOCATION }}
-      TF_VAR_amiasea_db_admins_group_id: ${{ vars.AMIASEA_DB_ADMINS_GROUP_ID }}
+      TF_VAR_sql_admins_group_id: ${{ vars.SQL_ADMINS_GROUP_ID }}
       TF_VAR_ghcr_pat_versionless_id: ${{ vars.GHCR_PAT_VERSIONLESS_ID }}
       TF_VAR_sovereign_billing_scope_id: ${{ vars.SOVEREIGN_BILLING_SCOPE_ID }}
 
