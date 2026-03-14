@@ -31,7 +31,7 @@ resource "azurerm_key_vault" "vault" {
   }
 }
 
-resource "azurerm_key_vault_access_policy" "uami_crypto" {
+resource "azurerm_key_vault_access_policy" "vc_crypto" {
   key_vault_id = azurerm_key_vault.vault.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = data.azuread_service_principal.vc_service.object_id
