@@ -1,6 +1,6 @@
 # --- 1. SQL SERVER (Entra-Only Auth) ---
 resource "azurerm_mssql_server" "sql" {
-  provider = azuread.sub
+  provider = azurerm.sub
   name                         = "amiasea"
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = var.location
