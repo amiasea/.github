@@ -76,8 +76,3 @@ variable "amiasea_github_private_key" {
   type      = string
   ephemeral = true
 }
-
-variable "local_ip" {
-  type = string
-  sensitive = true
-}

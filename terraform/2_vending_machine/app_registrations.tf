@@ -43,7 +43,7 @@ resource "azuread_service_principal" "aviator_api_sp" {
 }
 
 # 2. Get the Service Principal for the Verifiable Credentials API
-resource "azuread_service_principal" "vc_service" {
+data "azuread_service_principal" "vc_service" {
   client_id = "6a8b4b39-c021-437c-b060-5a14a3fd65f3"
 }
 
@@ -51,7 +51,7 @@ resource "azuread_service_principal" "vc_service" {
 resource "azuread_app_role_assignment" "vc_consent" {
   app_role_id         = "0efca039-bc61-49cc-9366-89689f506859" # VerifiableCredential.Create.All
   principal_object_id = azuread_service_principal.aviator_api_sp.object_id
-  resource_object_id  = azuread_service_principal.vc_service.object_id
+  resource_object_id  = data.azuread_service_principal.vc_service.object_id
 }
 
 ###############################################################
@@ -86,7 +86,7 @@ resource "azuread_service_principal" "aviator_frontend_sp" {
 # --- THE "TRUST" LINK ---
 resource "azuread_application_pre_authorized" "frontend_trust" {
   # This must be the OBJECT ID of the API application
-  application_id = azuread_application.aviator_api.object_id
+  application_id = azuread_application.aviator_api.id
   
   # The Client ID of the frontend app is correct here
   authorized_client_id  = azuread_application.aviator_frontend.client_id
