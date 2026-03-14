@@ -52,6 +52,10 @@ jobs:
           # INJECT: Set the dynamic env var for subsequent steps
           echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
 
+      - name: Debug env
+        run: |
+          echo "TF_TOKEN_app_terraform_io is set? -> ${TF_TOKEN_app_terraform_io:+yes}"
+
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.14.6"
