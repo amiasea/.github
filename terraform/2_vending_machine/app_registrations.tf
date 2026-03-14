@@ -64,7 +64,7 @@ resource "azuread_application" "aviator_frontend" {
 
   single_page_application {
     # Replace with your actual frontend URLs
-    redirect_uris = ["http://localhost:3000", "https://app.amiasea.com"]
+    redirect_uris = ["http://localhost:3000/", "https://app.amiasea.com/"]
   }
 
   # This links the Frontend to the API
@@ -84,12 +84,14 @@ resource "azuread_service_principal" "aviator_frontend_sp" {
 }
 
 # --- THE "TRUST" LINK ---
-# Pre-authorizes the frontend so users don't see a consent popup for the API
-resource "azuread_application_pre_authorized_applications" "frontend_trust" {
-  application_id       = azuread_application.aviator_api.id
-  authorized_client_id = azuread_application.aviator_frontend.client_id
-  permission_ids       = [tolist(azuread_application.aviator_api.api[0].oauth2_permission_scope)[0].id]
-  depends_on           = [azuread_application.aviator_api]
+resource "azuread_application_pre_authorized" "frontend_trust" {
+  # This must be the OBJECT ID of the API application
+  application_id = azuread_application.aviator_api.object_id
+  
+  # The Client ID of the frontend app is correct here
+  authorized_client_id  = azuread_application.aviator_frontend.client_id
+  
+  permission_ids        = [tolist(azuread_application.aviator_api.api[0].oauth2_permission_scope)[0].id]
 }
 
 resource "azuread_service_principal_delegated_permission_grant" "frontend_to_api_consent" {

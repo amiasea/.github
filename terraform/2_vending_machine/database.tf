@@ -16,7 +16,7 @@ resource "azurerm_mssql_server" "sql" {
 resource "azurerm_mssql_database" "db" {
   name      = "users"
   server_id = azurerm_mssql_server.sql.id
-  sku_name  = "Free" # Enables Free Tier
+  sku_name  = "Free"
 }
 
 # --- 3. RBAC: DATA CONTRIBUTOR ---
