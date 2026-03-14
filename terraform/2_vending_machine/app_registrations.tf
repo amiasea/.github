@@ -42,9 +42,9 @@ resource "azuread_service_principal" "aviator_api_sp" {
   depends_on = [azuread_application_identifier_uri.aviator_api_uri]
 }
 
-# Use the official Microsoft App ID for the VC Request service
 data "azuread_service_principal" "vc_service" {
-  client_id = "49645851-6783-490b-8038-f996d9263654"
+  client_id  = "49645851-6783-490b-8038-f996d9263654"
+  depends_on = [azapi_resource_action.sovereign_onboard]
 }
 
 resource "azuread_app_role_assignment" "vc_consent" {
