@@ -10,6 +10,8 @@ resource "azurerm_mssql_server" "sql" {
     azuread_authentication_only = true # DISABLES SQL passwords
     tenant_id = data.azurerm_client_config.current.tenant_id
   }
+
+  depends_on = [ azurerm_resource_group.rg ]
 }
 
 # --- 2. SQL DATABASE (Free Tier) ---

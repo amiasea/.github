@@ -4,7 +4,9 @@ resource "azurerm_container_app_environment" "main" {
   resource_group_name = azurerm_resource_group.rg.name
 
   infrastructure_subnet_id   = azurerm_subnet.subnet.id
-  internal_load_balancer_enabled = false 
+  internal_load_balancer_enabled = false
+
+  depends_on = [ azurerm_resource_group.rg ]
 }
 
 resource "azurerm_container_app" "aviator_api" {
