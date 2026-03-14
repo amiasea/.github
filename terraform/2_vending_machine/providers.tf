@@ -27,14 +27,6 @@ provider "azurerm" {
 provider "azurerm" {
   alias           = "sub"
   subscription_id = azurerm_subscription.subscription.subscription_id
-
-  resource_provider_registrations = "none" # Prevents it from trying to register 70+ default ones
-  resource_providers_to_register = [
-    "Microsoft.App",
-    "Microsoft.OperationalInsights",
-    "Microsoft.ContainerService"
-  ]
-
   features {}
 }
 

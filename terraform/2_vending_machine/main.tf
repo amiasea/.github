@@ -12,11 +12,24 @@ resource "time_sleep" "wait_for_sub" {
   depends_on      = [azurerm_subscription.subscription]
 }
 
+resource "azurerm_resource_provider_registration" "essential" {
+  for_each = toset([
+    "Microsoft.App",                 # Container Apps
+    "Microsoft.Sql",                 # SQL Server
+    "Microsoft.KeyVault",            # Secrets
+    "Microsoft.Network",              # VNets / IPs
+    "Microsoft.ManagedIdentity",
+  ])
+
+  provider = azurerm.sub
+  name     = each.value
+}
+
 resource "azurerm_resource_group" "rg" {
   provider   = azurerm.sub
   name       = "rg-${var.prefix}-${var.env}"
   location   = var.location
-  depends_on = [time_sleep.wait_for_sub]
+  depends_on = [time_sleep.wait_for_sub, azurerm_resource_provider_registration.essential]
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
