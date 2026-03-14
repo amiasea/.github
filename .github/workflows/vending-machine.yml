@@ -17,7 +17,7 @@ jobs:
         env: ["dev"]
     env:
       TF_IN_AUTOMATION: true
-      # TF_WORKSPACE: "amiasea-${{ matrix.env }}"
+      TF_WORKSPACE: "amiasea-${{ matrix.env }}"
       TF_VAR_env: ${{ matrix.env }}
       TF_CLOUD_PROJECT: "amiasea"
 
