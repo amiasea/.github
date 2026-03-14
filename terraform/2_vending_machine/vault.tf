@@ -24,19 +24,22 @@ resource "azurerm_key_vault" "vault" {
   sku_name                    = "standard"
   rbac_authorization_enabled  = false
 
-    # Grant the Verified ID Service access to the keys
-  access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azuread_service_principal.vc_service.object_id
-
-    key_permissions = ["Get", "Create", "Sign"]
-  }
-
   network_acls {
     default_action             = "Deny"
     bypass                     = "AzureServices"
     virtual_network_subnet_ids = [azurerm_subnet.subnet.id]
   }
+}
+
+resource "azurerm_key_vault_access_policy" "uami_crypto" {
+  key_vault_id = azurerm_key_vault.vault.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = data.azuread_service_principal.vc_service.object_id
+
+  # Equivalent to 'Key Vault Crypto User' permissions
+  key_permissions = ["Get", "Create", "Sign"]
+
+  depends_on = [ azapi_resource_action.sovereign_onboard ]
 }
 
 resource "azurerm_key_vault_access_policy" "uami_crypto" {
