@@ -6,6 +6,25 @@ data "http" "my_public_ip" {
   url = "https://ifconfig.me"
 }
 
+# 1. Get the Service Principal ID of the terraform runner
+data "azuread_client_config" "current" {}
+
+# 2. Get the Template ID for the "Application Administrator" role
+data "azuread_directory_role_template" "app_admin" {
+  display_name = "Application Administrator"
+}
+
+# 3. Ensure the role is enabled in your tenant
+resource "azuread_directory_role" "app_admin" {
+  template_id = data.azuread_directory_role_template.app_admin.template_id
+}
+
+# 4. Assign the role to your Terraform Service Principal
+resource "azuread_directory_role_assignment" "terraform_app_admin" {
+  role_id             = azuread_directory_role.app_admin.template_id
+  principal_object_id = data.azuread_client_config.current.object_id
+}
+
 data "azurerm_subscription" "amiasea" {
   subscription_id = var.subscription_id
 }
@@ -151,6 +170,12 @@ resource "azurerm_role_assignment" "terraform_kv_admin" {
 resource "azurerm_role_assignment" "vending_secrets_power" {
   scope                = data.azurerm_subscription.amiasea.id
   role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_role_assignment" "subscription_creator" {
+  scope                = data.azurerm_subscription.amiasea.id
+  role_definition_name = "Azure subscription creator"
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
