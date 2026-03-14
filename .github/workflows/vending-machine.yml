@@ -17,8 +17,9 @@ jobs:
         env: ["dev"]
     env:
       TF_IN_AUTOMATION: true
-      # TF_WORKSPACE: "amiasea-${{ matrix.env }}"
+      TF_WORKSPACE: "amiasea-${{ matrix.env }}"
       TF_VAR_env: ${{ matrix.env }}
+      TF_CLOUD_PROJECT: "amiasea"
 
       TF_VAR_tenant_id: ${{ vars.TENANT_ID }}
       TF_VAR_subscription_id: ${{ vars.SUBSCRIPTION_ID }}
@@ -60,5 +61,5 @@ jobs:
         working-directory: ./terraform/2_vending_machine
         run: |
           terraform init
-          terraform workspace select -or-create "amiasea-${{ matrix.env }}"
+          # terraform workspace select -or-create "amiasea-${{ matrix.env }}"
           terraform apply -auto-approve
