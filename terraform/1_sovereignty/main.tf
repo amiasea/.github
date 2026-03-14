@@ -188,3 +188,20 @@ resource "terraform_data" "clear_kv_ips" {
     command = "az keyvault update --name ${azurerm_key_vault.vault.name} --resource-group ${azurerm_resource_group.rg.name} --set properties.networkAcls.ipRules=[]"
   }
 }
+
+data "tfe_project" "amiasea" {
+  name = "amiasea"
+  organization = "amiasea"
+}
+
+resource "tfe_workspace" "workspace_dev" {
+  name         = "amiasea-dev"
+  organization = "amiasea"
+  project_id = data.tfe_project.amiasea.id
+}
+
+resource "tfe_workspace" "workspace_prod" {
+  name         = "amiasea-prod"
+  organization = "amiasea"
+  project_id = data.tfe_project.amiasea.id
+}

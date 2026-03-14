@@ -22,6 +22,10 @@ terraform {
       source  = "hashicorp/http"
       version = "~> 3.0"
     }
+    tfe = {
+      source  = "hashicorp/tfe"
+      version = "~> 0.74.1"
+    }
   }
 }
 
@@ -49,4 +53,8 @@ provider "github" {
 provider "azapi" {
   subscription_id = var.subscription_id
   skip_provider_registration = false
+}
+
+provider "tfe" {
+  hostname = "app.terraform.io"
 }
