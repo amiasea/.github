@@ -37,3 +37,8 @@ provider "azuread" {
 provider "random" {
   # This is used to generate random suffixes for resource names to ensure uniqueness
 }
+
+provider "azapi" {
+  subscription_id = azurerm_subscription.subscription.subscription_id
+  skip_provider_registration = false
+}
