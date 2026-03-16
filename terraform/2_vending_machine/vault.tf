@@ -1,4 +1,5 @@
 resource "azurerm_key_vault" "vault" {
+  provider = azurerm.sub
   name                        = "kv-${var.prefix}-${var.env}"
   location                    = var.location
   resource_group_name         = azurerm_resource_group.rg.name
@@ -16,6 +17,7 @@ resource "azurerm_key_vault" "vault" {
 }
 
 resource "azurerm_role_assignment" "uami_kv_admin" {
+  provider = azurerm.sub
   scope                = azurerm_key_vault.vault.id
   role_definition_name = "Key Vault Administrator"
   principal_id         = azurerm_user_assigned_identity.uami.principal_id

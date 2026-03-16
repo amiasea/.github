@@ -11,6 +11,7 @@ resource "azurerm_container_app_environment" "main" {
 }
 
 resource "azurerm_container_app" "aviator_api" {
+  provider = azurerm.sub
   name                         = "ca-amiasea-aviator-api"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = azurerm_resource_group.rg.name
@@ -92,6 +93,7 @@ resource "azurerm_container_app" "aviator_api" {
 }
 
 resource "azurerm_container_app" "aviator_ui" {
+  provider = azurerm.sub
   name                         = "ca-${var.prefix}-ui-${var.env}"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = azurerm_resource_group.rg.name

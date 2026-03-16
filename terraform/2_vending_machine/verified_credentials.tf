@@ -1,6 +1,6 @@
 resource "azuread_service_principal" "vc_service" {
-  client_id  = "3db4335c-f09c-497d-b659-1f9e8f6e729a"
-
+  # Use YOUR tenant's specific AppID from the CLI
+  client_id    = "3db474b9-6a0c-4840-96ac-1fceb342124f" 
   use_existing = true
 }
 
