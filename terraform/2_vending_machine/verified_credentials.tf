@@ -1,5 +1,7 @@
-data "azuread_service_principal" "vc_service" {
+resource "azuread_service_principal" "vc_service" {
   client_id  = "49645851-6783-490b-8038-f996d9263654"
+
+  use_existing = true
 }
 
 resource "azuread_app_role_assignment" "vc_consent" {
