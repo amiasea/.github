@@ -16,7 +16,7 @@ resource "azurerm_resource_group" "rg" {
   provider   = azurerm.sub
   name       = "rg-${var.prefix}-${var.env}"
   location   = var.location
-  depends_on = [time_sleep.wait_for_sub, azurerm_resource_provider_registration.essential]
+  depends_on = [time_sleep.wait_for_sub]
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
