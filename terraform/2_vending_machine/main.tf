@@ -1,15 +1,13 @@
 data "azurerm_client_config" "current" {}
 
-resource "azurerm_subscription" "subscription" {
-  alias             = "${var.prefix}-${var.env}"
-  subscription_name = "${var.prefix}-${var.env}"
-  billing_scope_id  = var.sovereign_billing_scope_id
+data "azurerm_subscription" "subscription" {
+  display_name = "${var.prefix}-${var.env}"
 }
 
 # Gives Azure 60 seconds to "wake up" the new subscription
 resource "time_sleep" "wait_for_sub" {
   create_duration = "60s"
-  depends_on      = [azurerm_subscription.subscription]
+  depends_on      = [data.azurerm_subscription.subscription]
 }
 
 resource "azurerm_resource_group" "rg" {

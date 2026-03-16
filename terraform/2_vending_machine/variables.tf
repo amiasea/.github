@@ -19,16 +19,6 @@ variable "env" {
   }
 }
 
-variable "sovereign_billing_scope_id" {
-  type        = string
-  description = "Billing Scope ID for the sovereign subscription."
-}
-
-# variable "role_definition_id" {
-#   type        = string
-#   description = "Role Definition ID to assign to the UAMI in the new subscription."
-# }
-
 variable "api_scope" {
   type        = string
   description = "The scope of the API permissions to grant to the UAMI"

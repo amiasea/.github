@@ -44,13 +44,6 @@ resource "github_actions_organization_variable" "delegated_permissions_client_id
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
 
-resource "github_actions_organization_variable" "sovereign_billing_scope_id" {
-  variable_name           = "SOVEREIGN_BILLING_SCOPE_ID"
-  value                   = data.azurerm_billing_mca_account_scope.billing_scope.id
-  visibility              = "selected"
-  selected_repository_ids = [data.github_repository.repo.repo_id]
-}
-
 resource "github_actions_organization_variable" "aviator_gh_app_id" {
   variable_name           = "AMIASEA_GH_APP_ID"
   value                   = "2670685"

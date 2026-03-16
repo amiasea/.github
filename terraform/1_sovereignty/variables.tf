@@ -76,3 +76,9 @@ variable "amiasea_github_private_key" {
   type      = string
   ephemeral = true
 }
+
+variable "prefix" {
+  type        = string
+  description = "Prefix"
+  default = "amiasea"
+}
