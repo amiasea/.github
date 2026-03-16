@@ -16,6 +16,12 @@ resource "azurerm_key_vault" "vault" {
   }
 }
 
+resource "azurerm_role_assignment" "sovereign_kv_secrets_user" {
+  scope                = var.sovereign_key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.uami.principal_id
+}
+
 resource "azurerm_role_assignment" "uami_kv_admin" {
   provider = azurerm.sub
   scope                = azurerm_key_vault.vault.id

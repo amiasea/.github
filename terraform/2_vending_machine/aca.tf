@@ -90,6 +90,8 @@ resource "azurerm_container_app" "aviator_api" {
       # template[0].container[0].image,
     ]
   }
+
+  depends_on = [ azurerm_role_assignment.sovereign_kv_secrets_user ]
 }
 
 resource "azurerm_container_app" "aviator_ui" {
@@ -154,4 +156,6 @@ resource "azurerm_container_app" "aviator_ui" {
       template[0].container[0].image,
     ]
   }
+
+  depends_on = [ azurerm_role_assignment.sovereign_kv_secrets_user ]
 }
