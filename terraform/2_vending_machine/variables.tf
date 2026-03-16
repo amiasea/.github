@@ -44,3 +44,8 @@ variable "ghcr_pat_versionless_id" {
   type = string
   description = "GHCR PAT Key Vault Secret Versionless ID"
 }
+
+variable "sovereign_key_vault_id" {
+  type = string
+  description = "Sovereign Key Vault ID"
+}

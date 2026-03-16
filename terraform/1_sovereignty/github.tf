@@ -78,3 +78,10 @@ resource "github_actions_organization_variable" "ghcr_pat_versionless_id" {
   visibility              = "selected"
   selected_repository_ids = [data.github_repository.repo.repo_id]
 }
+
+resource "github_actions_organization_variable" "sovereign_key_vault_id" {
+  variable_name           = "SOVEREIGN_KEY_VAULT_ID"
+  value                   = azurerm_key_vault.vault.id
+  visibility              = "selected"
+  selected_repository_ids = [data.github_repository.repo.repo_id]
+}

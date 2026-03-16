@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Amiasea.Data.Entity\Amiasea.Data.Entity.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Identity\" />
+  </ItemGroup>
+
 </Project>

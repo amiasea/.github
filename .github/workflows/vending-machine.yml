@@ -26,6 +26,7 @@ jobs:
       TF_VAR_sql_admins_group_id: ${{ vars.SQL_ADMINS_GROUP_ID }}
       TF_VAR_ghcr_pat_versionless_id: ${{ vars.GHCR_PAT_VERSIONLESS_ID }}
       TF_VAR_sovereign_billing_scope_id: ${{ vars.SOVEREIGN_BILLING_SCOPE_ID }}
+      TF_VAR_sovereign_key_vault_id: ${{ vars.SOVEREIGN_KEY_VAULT_ID }}
 
     steps:
       - uses: actions/checkout@v4

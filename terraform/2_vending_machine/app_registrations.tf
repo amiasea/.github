@@ -20,12 +20,12 @@ resource "azuread_application" "aviator_api" {
 
   # Add this block for Verifiable Credentials permissions
   required_resource_access {
-    # Resource App ID for 'Verifiable Credentials Service Request'
-    resource_app_id = "6a8b4b39-c021-437c-b060-5a14a3fd65f3"
+    # Target the VC Request Service
+    resource_app_id = data.azuread_service_principal.vc_service.client_id
 
     resource_access {
-      # ID for 'VerifiableCredential.Create.All' application permission
-      id   = "0efca039-bc61-49cc-9366-89689f506859"
+      # ID for 'VerifiableCredential.Create.All'
+      id   = "949ebb93-18f8-41b4-b677-c2bfea940027" 
       type = "Role"
     }
   }
@@ -40,20 +40,6 @@ resource "azuread_service_principal" "aviator_api_sp" {
   client_id = azuread_application.aviator_api.client_id
   # Ensures the URI is registered before the SP is finalized
   depends_on = [azuread_application_identifier_uri.aviator_api_uri]
-}
-
-data "azuread_service_principal" "vc_service" {
-  client_id  = "49645851-6783-490b-8038-f996d9263654"
-  depends_on = [azapi_resource_action.sovereign_onboard]
-}
-
-resource "azuread_app_role_assignment" "vc_consent" {
-  # Role: VerifiableCredential.Create.All
-  app_role_id         = "949ebb93-18f8-41b4-b677-c2bfea940027" # Correct ID from registry
-  principal_object_id = azuread_service_principal.aviator_api_sp.object_id
-  
-  # This MUST be the Service Principal's Object ID
-  resource_object_id  = data.azuread_service_principal.vc_service.object_id
 }
 
 ###############################################################
