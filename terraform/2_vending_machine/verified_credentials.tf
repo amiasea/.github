@@ -1,5 +1,5 @@
 resource "azuread_service_principal" "vc_service" {
-  client_id  = "49645851-6783-490b-8038-f996d9263654"
+  client_id  = "3db4335c-f09c-497d-b659-1f9e8f6e729a"
 
   use_existing = true
 }

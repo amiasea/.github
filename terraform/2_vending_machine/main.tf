@@ -12,15 +12,6 @@ resource "time_sleep" "wait_for_sub" {
   depends_on      = [azurerm_subscription.subscription]
 }
 
-resource "azurerm_resource_provider_registration" "essential" {
-  for_each = toset([
-    "Microsoft.App",                 # Container Apps
-  ])
-
-  provider = azurerm.sub
-  name     = each.value
-}
-
 resource "azurerm_resource_group" "rg" {
   provider   = azurerm.sub
   name       = "rg-${var.prefix}-${var.env}"
