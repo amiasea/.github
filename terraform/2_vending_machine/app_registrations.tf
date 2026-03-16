@@ -21,7 +21,7 @@ resource "azuread_application" "aviator_api" {
   # Add this block for Verifiable Credentials permissions
   required_resource_access {
     # Target the VC Request Service
-    resource_app_id = data.azuread_service_principal.vc_service.client_id
+    resource_app_id = azuread_service_principal.vc_service.client_id
 
     resource_access {
       # ID for 'VerifiableCredential.Create.All'
