@@ -16,7 +16,8 @@ resource "azurerm_subscription" "subscription" {
 resource "azurerm_role_assignment" "delegated_permissions_subscription_owner" {
   for_each = azurerm_subscription.subscription
 
-  scope                = each.value.id
+  scope                = "/subscriptions/${each.value.subscription_id}"
+  
   role_definition_name = "Owner"
   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
   
