@@ -1,6 +1,6 @@
 resource "azurerm_container_app_environment" "main" {
   provider = azurerm.sub
-  name                = "amiasea-env"
+  name                = "cae-${var.prefix}-${var.env}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
