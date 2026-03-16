@@ -10,5 +10,5 @@ resource "azuread_app_role_assignment" "vc_consent" {
   principal_object_id = azurerm_user_assigned_identity.uami.principal_id
   
   # This MUST be the Service Principal's Object ID
-  resource_object_id  = data.azuread_service_principal.vc_service.object_id
+  resource_object_id  = azuread_service_principal.vc_service.object_id
 }
