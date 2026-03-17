@@ -21,15 +21,16 @@ resource "azurerm_dns_cname_record" "ui_env" {
 
 # DNS RECORD: WWW CNAME (All envs)
 resource "azurerm_dns_cname_record" "ui_www" {
-  name                = var.env == "prod" ? "www" : "www.${local.subdomain}"
+  # Changed: Always use www.${local.subdomain} to match your intended URL
+  name                = "www.${local.subdomain}" 
   zone_name           = data.azurerm_dns_zone.sovereign.name
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
   record              = azurerm_static_web_app.aviator_ui.default_host_name
 
-  # Forces Terraform to wait until public DNS can see this record
   provisioner "local-exec" {
-    command = "until nslookup ${var.env == "prod" ? "www" : "www.${local.subdomain}"}.${var.domain}; do echo 'Waiting for www DNS...'; sleep 5; done"
+    # Match the name here too
+    command = "until nslookup www.${local.subdomain}.${var.domain}; do echo 'Waiting for www DNS...'; sleep 5; done"
   }
 }
 
