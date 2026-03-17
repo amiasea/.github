@@ -6,11 +6,11 @@ using A = Amiasea.Data.Entity.Authz;
 
 namespace Amiasea.Data.Entity.Configurations.Authz;
 
-public class AuthorityConfiguration : IEntityTypeConfiguration<A.Authority>
+public class IdentityConfiguration : IEntityTypeConfiguration<A.Identity>
 {
-    public void Configure(EntityTypeBuilder<A.Authority> builder)
+    public void Configure(EntityTypeBuilder<A.Identity> builder)
     {
         builder.HasKey(e => e.ID);
-        builder.HasIndex(e => e.Name).IsUnique();
+        builder.HasIndex(e => new { e.ActorID, e.AuthorityID, e.AuthorityIdentitfier }).IsUnique();
     }
 }

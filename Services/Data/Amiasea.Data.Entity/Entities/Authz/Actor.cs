@@ -7,6 +7,7 @@ namespace Amiasea.Data.Entity.Authz;
 public class Actor
 {
     public int ID { get; set; }
+    public 
     public string Name { get; set; }
     public string Email { get; set; }
     public int OrganizationID { get; set; }

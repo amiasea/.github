@@ -1,7 +1,7 @@
 variable "billing_account_id" {
   type        = string
   description = "The billing account ID to link the subscription to. This is required for new subscriptions created under an Enterprise Agreement (EA)."
-  sensitive = true
+  sensitive   = true
 
   validation {
     # Validates the long MCA billing account format
@@ -13,7 +13,7 @@ variable "billing_account_id" {
 variable "billing_profile_id" {
   type        = string
   description = "The billing profile ID to link the subscription to. This is required for new subscriptions created under an Enterprise Agreement (EA)."
-  sensitive = true
+  sensitive   = true
 
   validation {
     # Validates the 4-part alphanumeric profile ID
@@ -25,7 +25,7 @@ variable "billing_profile_id" {
 variable "billing_profile_invoice_section_id" {
   type        = string
   description = "The billing profile invoice section ID to link the subscription to. This is required for new subscriptions created under an Enterprise Agreement (EA)."
-  sensitive = true
+  sensitive   = true
 
   validation {
     condition     = can(regex("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{3,4}-[A-Z0-9]{3,4}$", var.billing_profile_invoice_section_id))
@@ -48,17 +48,17 @@ variable "key_vault_name" {
 variable "resource_group_name" {
   type        = string
   description = "Resource group for all sovereign resources."
-  default = "rg-amiasea"
+  default     = "rg-amiasea"
 }
 
 variable "location" {
   type        = string
   description = "Azure region."
-  default = "centralus"
+  default     = "centralus"
 }
 
 variable "subscription_id" {
-  type = string
+  type        = string
   description = "Subscription ID."
 }
 
@@ -80,5 +80,11 @@ variable "amiasea_github_private_key" {
 variable "prefix" {
   type        = string
   description = "Prefix"
-  default = "amiasea"
+  default     = "amiasea"
+}
+
+variable "domain" {
+  type        = string
+  description = "Domain name"
+  default     = "amiasea.com"
 }
