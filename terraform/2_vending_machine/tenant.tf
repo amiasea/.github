@@ -5,7 +5,7 @@ resource "azapi_resource" "external_tenant" {
   type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2025-08-01-preview"
   
   # This must be the unique .onmicrosoft.com domain name
-  name      = "aviatortenant-${var.env}.onmicrosoft.com"
+  name      = "aviator-tenant-${var.env}.onmicrosoft.com"
   
   # This is the Resource Group ID from your PUT URL
   parent_id = "/subscriptions/${local.target_sub_id}/resourceGroups/${azurerm_resource_group.rg.name}"
