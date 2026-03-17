@@ -6,7 +6,7 @@ resource "azapi_resource" "external_tenant" {
   name      = "aviatortenant-${var.env}.onmicrosoft.com"
   
   # This is the Resource Group ID from your PUT URL
-  parent_id = "/subscriptions/da348b35-29b6-4906-85ec-4a097aa5fe04/resourceGroups/${azurerm_resource_group.rg}"
+  parent_id = "/subscriptions/${local.target_sub_id}/resourceGroups/${azurerm_resource_group.rg}"
 
   location  = "United States"
 

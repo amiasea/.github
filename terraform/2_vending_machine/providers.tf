@@ -43,6 +43,6 @@ provider "random" {
 }
 
 provider "azapi" {
-  subscription_id = azurerm_subscription.subscription.subscription_id
+  subscription_id = local.target_sub_id
   skip_provider_registration = false
 }
