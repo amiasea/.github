@@ -1,161 +1,166 @@
-# resource "azurerm_container_app_environment" "main" {
-#   provider = azurerm.sub
-#   name                = "cae-${var.prefix}-${var.env}"
-#   location            = var.location
-#   resource_group_name = azurerm_resource_group.rg.name
+resource "azurerm_container_app_environment" "main" {
+  provider = azurerm.sub
+  name                = "cae-${var.prefix}-${var.env}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
 
-#   infrastructure_subnet_id   = azurerm_subnet.subnet.id
-#   internal_load_balancer_enabled = false
+  depends_on = [ azurerm_resource_group.rg ]
+}
 
-#   depends_on = [ azurerm_resource_group.rg ]
-# }
+resource "azurerm_container_app" "aviator_api" {
+  provider = azurerm.sub
+  name                         = "ca-${var.prefix}-api-${var.env}"
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.rg.name
+  revision_mode                = "Single"
 
-# resource "azurerm_container_app" "aviator_api" {
-#   provider = azurerm.sub
-#   name                         = "ca-${var.prefix}-api-${var.env}"
-#   container_app_environment_id = azurerm_container_app_environment.main.id
-#   resource_group_name          = azurerm_resource_group.rg.name
-#   revision_mode                = "Single"
-
-#   identity {
-#     type         = "UserAssigned"
-#     identity_ids = [azurerm_user_assigned_identity.uami.id]
-#   }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.uami.id]
+  }
 
 
-#   template {
-#     min_replicas = 0
-#     max_replicas = 1
+  template {
+    min_replicas = 0
+    max_replicas = 1
 
-#     http_scale_rule {
-#       name                = "http-auto-scale"
-#       concurrent_requests = "10"
-#     }
+    http_scale_rule {
+      name                = "http-auto-scale"
+      concurrent_requests = "10"
+    }
 
-#     container {
-#       name   = "amiasea-api"
-#       image  = "ghcr.io/amiasea/amiasea-api:latest"
-#       cpu    = 0.25
-#       memory = "0.5Gi"
+    container {
+      name   = "amiasea-api"
+      image  = "ghcr.io/amiasea/amiasea-api:latest"
+      cpu    = 0.25
+      memory = "0.5Gi"
 
-#       # Setting 1: DB Connection
-#       env {
-#         name  = "SQL_CONNECTION_STRING"
-#         secret_name = "sql-conn" # References the secret above
-#       }
+      # Setting 1: DB Connection
+      env {
+        name  = "SQL_CONNECTION_STRING"
+        secret_name = "sql-conn" # References the secret above
+      }
 
-#       # Setting 2: Verifiable Credentials Authority
-#       env {
-#         name  = "VC_AUTHORITY_DID"
-#         value = "did:ion:your-organization-did-here"
-#       }
+      # Setting 2: Verifiable Credentials Authority
+      env {
+        name  = "VC_AUTHORITY_DID"
+        value = "did:ion:your-organization-did-here"
+      }
 
-#       env {
-#         name  = "AZURE_CLIENT_ID"
-#         value = azurerm_user_assigned_identity.uami.client_id
-#       }
-#     }
-#   }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.uami.client_id
+      }
+    }
+  }
 
-#   registry {
-#     server               = "ghcr.io"
-#     username             = "AlfredoBall"
-#     password_secret_name = "ghcr-pat"
-#   }
+  registry {
+    server               = "ghcr.io"
+    username             = "AlfredoBall"
+    password_secret_name = "ghcr-pat"
+  }
 
-#   secret {
-#     name  = "sql-conn"
-#     value = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Database=${azurerm_mssql_database.db.name};Authentication=Active Directory Managed Identity;"
-#   }
+  secret {
+    name  = "sql-conn"
+    value = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Database=${azurerm_mssql_database.db.name};Authentication=Active Directory Managed Identity;"
+  }
 
-#   secret {
-#     name                = "ghcr-pat"
-#     key_vault_secret_id = var.ghcr_pat_versionless_id
-#     identity            = azurerm_user_assigned_identity.uami.id
-#   }
+  secret {
+    name                = "ghcr-pat"
+    key_vault_secret_id = var.ghcr_pat_versionless_id
+    identity            = azurerm_user_assigned_identity.uami.id
+  }
 
-#   ingress {
-#     external_enabled = true
-#     target_port      = 80
-#     traffic_weight {
-#       percentage      = 100
-#       latest_revision = true
-#     }
-#   }
+  ingress {
+    external_enabled = true
+    target_port      = 80
 
-#   # IMPORTANT: Terraform will try to replace this if the value changes in KV
-#   lifecycle {
-#     ignore_changes = [
-#       secret,
-#       # template[0].container[0].image,
-#     ]
-#   }
+    cors {
+      allowed_origins = [
+        "https://${local.subdomain}${var.domain}", 
+        "https://www.${local.subdomain}${var.domain}"
+      ]
+      allowed_methods = ["GET", "POST", "OPTIONS"]
+    }
+    
+    traffic_weight {
+      percentage      = 100
+      latest_revision = true
+    }
+  }
 
-#   depends_on = [ azurerm_role_assignment.sovereign_kv_secrets_user ]
-# }
+  lifecycle {
+    ignore_changes = [
+      secret,
+      # template[0].container[0].image,
+    ]
+  }
 
-# resource "azurerm_container_app" "aviator_ui" {
-#   provider = azurerm.sub
-#   name                         = "ca-${var.prefix}-ui-${var.env}"
-#   container_app_environment_id = azurerm_container_app_environment.main.id
-#   resource_group_name          = azurerm_resource_group.rg.name
-#   revision_mode                = "Single"
+  depends_on = [ azurerm_role_assignment.sovereign_kv_secrets_user ]
+}
 
-#   identity {
-#     type         = "UserAssigned"
-#     identity_ids = [azurerm_user_assigned_identity.uami.id]
-#   }
+resource "azurerm_container_app" "aviator_ui" {
+  provider = azurerm.sub
+  name                         = "ca-${var.prefix}-ui-${var.env}"
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.rg.name
+  revision_mode                = "Single"
 
-#   template {
-#     min_replicas = 0
-#     max_replicas = 1
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.uami.id]
+  }
 
-#     http_scale_rule {
-#       name                = "http-auto-scale"
-#       concurrent_requests = "10"
-#     }
+  template {
+    min_replicas = 0
+    max_replicas = 1
 
-#     container {
-#       name   = "amiasea-api"
-#       image  = "docker.io/library/alpine:latest"
-#       cpu    = 0.25
-#       memory = "0.5Gi"
+    http_scale_rule {
+      name                = "http-auto-scale"
+      concurrent_requests = "10"
+    }
 
-#       env {
-#         name  = "AZURE_CLIENT_ID"
-#         value = azurerm_user_assigned_identity.uami.client_id
-#       }
-#     }
-#   }
+    container {
+      name   = "amiasea-api"
+      image  = "docker.io/library/alpine:latest"
+      cpu    = 0.25
+      memory = "0.5Gi"
 
-#   secret {
-#     name                = "ghcr-pat"
-#     key_vault_secret_id = var.ghcr_pat_versionless_id
-#     identity            = azurerm_user_assigned_identity.uami.id
-#   }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.uami.client_id
+      }
+    }
+  }
 
-#   registry {
-#     server               = "ghcr.io"
-#     username             = "AlfredoBall"
-#     password_secret_name = "ghcr-pat"
-#   }
+  secret {
+    name                = "ghcr-pat"
+    key_vault_secret_id = var.ghcr_pat_versionless_id
+    identity            = azurerm_user_assigned_identity.uami.id
+  }
 
-#   ingress {
-#     external_enabled = true
-#     target_port      = 80
-#     traffic_weight {
-#       percentage      = 100
-#       latest_revision = true
-#     }
-#   }
+  registry {
+    server               = "ghcr.io"
+    username             = "AlfredoBall"
+    password_secret_name = "ghcr-pat"
+  }
 
-#   # IMPORTANT: Terraform will try to replace this if the value changes in KV
-#   lifecycle {
-#     ignore_changes = [
-#       secret,
-#       template[0].container[0].image,
-#     ]
-#   }
+  ingress {
+    external_enabled = true
+    target_port      = 80
+    traffic_weight {
+      percentage      = 100
+      latest_revision = true
+    }
+  }
 
-#   depends_on = [ azurerm_role_assignment.sovereign_kv_secrets_user ]
-# }
+  # IMPORTANT: Terraform will try to replace this if the value changes in KV
+  lifecycle {
+    ignore_changes = [
+      secret,
+      template[0].container[0].image,
+    ]
+  }
+
+  depends_on = [ azurerm_role_assignment.sovereign_kv_secrets_user ]
+}

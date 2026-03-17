@@ -14,7 +14,7 @@ jobs:
       # fail-fast: false # Allows prod to run even if dev fails
       max-parallel: 1
       matrix:
-        env: ["dev", "prod"]
+        env: ["dev"]
     env:
       TF_IN_AUTOMATION: true
       TF_VAR_env: ${{ matrix.env }}

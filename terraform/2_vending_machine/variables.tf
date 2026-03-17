@@ -9,6 +9,12 @@ variable "prefix" {
   default = "amiasea"
 }
 
+variable "domain" {
+  type = string
+  description = "domain"
+  default = "amiasea.com"
+}
+
 variable "env" {
   type        = string
   description = "Deployment environment (e.g., dev, prod)."

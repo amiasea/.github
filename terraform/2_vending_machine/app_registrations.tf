@@ -51,8 +51,11 @@ resource "azuread_application" "aviator_frontend" {
   sign_in_audience = "AzureADMyOrg"
 
   single_page_application {
-    # Replace with your actual frontend URLs
-    redirect_uris = ["http://localhost:3000/", "https://app.amiasea.com/"]
+    redirect_uris = [
+      "http://localhost:3000/",
+      "https://${local.subdomain}${var.domain}/",
+      "https://www.${local.subdomain}${var.domain}/"
+    ]
   }
 
   # This links the Frontend to the API
