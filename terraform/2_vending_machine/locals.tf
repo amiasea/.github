@@ -5,5 +5,5 @@ locals {
     s.subscription_id if s.display_name == "${var.prefix}-${var.env}"
   ][0]
 
-  subdomain = var.env == "prod" ? "aviator" : "aviator-${var.env}."
+  subdomain = var.env == "prod" ? "aviator" : "aviator-${var.env}"
 }

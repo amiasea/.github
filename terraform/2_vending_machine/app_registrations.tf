@@ -53,8 +53,8 @@ resource "azuread_application" "aviator_frontend" {
   single_page_application {
     redirect_uris = [
       "http://localhost:3000/",
-      "https://${local.subdomain}${var.domain}/",
-      "https://www.${local.subdomain}${var.domain}/"
+      "https://${local.subdomain}.${var.domain}/",
+      "https://www.${local.subdomain}.${var.domain}/"
     ]
   }
 

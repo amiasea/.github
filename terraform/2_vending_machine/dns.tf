@@ -7,7 +7,7 @@ data "azurerm_dns_zone" "sovereign" {
 # DNS RECORD: Subdomain CNAME (Dev/Test only)
 resource "azurerm_dns_cname_record" "ui_env" {
   count               = var.env == "prod" ? 0 : 1
-  name                = trimsuffix(local.subdomain, ".")
+  name                = local.subdomain
   zone_name           = data.azurerm_dns_zone.sovereign.name
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
@@ -15,13 +15,13 @@ resource "azurerm_dns_cname_record" "ui_env" {
 
     # This "loops" until nslookup actually finds the record
   provisioner "local-exec" {
-    command = "until nslookup ${trimsuffix(local.subdomain, ".")}.${var.domain}; do sleep 5; done"
+    command = "until nslookup ${local.subdomain}.${var.domain}; do sleep 5; done"
   }
 }
 
 # DNS RECORD: WWW CNAME (All envs)
 resource "azurerm_dns_cname_record" "ui_www" {
-  name                = var.env == "prod" ? "www" : "www.${trimsuffix(local.subdomain, ".")}"
+  name                = var.env == "prod" ? "www" : "www.${local.subdomain}"
   zone_name           = data.azurerm_dns_zone.sovereign.name
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
@@ -29,7 +29,7 @@ resource "azurerm_dns_cname_record" "ui_www" {
 
   # Forces Terraform to wait until public DNS can see this record
   provisioner "local-exec" {
-    command = "until nslookup ${var.env == "prod" ? "www" : "www.${trimsuffix(local.subdomain, ".")}"}.${var.domain}; do echo 'Waiting for www DNS...'; sleep 5; done"
+    command = "until nslookup ${var.env == "prod" ? "www" : "www.${local.subdomain}"}.${var.domain}; do echo 'Waiting for www DNS...'; sleep 5; done"
   }
 }
 
@@ -51,7 +51,7 @@ resource "azurerm_dns_a_record" "ui_root" {
 # Main Domain Binding (e.g., amiasea.com or dev.amiasea.com)
 resource "azurerm_static_web_app_custom_domain" "ui_main" {
   static_web_app_id = azurerm_static_web_app.aviator_ui.id
-  domain_name       = "${local.subdomain}${var.domain}"
+  domain_name       = "${local.subdomain}.${var.domain}"
   
   # Root (Prod) MUST use dns-txt-token; Subdomains use cname-delegation
   validation_type   = var.env == "prod" ? "dns-txt-token" : "cname-delegation"
@@ -65,7 +65,7 @@ resource "azurerm_static_web_app_custom_domain" "ui_main" {
 # WWW Subdomain Binding
 resource "azurerm_static_web_app_custom_domain" "ui_www" {
   static_web_app_id = azurerm_static_web_app.aviator_ui.id
-  domain_name       = "www.${local.subdomain}${var.domain}"
+  domain_name       = "www.${local.subdomain}.${var.domain}"
   validation_type   = "cname-delegation"
 
   depends_on = [azurerm_dns_cname_record.ui_www]

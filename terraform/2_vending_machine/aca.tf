@@ -77,8 +77,8 @@ resource "azurerm_container_app" "aviator_api" {
 
     cors {
       allowed_origins = [
-        "https://${local.subdomain}${var.domain}", 
-        "https://www.${local.subdomain}${var.domain}"
+        "https://${local.subdomain}.${var.domain}", 
+        "https://www.${local.subdomain}.${var.domain}"
       ]
       allowed_methods = ["GET", "POST", "OPTIONS"]
     }

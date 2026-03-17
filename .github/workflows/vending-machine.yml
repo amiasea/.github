@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       # fail-fast: false # Allows prod to run even if dev fails
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         env: ["dev", "prod"]
     env:
