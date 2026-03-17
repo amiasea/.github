@@ -6,16 +6,20 @@ resource "azurerm_static_web_app" "aviator_ui" {
   sku_tier            = "Free"      # The magic words
 }
 
-# 1. Main Domain (e.g., dev.amiasea.com or amiasea.com)
 resource "azurerm_static_web_app_custom_domain" "ui_main" {
   static_web_app_id = azurerm_static_web_app.aviator_ui.id
   domain_name       = "${local.subdomain}${var.domain}"
-  validation_type   = "cname-delegation"
+  
+  # Logic: Use TXT for root (prod), CNAME for subdomains (dev/test)
+  validation_type   = local.subdomain == "" ? "dns-txt-token" : "cname-delegation"
+
+  depends_on = [azurerm_dns_cname_record.ui_env]
 }
 
-# 2. WWW Subdomain (e.g., www.dev.amiasea.com or www.amiasea.com)
 resource "azurerm_static_web_app_custom_domain" "ui_www" {
   static_web_app_id = azurerm_static_web_app.aviator_ui.id
   domain_name       = "www.${local.subdomain}${var.domain}"
   validation_type   = "cname-delegation"
+
+  depends_on = [azurerm_dns_cname_record.ui_www]
 }

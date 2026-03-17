@@ -13,3 +13,12 @@ resource "azurerm_dns_cname_record" "ui_env" {
   ttl                 = 300
   record              = azurerm_static_web_app.aviator_ui.default_host_name
 }
+
+resource "azurerm_dns_cname_record" "ui_www" {
+  # Logic: "www.dev" or "www" for prod
+  name                = local.subdomain == "" ? "www" : "www.${trimsuffix(local.subdomain, ".")}"
+  zone_name           = data.azurerm_dns_zone.sovereign.name
+  resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
+  ttl                 = 300
+  record              = azurerm_static_web_app.aviator_ui.default_host_name
+}
