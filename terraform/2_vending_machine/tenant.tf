@@ -1,4 +1,6 @@
 resource "azapi_resource" "external_tenant" {
+  depends_on = [ azurerm_subscriptions.search ]
+
   # Use the latest preview version you saw in your network tab
   type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2025-08-01-preview"
   
