@@ -53,6 +53,12 @@ resource "azapi_resource_action" "sp_billing_assignment_private" {
   }
 }
 
+resource "azurerm_role_assignment" "delegated_permissions_app_tenant_creator" {
+  scope                = data.azurerm_subscription.amiasea.id
+  role_definition_name = "Tenant Creator"
+  principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
+}
+
 resource "azurerm_role_assignment" "delegated_permissions_app_kv_secrets_user" {
   scope                = azurerm_key_vault.vault.id
   role_definition_name = "Key Vault Secrets User"
