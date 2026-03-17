@@ -12,6 +12,11 @@ resource "azurerm_dns_cname_record" "ui_env" {
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
   record              = azurerm_static_web_app.aviator_ui.default_host_name
+
+    # This "loops" until nslookup actually finds the record
+  provisioner "local-exec" {
+    command = "until nslookup ${trimsuffix(local.subdomain, ".")}.${var.domain}; do sleep 5; done"
+  }
 }
 
 # DNS RECORD: WWW CNAME (All envs)
@@ -21,6 +26,11 @@ resource "azurerm_dns_cname_record" "ui_www" {
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
   record              = azurerm_static_web_app.aviator_ui.default_host_name
+
+  # Forces Terraform to wait until public DNS can see this record
+  provisioner "local-exec" {
+    command = "until nslookup ${var.env == "prod" ? "www" : "www.${trimsuffix(local.subdomain, ".")}"}.${var.domain}; do echo 'Waiting for www DNS...'; sleep 5; done"
+  }
 }
 
 # DNS RECORD: Root Alias A-Record (Prod only)
@@ -31,6 +41,11 @@ resource "azurerm_dns_a_record" "ui_root" {
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
   target_resource_id  = azurerm_static_web_app.aviator_ui.id # Alias to SWA
+
+  # For the root, we check the naked domain (e.g., amiasea.com)
+  provisioner "local-exec" {
+    command = "until nslookup ${var.domain}; do echo 'Waiting for root DNS...'; sleep 5; done"
+  }
 }
 
 # Main Domain Binding (e.g., amiasea.com or dev.amiasea.com)
