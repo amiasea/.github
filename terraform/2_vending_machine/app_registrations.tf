@@ -2,7 +2,7 @@ resource "random_uuid" "api_scope_id" {}
 
 # --- APP REGISTRATION ---
 resource "azuread_application" "aviator_api" {
-  display_name     = "Amiasea Aviator Service - ${env.var}"
+  display_name     = "Amiasea Aviator Service - ${var.env}"
   sign_in_audience = "AzureADMyOrg"
 
   api {
@@ -47,7 +47,7 @@ resource "azuread_service_principal" "aviator_api_sp" {
 # --- Frontend SPA Registration ---
 
 resource "azuread_application" "aviator_frontend" {
-  display_name     = "Amiasea Aviator Frontend - ${env.var}"
+  display_name     = "Amiasea Aviator Frontend - ${var.env}"
   sign_in_audience = "AzureADMyOrg"
 
   single_page_application {
