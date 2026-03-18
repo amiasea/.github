@@ -2,7 +2,7 @@
 resource "azurerm_mssql_server" "sql" {
   provider = azurerm.sub
   name                         = "sql-${var.prefix}-${var.env}"
-  resource_group_name          = azurerm_resource_group.rg.name
+  resource_group_name          = data.azurerm_resource_group.rg.name
   location                     = var.location
   version                      = "12.0"
   azuread_administrator {
@@ -12,7 +12,7 @@ resource "azurerm_mssql_server" "sql" {
     tenant_id = data.azurerm_client_config.current.tenant_id
   }
 
-  depends_on = [ azurerm_resource_group.rg ]
+  depends_on = [ data.azurerm_resource_group.rg ]
 }
 
 # --- 2. SQL DATABASE (Free Tier) ---
