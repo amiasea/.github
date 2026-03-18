@@ -38,6 +38,12 @@ provider "azuread" {
   use_oidc  = true
 }
 
+provider "azuread" {
+  alias = "ciam"
+  tenant_id = local.ciam_tenant_id
+  use_oidc  = true
+}
+
 provider "random" {
   # This is used to generate random suffixes for resource names to ensure uniqueness
 }
