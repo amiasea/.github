@@ -1,5 +1,5 @@
 data "azapi_resource" "ciam_tenant" {
-  type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2023-05-15-preview"
+  type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2025-08-01-preview"
   name      = "aviatortenant${var.env}.onmicrosoft.com"
   parent_id = data.azurerm_resource_group.rg.id
 }
