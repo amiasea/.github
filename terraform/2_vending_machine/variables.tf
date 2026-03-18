@@ -1,5 +1,6 @@
 variable "location" {
   type        = string
+  default     = "centralus"
   description = "Azure region for resource deployment."
 }
 
