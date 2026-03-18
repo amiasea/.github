@@ -8,5 +8,5 @@ locals {
   subdomain = var.env == "prod" ? "aviator" : "aviator-${var.env}"
 
   # Extract the GUID from the azapi response
-  ciam_tenant_id = data.azapi_resource.ciam_tenant.output.properties.tenantId
+  ciam_tenant_id = jsondecode(data.azapi_resource.ciam_tenant.body).properties.tenantId
 }
