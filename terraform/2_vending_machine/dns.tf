@@ -15,7 +15,7 @@ resource "azurerm_dns_cname_record" "ui_env" {
 
     # This "loops" until nslookup actually finds the record
   provisioner "local-exec" {
-    command = "until nslookup ${local.subdomain}.${var.domain}; do sleep 5; done"
+    command = "until nslookup ${local.subdomain}.${var.domain}; do sleep 5; done; echo 'DNS resolved, waiting 60s for SWA propagation...'; sleep 60"
   }
 }
 
@@ -30,7 +30,7 @@ resource "azurerm_dns_cname_record" "ui_www" {
 
   provisioner "local-exec" {
     # Match the name here too
-    command = "until nslookup www.${local.subdomain}.${var.domain}; do echo 'Waiting for www DNS...'; sleep 5; done"
+    command = "until nslookup www.${local.subdomain}.${var.domain}; do echo 'Waiting for www DNS...'; sleep 5; done; echo 'DNS resolved, waiting 60s for SWA propagation...'; sleep 60"
   }
 }
 
@@ -45,7 +45,7 @@ resource "azurerm_dns_a_record" "ui_root" {
 
   # For the root, we check the naked domain (e.g., amiasea.com)
   provisioner "local-exec" {
-    command = "until nslookup ${var.domain}; do echo 'Waiting for root DNS...'; sleep 5; done"
+    command = "until nslookup ${var.domain}; do echo 'Waiting for root DNS...'; sleep 5; done; echo 'DNS resolved, waiting 60s for SWA propagation...'; sleep 60"
   }
 }
 
