@@ -88,3 +88,9 @@ variable "domain" {
   description = "Domain name"
   default     = "amiasea.com"
 }
+
+variable "environments" {
+  type = list(string)
+  description = "Environments"
+  default = ["dev", "prod"]
+}

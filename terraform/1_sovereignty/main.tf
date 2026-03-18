@@ -10,15 +10,13 @@ data "azurerm_subscription" "amiasea" {
   subscription_id = var.subscription_id
 }
 
+data "azurerm_subscriptions" "search" {
+  display_name_prefix = "${var.prefix}-"
+}
+
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location
-}
-
-data "azurerm_billing_mca_account_scope" "billing_scope" {
-  billing_account_name = var.billing_account_id
-  billing_profile_name = var.billing_profile_id
-  invoice_section_name = var.billing_profile_invoice_section_id
 }
 
 resource "azuread_application" "delegated_permissions" {
@@ -33,17 +31,8 @@ resource "azuread_directory_role" "app_admin" {
   display_name = "Application Administrator"
 }
 
-resource "azuread_directory_role" "tenant_creator" {
-  display_name = "Tenant Creator"
-}
-
 resource "azuread_directory_role_assignment" "app_admin" {
   role_id             = azuread_directory_role.app_admin.template_id
-  principal_object_id = azuread_service_principal.delegated_permissions_sp.object_id
-}
-
-resource "azuread_directory_role_assignment" "tenant_creator" {
-  role_id             = azuread_directory_role.tenant_creator.template_id
   principal_object_id = azuread_service_principal.delegated_permissions_sp.object_id
 }
 
@@ -60,6 +49,17 @@ resource "azapi_resource_action" "sp_billing_assignment_private" {
     principalId      = "dd22011c-712e-4738-a1cf-fec01e03e11f"
     roleDefinitionId = "/providers/Microsoft.Billing/billingAccounts/e6f21f58-2e79-4634-a6bc-73667055877b:bbbb9159-b15e-4009-8cd8-73c88b42f6aa_2019-05-31/billingProfiles/MUGO-ML6Y-BG7-PGB/invoiceSections/V4EB-6NK3-PJA-PGB/billingRoleDefinitions/30000000-aaaa-bbbb-cccc-100000000006"
   }
+}
+
+resource "azurerm_role_assignment" "sp_sub_contributor" {
+  for_each = toset(var.environments)
+
+  # Scope is the ENTIRE new subscription
+  scope                = "/subscriptions/${azurerm_subscription.env_sub[each.value].subscription_id}"
+  role_definition_name = "Contributor"
+  
+  # This is the Object ID of your GitHub OIDC Service Principal
+  principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
 }
 
 resource "azurerm_role_assignment" "delegated_permissions_app_kv_secrets_user" {
