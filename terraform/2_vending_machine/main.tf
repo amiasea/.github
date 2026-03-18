@@ -1,5 +1,9 @@
 data "azurerm_client_config" "current" {}
 
+data "azurerm_subscriptions" "search" {
+  display_name_prefix = "${var.prefix}-${var.env}"
+}
+
 data "azurerm_resource_group" "rg" {
   provider   = azurerm.sub
   name       = "rg-${var.prefix}-${var.env}"
