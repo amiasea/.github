@@ -12,8 +12,3 @@ resource "azuread_user_flow_attribute" "organization" {
   data_type    = "string"
   description  = "Company or Org name"
 }
-
-output "ciam_tenant_id" {
-  # Now that we're catching the values, we can parse the string
-  value = jsondecode(data.azapi_resource.ciam_tenant.output).properties.tenantId
-}
