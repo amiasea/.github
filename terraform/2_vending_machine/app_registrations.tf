@@ -2,8 +2,9 @@ resource "random_uuid" "api_scope_id" {}
 
 # --- APP REGISTRATION ---
 resource "azuread_application" "aviator_api" {
-  display_name     = "Amiasea Aviator Service - ${var.env}"
+  display_name     = "Amiasea Aviator Service - ${title(var.env)}"
   sign_in_audience = "AzureADMyOrg"
+  prevent_duplicate_names = true
 
   api {
     requested_access_token_version = 2
@@ -47,8 +48,9 @@ resource "azuread_service_principal" "aviator_api_sp" {
 # --- Frontend SPA Registration ---
 
 resource "azuread_application" "aviator_frontend" {
-  display_name     = "Amiasea Aviator Frontend - ${var.env}"
+  display_name     = "Amiasea Aviator Frontend - ${title(var.env)}"
   sign_in_audience = "AzureADMyOrg"
+  prevent_duplicate_names = true
 
   single_page_application {
     redirect_uris = [
