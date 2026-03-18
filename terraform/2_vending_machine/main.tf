@@ -7,7 +7,6 @@ data "azurerm_subscriptions" "search" {
 data "azurerm_resource_group" "rg" {
   provider   = azurerm.sub
   name       = "rg-${var.prefix}-${var.env}"
-  location   = var.location
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
