@@ -6,12 +6,12 @@
 #   response_export_values = ["*"]
 # }
 
-resource "azuread_user_flow_attribute" "organization" {
-  provider     = azuread.ciam
-  display_name = "Organization"
-  data_type    = "string"
-  description  = "Company or Org name"
-}
+# resource "azuread_user_flow_attribute" "organization" {
+#   provider     = azuread.ciam
+#   display_name = "Organization"
+#   data_type    = "string"
+#   description  = "Company or Org name"
+# }
 
 resource "azapi_resource" "external_tenant" {
 #   for_each  = toset(var.environments)
