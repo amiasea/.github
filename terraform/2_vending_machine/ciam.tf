@@ -16,7 +16,7 @@
 resource "azapi_resource" "external_tenant" {
 #   for_each  = toset(var.environments)
   type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2025-08-01-preview"
-  name      = "aviatortenant${var.env}.onmicrosoft.com"
+  name      = "aviatortenanttest.onmicrosoft.com"
   parent_id = data.azurerm_resource_group.rg.id
   ignore_casing = true
 
@@ -27,7 +27,7 @@ resource "azapi_resource" "external_tenant" {
     sku = { name = "Base", tier = "A0" }
     properties = {
       createTenantProperties = {
-        displayName = "Aviator ${title(var.env)}"
+        displayName = "Aviator Test"
         countryCode = "US"
       },
       initialDomainAdministrator = {
