@@ -74,7 +74,8 @@ resource "azapi_resource_action" "external_tenant_post" {
   resource_id = "/subscriptions/bd0f2cca-0676-49e6-a8c2-cae21ea7216b/resourceGroups/rg-amiasea-dev/providers/Microsoft.AzureActiveDirectory/ciamDirectories/aviatortenanttest.onmicrosoft.com"
   method      = "POST"
 
-  body = jsonencode({
+  # Removed jsonencode() - version 2.0+ requires a raw HCL object
+  body = {
     location = "United States"
     sku = {
       name = "Base"
@@ -91,23 +92,16 @@ resource "azapi_resource_action" "external_tenant_post" {
       initialDomainAdministrator = {
         userPrincipalName = "alfredo.ball@amiasea.onmicrosoft.com"
         displayName       = "Alfredo Ball"
-        # accountEnabled  = true
-        # passwordProfile = {
-        #   password                      = "YourPassword123!"
-        #   forceChangePasswordNextSignIn = true
-        # }
       }
     }
-  })
+  }
 
-  # Export values to capture the resulting tenant details
   response_export_values = [
     "properties.tenantId",
     "properties.domainName",
     "properties.provisioningState"
   ]
 
-  # Matches the specific timeouts from your original resource
   timeouts {
     create = "30m"
     update = "30m"
