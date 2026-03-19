@@ -72,7 +72,7 @@
 resource "azapi_resource_action" "external_tenant_post" {
   type        = "Microsoft.AzureActiveDirectory/ciamDirectories@2023-05-17-preview"
   resource_id = "/subscriptions/bd0f2cca-0676-49e6-a8c2-cae21ea7216b/resourceGroups/rg-amiasea-dev/providers/Microsoft.AzureActiveDirectory/ciamDirectories/aviatortenanttest.onmicrosoft.com"
-  method      = "POST"
+  method      = "PUT"
 
   # Removed jsonencode() - version 2.0+ requires a raw HCL object
   body = {
