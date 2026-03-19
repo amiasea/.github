@@ -15,7 +15,7 @@
 
 resource "azapi_resource" "external_tenant" {
 #   for_each  = toset(var.environments)
-  type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2025-08-01-preview"
+  type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2023-05-17-preview"
   name      = "aviatortenanttest.onmicrosoft.com"
   parent_id = data.azurerm_resource_group.rg.id
   ignore_casing = true
@@ -23,24 +23,38 @@ resource "azapi_resource" "external_tenant" {
   schema_validation_enabled = false
   location                  = "United States"
 
-  body = {
-    sku = { name = "Base", tier = "A0" }
-    properties = {
-      createTenantProperties = {
-        displayName = "Aviator Test"
-        countryCode = "US"
-      },
-      initialDomainAdministrator = {
-        userPrincipalName = "alfredo.ball@amiasea.onmicrosoft.com"
-        displayName       = "Alfredo Ball"
-        # passwordProfile = {
-        #   password                      = var.initial_domain_administrator.password
-        #   forceChangePasswordNextSignIn = true
-        # }
-        # accountEnabled = true
+    body = merge(
+    {
+      properties = merge(
+        {
+          createTenantProperties = {
+            countryCode = "US"
+            displayName = "Aviator Test"
+          }
+
+          billingConfig = {
+            billingType = "MAU"
+          }
+        },
+        {
+            initialDomainAdministrator = {
+                userPrincipalName = "alfredo.ball@amiasea.onmicrosoft.com"
+                displayName       = "Alfredo Ball"
+                # passwordProfile = {
+                #     password                      = var.initial_domain_administrator.password
+                #     forceChangePasswordNextSignIn = true
+                # }
+                # accountEnabled = true
+            }
+        }
+      )
+
+      sku = {
+        name = "Base"
+        tier = "A0"
       }
     }
-  }
+  )
 
   timeouts {
     create = "30m"
