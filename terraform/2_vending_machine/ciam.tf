@@ -17,7 +17,7 @@ resource "azapi_resource" "external_tenant" {
 #   for_each  = toset(var.environments)
   type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2025-08-01-preview"
   name      = "aviatortenant${var.env}.onmicrosoft.com"
-  parent_id = azapi_resource.rg_env[var.env].id
+  parent_id = data.azurerm_resource_group.rg.id
   ignore_casing = true
 
   schema_validation_enabled = false
