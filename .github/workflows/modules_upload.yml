@@ -1,4 +1,4 @@
-name: Auto-Major Publish Sweep
+name: Modules Upload
 
 on:
   workflow_dispatch:
