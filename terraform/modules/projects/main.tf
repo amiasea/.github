@@ -21,22 +21,17 @@ resource "github_repository" "project_repos" {
   source_owner = "amiasea"
 }
 
-data "github_app_installation" "hcp_terraform" {
-  # For the official HCP Terraform App, the slug is "terraform-cloud"
-  slug = "terraform-cloud"
+# This is now a TFE data source
+data "tfe_github_app_installation" "hcp_terraform" {
+  name = "amiasea"
 }
 
 resource "github_app_installation_repositories" "hcp_tf_permissions" {
-  installation_id = data.github_app_installation.hcp_terraform.id
+  # The GitHub provider resource uses the ID found by the TFE data source
+  installation_id = data.tfe_github_app_installation.hcp_terraform.installation_id
 
-  # Combine the template repo and the new factory repos
   selected_repositories = concat(
     [var.template_repo_name],
     [for repo in github_repository.project_repos : repo.name]
   )
-
-  # Ensure the repos exist before trying to attach them to the App
-  depends_on = [
-    github_repository.project_repos
-  ]
 }

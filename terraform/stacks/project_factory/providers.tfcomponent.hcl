@@ -1,11 +1,13 @@
-# 1. Define which provider plugin to use
 required_providers {
   github = {
     source  = "integrations/github"
     version = "~> 6.0"
   }
+  tfe = {
+    source  = "hashicorp/tfe"
+    version = "~> 0.75.0"
+  }
 }
 
-# 2. Instantiate the provider and give it a local name (e.g., "main")
-provider "github" "main" {
-}
+provider "github" "main" {}
+provider "tfe" "main" {}

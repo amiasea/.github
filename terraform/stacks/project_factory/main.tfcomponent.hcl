@@ -14,5 +14,8 @@ component "factory" {
     projects      = var.project_list
   }
 
-  providers = { github = provider.github.main }
+  providers = {
+    github = provider.github.main
+    tfe    = provider.tfe.main
+  }
 }
