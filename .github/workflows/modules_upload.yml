@@ -67,7 +67,7 @@ jobs:
             
             echo "LOG: Ensuring Registry Shell exists for $MODULE_NAME..."
             # FIX: Path updated to /api/v2/organizations/:org/registry-modules
-            SHELL_URL="https://app.terraform.io"
+            SHELL_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
             SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
@@ -77,7 +77,7 @@ jobs:
 
             echo "LOG: Fetching current version metadata..."
             # FIX: Path updated to include /api/v2/organizations/.../registry-modules/private/...
-            META_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
+            META_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
             MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
             
             # Use jq to check for error or extract version
@@ -94,7 +94,7 @@ jobs:
 
             echo "LOG: Requesting upload URL for v$NEXT_VERSION..."
             # FIX: Path updated to include /api/v2/organizations/.../versions
-            VER_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
+            VER_URL="/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
