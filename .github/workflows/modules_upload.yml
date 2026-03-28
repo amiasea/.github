@@ -65,12 +65,11 @@ jobs:
             DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
             if [ ! -d "$DIR" ]; then continue; fi
 
-            # Define Improved URLs
             SHELL_URL="${{ env.BASE_URL }}"
             META_URL="${{ env.BASE_URL }}/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
             VER_URL="$META_URL/versions"
 
-            echo "LOG: [1/5] Validating Module..."
+            echo "LOG: [1/6] Validating Module..."
             cd "$DIR"
             terraform init -backend=false
             if ! terraform validate; then
@@ -79,7 +78,14 @@ jobs:
             fi
             cd - > /dev/null
 
-            echo "LOG: [2/5] Ensuring Registry Shell exists..."
+            echo "LOG: [2/6] Checking for README.md..."
+            if [ ! -f "$DIR/README.md" ]; then
+              echo "ERROR: Missing README.md in $DIR. Documentation is mandatory for PMR."
+              continue
+            fi
+            echo "LOG: README.md found."
+
+            echo "LOG: [3/6] Ensuring Registry Shell exists..."
             SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
@@ -89,7 +95,7 @@ jobs:
             HTTP_STATUS=$(echo "$SHELL_RESP" | grep "HTTP_STATUS" | cut -d' ' -f2)
             [ "$HTTP_STATUS" == "422" ] && echo "LOG: Shell already exists." || echo "LOG: Shell created."
 
-            echo "LOG: [3/5] Fetching metadata from $META_URL"
+            echo "LOG: [4/6] Fetching current version metadata..."
             MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
             
             LATEST_VERSION=$(echo "$MODULE_META" | jq -r '
@@ -104,17 +110,17 @@ jobs:
             
             if [[ "$PR_TITLE" == *"feat"* ]]; then
               NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
-              LOG_MSG="Feature detected (Minor bump)"
+              LOG_MSG="Feature bump"
             elif [[ "$PR_TITLE" == *"fix"* ]]; then
               NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
-              LOG_MSG="Fix detected (Patch bump)"
+              LOG_MSG="Fix bump"
             else
               NEXT_VERSION="$((MAJOR + 1)).0.0"
-              LOG_MSG="Default (Major bump)"
+              LOG_MSG="Major bump"
             fi
             echo "LOG: $LOG_MSG -> v$NEXT_VERSION"
 
-            echo "LOG: [4/5] Requesting upload URL from $VER_URL"
+            echo "LOG: [5/6] Requesting upload URL..."
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
@@ -124,7 +130,7 @@ jobs:
             UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // .data.attributes."upload-url" // empty')
 
             if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
-              echo "::group::[5/5] Packaging & Uploading"
+              echo "::group::[6/6] Packaging & Uploading"
               cd "$DIR"
               tar -czf ../../../module_upload.tar.gz .
               cd - > /dev/null
@@ -134,15 +140,11 @@ jobs:
                    --data-binary @module_upload.tar.gz \
                    "$UPLOAD_URL")
               
-              echo "ARCHIVIST RESPONSE: $UPLOAD_RESULT"
               rm module_upload.tar.gz
               echo "::endgroup::"
-              echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION is now live."
+              echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION live."
             else
-              echo "ERROR: Upload request failed."
-              echo "--- DEBUG ---"
-              echo "Registry Meta: $MODULE_META"
-              echo "Version Request: $RESPONSE"
+              echo "ERROR: No Upload URL. Resp: $RESPONSE"
             fi
             echo "----------------------------------------------------------------"
           done

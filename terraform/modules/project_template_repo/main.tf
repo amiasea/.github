@@ -2,7 +2,7 @@ resource "github_repository" "project_template" {
   name        = "project-repo-template"
   description = "Template for Terraform Project"
   visibility  = "private"
-  #   topics      = each.value.topics
+
   is_template = true
 
   security_and_analysis {
@@ -14,4 +14,3 @@ resource "github_repository" "project_template" {
   auto_init         = true
   source_owner      = "amiasea"
 }
-
