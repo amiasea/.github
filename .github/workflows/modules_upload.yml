@@ -94,7 +94,7 @@ jobs:
 
             echo "LOG: Requesting upload URL for v$NEXT_VERSION..."
             # FIX: Path updated to include /api/v2/organizations/.../versions
-            VER_URL="/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
+            VER_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
