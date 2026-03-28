@@ -13,9 +13,11 @@ component "template" {
 component "factory" {
   source = "app.terraform.io/amiasea/projects/github"
   version = "~> 1.0.0"
+  
   inputs = {
     template_name = component.template.outputs.repository_name
     projects      = var.project_list
   }
+
   providers = { github = provider.github.main }
 }

@@ -11,6 +11,9 @@ jobs:
     # ONLY runs if Modules succeeded OR if you triggered it manually
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     env:
       TF_ORG: "amiasea"
       TF_PROJECT: "amiasea"
