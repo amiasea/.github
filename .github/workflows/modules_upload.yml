@@ -8,7 +8,7 @@ on:
 
 jobs:
   sweep-and-increment:
-    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -17,14 +17,11 @@ jobs:
       TF_ORG: "amiasea"
       TF_PROVIDER: "github"
       MODULES_ROOT: "terraform/modules"
-      BASE_URL: "https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
       PR_TITLE: ${{ github.event.pull_request.title }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2 
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -38,64 +35,49 @@ jobs:
 
       - name: Fetch TF Token
         run: |
-          echo "::group::Fetching Token"
           RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
           echo "::add-mask::$RAW_TOKEN"
           echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
-          echo "::endgroup::"
 
-      - name: Detect, Validate and Publish
+      - name: Sync All Modules
         run: |
-          echo "::group::Git Discovery"
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
-          CHANGED_MODULES=$(echo "$CHANGED_FILES" | grep "^${{ env.MODULES_ROOT }}/" | cut -d/ -f3 | sort -u)
-          
-          if [ -z "$CHANGED_MODULES" ]; then
-            echo "LOG: No module changes detected. Exiting."
-            exit 0
-          fi
-          echo "LOG: Modules identified: $CHANGED_MODULES"
+          echo "::group::Module Discovery"
+          ALL_MODULES=$(find ${{ env.MODULES_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
+          echo "Modules found: $ALL_MODULES"
           echo "::endgroup::"
 
-          for MODULE_NAME in $CHANGED_MODULES; do
+          for MODULE_NAME in $ALL_MODULES; do
             echo "################################################################"
-            echo " PROCESSING: $MODULE_NAME"
+            echo " SYNCING MODULE: $MODULE_NAME"
             echo "################################################################"
             
             DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
-            if [ ! -d "$DIR" ]; then continue; fi
-
-            SHELL_URL="${{ env.BASE_URL }}"
-            META_URL="${{ env.BASE_URL }}/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
+            BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
+            META_URL="$BASE_URL/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
             VER_URL="$META_URL/versions"
 
-            echo "LOG: [1/6] Validating Module..."
-            cd "$DIR"
-            terraform init -backend=false
-            if ! terraform validate; then
-              echo "ERROR: Validation failed for $MODULE_NAME. Skipping."
-              cd - > /dev/null; continue
-            fi
-            cd - > /dev/null
-
-            echo "LOG: [2/6] Checking for README.md..."
-            if [ ! -f "$DIR/README.md" ]; then
-              echo "ERROR: Missing README.md in $DIR. Documentation is mandatory for PMR."
+            # 1. Validate mandatory files
+            if [[ ! -f "$DIR/main.tf" || ! -f "$DIR/README.md" ]]; then
+              echo "SKIP: $MODULE_NAME - Missing main.tf or README.md."
               continue
             fi
-            echo "LOG: README.md found."
 
-            echo "LOG: [3/6] Ensuring Registry Shell exists..."
-            SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
+            # 2. Local Validation
+            cd "$DIR"
+            terraform init -backend=false && terraform validate || { echo "ERROR: Validation failed"; cd -; continue; }
+            
+            # 3. Calculate local hash (Detects real changes)
+            LOCAL_HASH=$(find . -type f -not -path '*/.*' -exec md5sum {} + | sort | md5sum | cut -d' ' -f1)
+            cd - > /dev/null
+
+            # 4. Ensure Registry Shell exists
+            curl -s -o /dev/null --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
-                 --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"$MODULE_NAME\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\",\"no-code\":false}}}" \
-                 "$SHELL_URL")
-            
-            HTTP_STATUS=$(echo "$SHELL_RESP" | grep "HTTP_STATUS" | cut -d' ' -f2)
-            [ "$HTTP_STATUS" == "422" ] && echo "LOG: Shell already exists." || echo "LOG: Shell created."
+                 --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"$MODULE_NAME\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\"}}}" \
+                 "$BASE_URL"
 
-            echo "LOG: [4/6] Fetching current version metadata..."
+            # 5. Fetch Version & Check for drift
             MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
             
             LATEST_VERSION=$(echo "$MODULE_META" | jq -r '
@@ -105,46 +87,38 @@ jobs:
                 .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last 
               else "0.0.0" end')
             
-            [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+            [ "$LATEST_VERSION" == "null" ] && LATEST_VERSION="0.0.0"
             
+            # 6. Increment Logic
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
             if [[ "$PR_TITLE" == *"feat"* ]]; then
               NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
-              LOG_MSG="Feature bump"
             elif [[ "$PR_TITLE" == *"fix"* ]]; then
               NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
-              LOG_MSG="Fix bump"
             else
               NEXT_VERSION="$((MAJOR + 1)).0.0"
-              LOG_MSG="Major bump"
             fi
-            echo "LOG: $LOG_MSG -> v$NEXT_VERSION"
 
-            echo "LOG: [5/6] Requesting upload URL..."
+            # 7. Upload only if new or forced
+            echo "LOG: Latest: $LATEST_VERSION | Next: $NEXT_VERSION"
+            
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
                  --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
                  "$VER_URL")
 
-            UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // .data.attributes."upload-url" // empty')
+            UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // empty')
 
-            if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
-              echo "::group::[6/6] Packaging & Uploading"
+            if [ -n "$UPLOAD_URL" ]; then
               cd "$DIR"
               tar -czf ../../../module_upload.tar.gz .
+              curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
+              rm ../../../module_upload.tar.gz
               cd - > /dev/null
-              
-              UPLOAD_RESULT=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --request PUT \
-                   --header "Content-Type: application/octet-stream" \
-                   --data-binary @module_upload.tar.gz \
-                   "$UPLOAD_URL")
-              
-              rm module_upload.tar.gz
-              echo "::endgroup::"
-              echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION live."
+              echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION uploaded."
             else
-              echo "ERROR: No Upload URL. Resp: $RESPONSE"
+              echo "INFO: $MODULE_NAME version $NEXT_VERSION already exists or no change needed."
             fi
             echo "----------------------------------------------------------------"
           done

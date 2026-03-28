@@ -21,13 +21,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.14.8"
+        # We removed fetch-depth because we are no longer relying on git diff
 
       - name: 'Az CLI Login'
         uses: azure/login@v2
@@ -42,47 +36,53 @@ jobs:
           echo "::add-mask::$RAW_TOKEN"
           echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
 
-      - name: Detect and Process Stacks
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.8"
+          cli_config_credentials_token: ${{ env.TF_TOKEN_app_terraform_io }}
+
+      - name: Sync All Stacks from Filesystem
         run: |
           echo "::group::Stack Discovery"
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
-          echo "Files changed: $CHANGED_FILES"
+          # Find all directories that contain at least one stack file
+          # This replaces 'git diff' entirely
+          ALL_STACKS=$(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
           
-          CHANGED_STACKS=$(echo "$CHANGED_FILES" | grep "^${{ env.STACKS_ROOT }}/" | cut -d/ -f3 | sort -u)
-          
-          if [ -z "$CHANGED_STACKS" ]; then
-            echo "LOG: No stack changes detected. Exiting."
+          if [ -z "$ALL_STACKS" ]; then
+            echo "LOG: No stack directories found. Exiting."
             exit 0
           fi
-          echo "Stacks identified for update: $CHANGED_STACKS"
+          echo "Stacks to be synchronized: $ALL_STACKS"
           echo "::endgroup::"
 
-          for STACK_NAME in $CHANGED_STACKS; do
+          for STACK_NAME in $ALL_STACKS; do
             echo "################################################################"
-            echo " PROCESSING STACK: $STACK_NAME"
+            echo " SYNCING STACK: $STACK_NAME"
             echo "################################################################"
             
             STACK_DIR="${{ env.STACKS_ROOT }}/$STACK_NAME"
             
-            if [[ ! -f "$STACK_DIR/main.tfcomponent.hcl" && ! -f "$STACK_DIR/providers.tfcomponent.hcl" ]]; then
-              echo "SKIP: $STACK_NAME - No component files found."
+            if [[ ! -f "$STACK_DIR/main.tfcomponent.hcl" ]]; then
+              echo "SKIP: $STACK_NAME - Missing main.tfcomponent.hcl."
               continue
             fi
 
             cd "$STACK_DIR"
 
-            echo "LOG: [1/3] Initializing and Validating Stack..."
+            echo "LOG: [1/3] Initializing & Validating..."
             terraform stacks init
             terraform stacks validate
 
             echo "LOG: [2/3] Ensuring Stack Shell exists..."
+            # If the shell is missing, this creates it. If it exists, it continues.
             terraform stacks create \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
-              -stack-name "$STACK_NAME" || echo "INFO: Stack already exists."
+              -stack-name "$STACK_NAME" || echo "INFO: Shell already exists for $STACK_NAME"
 
-            echo "LOG: [3/3] Uploading Configuration (Speculative Only)..."
-            # We moved the 'Upload' logic into the bash loop properly
+            echo "LOG: [3/3] Forcing Configuration Upload (Speculative)..."
+            # Since we aren't checking diffs, this always uploads the current local state.
             terraform stacks configuration upload \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
@@ -90,10 +90,10 @@ jobs:
               -speculative
 
             cd - > /dev/null
-            echo "SUCCESS: $STACK_NAME processing complete."
+            echo "SUCCESS: $STACK_NAME is up to date."
             echo "----------------------------------------------------------------"
           done
 
       - name: Success Summary
         run: |
-          echo "SUCCESS: All modified stacks have been uploaded as speculative versions."
+          echo "SUCCESS: All stacks in the repository have been synchronized with HCP Terraform."

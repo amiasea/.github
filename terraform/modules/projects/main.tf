@@ -17,7 +17,7 @@ resource "github_repository" "project_repos" {
     repository           = var.template_repo_name
     include_all_branches = true
   }
-
+  
   auto_init         = false
   source_owner      = "amiasea"
 }
