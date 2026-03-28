@@ -13,6 +13,6 @@ component "factory" {
     template_repo_name = component.template.outputs.repository_name
     projects      = var.project_list
   }
-
+  
   providers = { github = provider.github.main }
 }

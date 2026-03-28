@@ -17,7 +17,6 @@ jobs:
       TF_ORG: "amiasea"
       TF_PROJECT: "amiasea"
       STACKS_ROOT: "terraform/stacks"
-      # ENABLE DETAILED LOGGING
       TF_LOG: "DEBUG" 
 
     steps:
@@ -45,6 +44,7 @@ jobs:
 
       - name: Sync All Stacks from Filesystem
         run: |
+          # Use find to locate all directories in the stacks root
           for STACK_NAME in $(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;) ; do
             echo "################################################################"
             echo " SYNCING STACK: $STACK_NAME"
@@ -54,37 +54,42 @@ jobs:
             cd "$STACK_DIR"
 
             # 1. PRE-UPLOAD AUDIT
-            echo "LOG: Verifying local file structure..."
-            ls -R
-            HCL_FILES=$(ls -1 *.hcl 2>/dev/null)
-            echo "LOG: Found HCL files: $HCL_FILES"
+            echo "LOG: Current files in $STACK_NAME:"
+            ls -F
 
-            # 2. INIT & VALIDATE
+            # 2. INIT & VALIDATE (Required to ensure HCL is correct)
+            echo "LOG: [1/3] Initializing & Validating..."
             terraform stacks init
             terraform stacks validate
 
-            # 3. ENSURE SHELL
+            # 3. THE "CLEAN PACK" TRICK
+            # We MUST remove .terraform before upload because the CLI's internal 
+            # packager will include it, often obscuring the root HCL files.
+            echo "LOG: Cleaning up provider binaries to ensure a clean upload..."
+            rm -rf .terraform .terraform.lock.hcl
+
+            # 4. ENSURE SHELL
+            echo "LOG: [2/3] Ensuring Stack Shell exists..."
             terraform stacks create \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
               -stack-name "$STACK_NAME" || echo "INFO: Shell exists."
 
-            # 4. MANUAL PACK & VERIFY ZIP CONTENT
-            echo "LOG: Creating manual tarball for $STACK_NAME..."
-            tar --exclude='.terraform' --exclude='.git' -czf ../../../stack_upload.tar.gz .
-            
-            echo "LOG: VERIFYING TARBALL ROOT CONTENT (MANDATORY FOR STACKS):"
-            tar -tvf ../../../stack_upload.tar.gz | head -n 10
-
-            # 5. UPLOAD WITH DEBUG LOGS
-            echo "LOG: Uploading configuration version with TF_LOG=DEBUG..."
+            # 5. UPLOAD (Using native CLI packaging from the stack root)
+            echo "LOG: [3/3] Uploading configuration (Speculative)..."
+            # We removed the -file flag as it is not supported by 'stacks configuration upload'
             terraform stacks configuration upload \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
               -stack-name "$STACK_NAME" \
-              -file ../../../stack_upload.tar.gz \
               -speculative
 
-            rm ../../../stack_upload.tar.gz
+            # Return to repository root for next iteration
             cd - > /dev/null
+            echo "SUCCESS: $STACK_NAME processed."
+            echo "----------------------------------------------------------------"
           done
+
+      - name: Success Summary
+        run: |
+          echo "SUCCESS: All stacks processed. Check the HCP UI for speculative plans."
