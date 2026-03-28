@@ -6,14 +6,17 @@ variable "project_list" {
 }
 
 variable "gh_app_id" {
-    type = string
+  type = string
+  default = "2670685"
 }
 
 variable "gh_app_installation" {
-    type = string
+  type = string
+  default = "105130264"
 }
 
-variable "github_jwt" {
+variable "gh_app_pem_file" {
   type      = string
-  ephemeral = true  # Mark as ephemeral for security in Stacks
+  sensitive = true
+  ephemeral = true # Won't be stored in state
 }
