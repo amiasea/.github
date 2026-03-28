@@ -11,7 +11,6 @@ component "factory" {
  
   inputs = {
     template_repo_name = component.template.outputs.repository_name
-    gh_app_id = componen
     projects      = var.project_list
   }
 
