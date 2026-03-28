@@ -8,7 +8,6 @@ on:
 
 jobs:
   deploy-stacks:
-    # ONLY runs if Modules succeeded OR if you triggered it manually
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
@@ -23,7 +22,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # Required for git diff to work
+          fetch-depth: 2
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -46,14 +45,13 @@ jobs:
       - name: Detect and Process Stacks
         run: |
           echo "::group::Stack Discovery"
-          # Identify changed files and extract the stack folder name
           CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
-          echo "Files changed in this push: $CHANGED_FILES"
+          echo "Files changed: $CHANGED_FILES"
           
           CHANGED_STACKS=$(echo "$CHANGED_FILES" | grep "^${{ env.STACKS_ROOT }}/" | cut -d/ -f3 | sort -u)
           
           if [ -z "$CHANGED_STACKS" ]; then
-            echo "LOG: No stack changes detected in ${{ env.STACKS_ROOT }}. Exiting."
+            echo "LOG: No stack changes detected. Exiting."
             exit 0
           fi
           echo "Stacks identified for update: $CHANGED_STACKS"
@@ -66,7 +64,6 @@ jobs:
             
             STACK_DIR="${{ env.STACKS_ROOT }}/$STACK_NAME"
             
-            # Ensure the directory actually contains stack files before proceeding
             if [[ ! -f "$STACK_DIR/main.tfcomponent.hcl" && ! -f "$STACK_DIR/providers.tfcomponent.hcl" ]]; then
               echo "SKIP: $STACK_NAME - No component files found."
               continue
@@ -79,22 +76,18 @@ jobs:
             terraform stacks validate
 
             echo "LOG: [2/3] Ensuring Stack Shell exists..."
-            # Create shell if missing; || echo ensures we don't fail if it already exists
             terraform stacks create \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
-              -stack-name "$STACK_NAME" || echo "INFO: Stack '$STACK_NAME' shell already exists."
+              -stack-name "$STACK_NAME" || echo "INFO: Stack already exists."
 
-          - name: Upload Configuration (Speculative Only)
-            working-directory: ${{ env.STACK_DIR }}
-            run: |
-              echo "LOG: Uploading configuration version v${{ github.run_number }}..."
-              # Adding -speculative ensures it creates a version and a plan, but NO deployment
-              terraform stacks configuration upload \
-                -organization-name ${{ env.TF_ORG }} \
-                -project-name "${{ env.TF_PROJECT }}" \
-                -stack-name "$STACK_NAME" \
-                -speculative
+            echo "LOG: [3/3] Uploading Configuration (Speculative Only)..."
+            # We moved the 'Upload' logic into the bash loop properly
+            terraform stacks configuration upload \
+              -organization-name ${{ env.TF_ORG }} \
+              -project-name "${{ env.TF_PROJECT }}" \
+              -stack-name "$STACK_NAME" \
+              -speculative
 
             cd - > /dev/null
             echo "SUCCESS: $STACK_NAME processing complete."
@@ -103,4 +96,4 @@ jobs:
 
       - name: Success Summary
         run: |
-          echo "SUCCESS: All modified stacks have been uploaded and deployment runs triggered."
+          echo "SUCCESS: All modified stacks have been uploaded as speculative versions."

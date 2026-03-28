@@ -3,6 +3,7 @@ deployment "projects" {
     project_list = [
     ]
   }
+  
   variables = {
     GITHUB_OWNER = "amiasea"
   }
