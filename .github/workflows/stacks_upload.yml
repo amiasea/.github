@@ -1,0 +1,103 @@
+name: Stacks Upload
+
+on:
+  workflow_run:
+    workflows: ["Modules Upload"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  deploy-stacks:
+    # ONLY runs if Modules succeeded OR if you triggered it manually
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      TF_ORG: "amiasea"
+      TF_PROJECT: "amiasea"
+      STACKS_ROOT: "terraform/stacks"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Required for git diff to work
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.8"
+
+      - name: 'Az CLI Login'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch TF Token
+        run: |
+          RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
+          echo "::add-mask::$RAW_TOKEN"
+          echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
+
+      - name: Detect and Process Stacks
+        run: |
+          echo "::group::Stack Discovery"
+          # Identify changed files and extract the stack folder name
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          echo "Files changed in this push: $CHANGED_FILES"
+          
+          CHANGED_STACKS=$(echo "$CHANGED_FILES" | grep "^${{ env.STACKS_ROOT }}/" | cut -d/ -f3 | sort -u)
+          
+          if [ -z "$CHANGED_STACKS" ]; then
+            echo "LOG: No stack changes detected in ${{ env.STACKS_ROOT }}. Exiting."
+            exit 0
+          fi
+          echo "Stacks identified for update: $CHANGED_STACKS"
+          echo "::endgroup::"
+
+          for STACK_NAME in $CHANGED_STACKS; do
+            echo "################################################################"
+            echo " PROCESSING STACK: $STACK_NAME"
+            echo "################################################################"
+            
+            STACK_DIR="${{ env.STACKS_ROOT }}/$STACK_NAME"
+            
+            # Ensure the directory actually contains stack files before proceeding
+            if [[ ! -f "$STACK_DIR/main.tfcomponent.hcl" && ! -f "$STACK_DIR/providers.tfcomponent.hcl" ]]; then
+              echo "SKIP: $STACK_NAME - No component files found."
+              continue
+            fi
+
+            cd "$STACK_DIR"
+
+            echo "LOG: [1/3] Initializing and Validating Stack..."
+            terraform stacks init
+            terraform stacks validate
+
+            echo "LOG: [2/3] Ensuring Stack Shell exists..."
+            # Create shell if missing; || echo ensures we don't fail if it already exists
+            terraform stacks create \
+              -organization-name ${{ env.TF_ORG }} \
+              -project-name "${{ env.TF_PROJECT }}" \
+              -stack-name "$STACK_NAME" || echo "INFO: Stack '$STACK_NAME' shell already exists."
+
+          - name: Upload Configuration (Speculative Only)
+            working-directory: ${{ env.STACK_DIR }}
+            run: |
+              echo "LOG: Uploading configuration version v${{ github.run_number }}..."
+              # Adding -speculative ensures it creates a version and a plan, but NO deployment
+              terraform stacks configuration upload \
+                -organization-name ${{ env.TF_ORG }} \
+                -project-name "${{ env.TF_PROJECT }}" \
+                -stack-name "$STACK_NAME" \
+                -speculative
+
+            cd - > /dev/null
+            echo "SUCCESS: $STACK_NAME processing complete."
+            echo "----------------------------------------------------------------"
+          done
+
+      - name: Success Summary
+        run: |
+          echo "SUCCESS: All modified stacks have been uploaded and deployment runs triggered."
