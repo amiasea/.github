@@ -66,6 +66,7 @@ jobs:
             fi
             
             echo "LOG: Ensuring Registry Shell exists for $MODULE_NAME..."
+            # FIX: Path updated to /api/v2/organizations/:org/registry-modules
             SHELL_URL="https://app.terraform.io"
             SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
@@ -75,13 +76,15 @@ jobs:
             echo "API RESPONSE (Shell): $SHELL_RESP"
 
             echo "LOG: Fetching current version metadata..."
+            # FIX: Path updated to include /api/v2/organizations/.../registry-modules/private/...
             META_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
             MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
             
-            LATEST_VERSION=$(echo $MODULE_META | jq -r '.data.attributes."latest-version" // "0.0.0"')
+            # Use jq to check for error or extract version
+            LATEST_VERSION=$(echo "$MODULE_META" | jq -r '.data.attributes."latest-version" // "0.0.0"')
             echo "LOG: Current latest version in Registry: $LATEST_VERSION"
             
-            if [ "$LATEST_VERSION" == "0.0.0" ] || [ "$LATEST_VERSION" == "null" ]; then
+            if [ "$LATEST_VERSION" == "0.0.0" ] || [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ]; then
               NEXT_VERSION="1.0.0"
             else
               MAJOR=$(echo $LATEST_VERSION | cut -d. -f1)
@@ -90,6 +93,7 @@ jobs:
             echo "LOG: Calculated next version: $NEXT_VERSION"
 
             echo "LOG: Requesting upload URL for v$NEXT_VERSION..."
+            # FIX: Path updated to include /api/v2/organizations/.../versions
             VER_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
@@ -97,9 +101,10 @@ jobs:
                  --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
                  "$VER_URL")
 
-            UPLOAD_URL=$(echo $RESPONSE | jq -r '.data.links.upload // empty')
+            # Extract upload link (note: depending on API response, it might be in .data.links.upload or .data.attributes.upload-url)
+            UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // .data.attributes."upload-url" // empty')
 
-            if [ -n "$UPLOAD_URL" ]; then
+            if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
               echo "LOG: Upload URL generated successfully."
               
               echo "::group::Packaging Module Artifact"
@@ -111,6 +116,7 @@ jobs:
               echo "::endgroup::"
 
               echo "LOG: Uploading to HCP Archivist..."
+              # Note: Archivist handles binary data, content-type is binary/octet-stream
               UPLOAD_RESULT=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --request PUT \
                    --header "Content-Type: application/octet-stream" \
                    --data-binary @module_upload.tar.gz \
