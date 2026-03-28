@@ -1,10 +1,14 @@
 name: Modules Upload
 
 on:
+  pull_request:
+    types: [closed]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   sweep-and-increment:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -13,12 +17,17 @@ jobs:
       TF_ORG: "amiasea"
       TF_PROVIDER: "aws"
       MODULES_ROOT: "terraform/modules"
+      BASE_URL: "https://app.terraform.io"
+      PR_TITLE: ${{ github.event.pull_request.title }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2 
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: 'Az CLI Login'
         uses: azure/login@v2
@@ -28,29 +37,24 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Fetch TF Token
-        id: fetch-token
         run: |
-          echo "::group::Fetching Token from Key Vault"
+          echo "::group::Fetching Token"
           RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
           echo "::add-mask::$RAW_TOKEN"
           echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
-          echo "Token fetched and masked successfully."
           echo "::endgroup::"
 
-      - name: Detect and Publish
+      - name: Detect, Validate and Publish
         run: |
           echo "::group::Git Discovery"
           CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
-          echo "Files changed in this push:"
-          echo "$CHANGED_FILES"
-          
           CHANGED_MODULES=$(echo "$CHANGED_FILES" | grep "^${{ env.MODULES_ROOT }}/" | cut -d/ -f3 | sort -u)
           
           if [ -z "$CHANGED_MODULES" ]; then
-            echo "LOG: No module changes detected in ${{ env.MODULES_ROOT }}. Exiting."
+            echo "LOG: No module changes detected. Exiting."
             exit 0
           fi
-          echo "LOG: Modules identified for update: $CHANGED_MODULES"
+          echo "LOG: Modules identified: $CHANGED_MODULES"
           echo "::endgroup::"
 
           for MODULE_NAME in $CHANGED_MODULES; do
@@ -59,14 +63,23 @@ jobs:
             echo "################################################################"
             
             DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
+            if [ ! -d "$DIR" ]; then continue; fi
 
-            if ! ls "$DIR"/*.tf >/dev/null 2>&1; then
-              echo "LOG: Skipping $MODULE_NAME - No .tf files found in directory."
-              continue
+            # Define Improved URLs
+            SHELL_URL="${{ env.BASE_URL }}"
+            META_URL="${{ env.BASE_URL }}/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
+            VER_URL="$META_URL/versions"
+
+            echo "LOG: [1/5] Validating Module..."
+            cd "$DIR"
+            terraform init -backend=false
+            if ! terraform validate; then
+              echo "ERROR: Validation failed for $MODULE_NAME. Skipping."
+              cd - > /dev/null; continue
             fi
-            
-            echo "LOG: [1/4] Ensuring Registry Shell exists..."
-            SHELL_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
+            cd - > /dev/null
+
+            echo "LOG: [2/5] Ensuring Registry Shell exists..."
             SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
@@ -74,35 +87,34 @@ jobs:
                  "$SHELL_URL")
             
             HTTP_STATUS=$(echo "$SHELL_RESP" | grep "HTTP_STATUS" | cut -d' ' -f2)
-            if [ "$HTTP_STATUS" == "422" ]; then
-              echo "LOG: Module shell already exists (422). Proceeding to check version."
-            else
-              echo "API RESPONSE (Shell): $SHELL_RESP"
-            fi
+            [ "$HTTP_STATUS" == "422" ] && echo "LOG: Shell already exists." || echo "LOG: Shell created."
 
-            echo "LOG: [2/4] Fetching current version metadata..."
-            META_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
+            echo "LOG: [3/5] Fetching metadata from $META_URL"
             MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
             
-            # IMPROVED LOGIC: Check 'latest-version' first, fallback to the highest version in 'version-statuses'
             LATEST_VERSION=$(echo "$MODULE_META" | jq -r '
-              if .data.attributes."latest-version" != null then 
+              if .data.attributes."latest-version" != null and .data.attributes."latest-version" != "" then 
                 .data.attributes."latest-version" 
               elif (.data.attributes."version-statuses" | length > 0) then 
-                .data.attributes."version-statuses" | map(.version) | last 
-              else 
-                "0.0.0" 
-              end')
+                .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last 
+              else "0.0.0" end')
             
-            if [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ]; then LATEST_VERSION="0.0.0"; fi
-            echo "LOG: Detected Latest Version: $LATEST_VERSION"
+            [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
             
-            MAJOR=$(echo $LATEST_VERSION | cut -d. -f1)
-            NEXT_VERSION="$((MAJOR + 1)).0.0"
-            echo "LOG: Calculated next version: $NEXT_VERSION"
+            if [[ "$PR_TITLE" == *"feat"* ]]; then
+              NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
+              LOG_MSG="Feature detected (Minor bump)"
+            elif [[ "$PR_TITLE" == *"fix"* ]]; then
+              NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+              LOG_MSG="Fix detected (Patch bump)"
+            else
+              NEXT_VERSION="$((MAJOR + 1)).0.0"
+              LOG_MSG="Default (Major bump)"
+            fi
+            echo "LOG: $LOG_MSG -> v$NEXT_VERSION"
 
-            echo "LOG: [3/4] Requesting upload URL for v$NEXT_VERSION..."
-            VER_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
+            echo "LOG: [4/5] Requesting upload URL from $VER_URL"
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
@@ -112,16 +124,11 @@ jobs:
             UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // .data.attributes."upload-url" // empty')
 
             if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
-              echo "LOG: Upload URL generated successfully."
-              
-              echo "::group::[4/4] Packaging & Uploading Module"
+              echo "::group::[5/5] Packaging & Uploading"
               cd "$DIR"
-              echo "Files being included in tarball:"
-              ls -R .
               tar -czf ../../../module_upload.tar.gz .
               cd - > /dev/null
               
-              echo "LOG: Uploading to HCP Archivist..."
               UPLOAD_RESULT=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --request PUT \
                    --header "Content-Type: application/octet-stream" \
                    --data-binary @module_upload.tar.gz \
@@ -132,12 +139,10 @@ jobs:
               echo "::endgroup::"
               echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION is now live."
             else
-              echo "ERROR: Failed to obtain Upload URL for $MODULE_NAME."
-              echo "--- DEBUG INFO ---"
-              echo "Target Version: $NEXT_VERSION"
-              echo "Registry Meta Response: $MODULE_META"
-              echo "Upload Request Response: $RESPONSE"
-              echo "--- END DEBUG ---"
+              echo "ERROR: Upload request failed."
+              echo "--- DEBUG ---"
+              echo "Registry Meta: $MODULE_META"
+              echo "Version Request: $RESPONSE"
             fi
             echo "----------------------------------------------------------------"
           done
