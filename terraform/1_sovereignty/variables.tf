@@ -33,10 +33,10 @@ variable "billing_profile_invoice_section_id" {
   }
 }
 
-variable "tfe_organization" {
-  type        = string
-  description = "Terraform Cloud organization name."
-  default     = "amiasea"
+variable "organization_name" {
+  type = string
+  description = "Organization name"
+  default = "amiasea"
 }
 
 variable "key_vault_name" {

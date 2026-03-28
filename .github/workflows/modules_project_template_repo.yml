@@ -1,0 +1,127 @@
+name: Auto-Major Publish Sweep
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sweep-and-increment:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TF_ORG: "amiasea"
+      TF_PROVIDER: "aws"
+      MODULES_ROOT: "terraform/modules"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 
+
+      - name: 'Az CLI Login'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch TF Token
+        id: fetch-token
+        run: |
+          echo "::group::Fetching Token from Key Vault"
+          RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
+          echo "::add-mask::$RAW_TOKEN"
+          echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
+          echo "Token fetched and masked successfully."
+          echo "::endgroup::"
+
+      - name: Detect and Publish
+        run: |
+          echo "::group::Git Discovery"
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          echo "Files changed in this push:"
+          echo "$CHANGED_FILES"
+          
+          CHANGED_MODULES=$(echo "$CHANGED_FILES" | grep "^${{ env.MODULES_ROOT }}/" | cut -d/ -f3 | sort -u)
+          
+          if [ -z "$CHANGED_MODULES" ]; then
+            echo "No module changes detected in ${{ env.MODULES_ROOT }}. Exiting."
+            exit 0
+          fi
+          echo "Modules identified for update: $CHANGED_MODULES"
+          echo "::endgroup::"
+
+          for MODULE_NAME in $CHANGED_MODULES; do
+            echo "################################################"
+            echo "STARTING PROCESSING: $MODULE_NAME"
+            echo "################################################"
+            
+            DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
+
+            if ! ls "$DIR"/*.tf >/dev/null 2>&1; then
+              echo "LOG: Skipping $MODULE_NAME - No .tf files found in directory."
+              continue
+            fi
+            
+            echo "LOG: Ensuring Registry Shell exists for $MODULE_NAME..."
+            SHELL_URL="https://app.terraform.io"
+            SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
+                 --header "Content-Type: application/vnd.api+json" \
+                 --request POST \
+                 --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"$MODULE_NAME\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\",\"no-code\":false}}}" \
+                 "$SHELL_URL")
+            echo "API RESPONSE (Shell): $SHELL_RESP"
+
+            echo "LOG: Fetching current version metadata..."
+            META_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
+            MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
+            
+            LATEST_VERSION=$(echo $MODULE_META | jq -r '.data.attributes."latest-version" // "0.0.0"')
+            echo "LOG: Current latest version in Registry: $LATEST_VERSION"
+            
+            if [ "$LATEST_VERSION" == "0.0.0" ] || [ "$LATEST_VERSION" == "null" ]; then
+              NEXT_VERSION="1.0.0"
+            else
+              MAJOR=$(echo $LATEST_VERSION | cut -d. -f1)
+              NEXT_VERSION="$((MAJOR + 1)).0.0"
+            fi
+            echo "LOG: Calculated next version: $NEXT_VERSION"
+
+            echo "LOG: Requesting upload URL for v$NEXT_VERSION..."
+            VER_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
+            RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
+                 --header "Content-Type: application/vnd.api+json" \
+                 --request POST \
+                 --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
+                 "$VER_URL")
+
+            UPLOAD_URL=$(echo $RESPONSE | jq -r '.data.links.upload // empty')
+
+            if [ -n "$UPLOAD_URL" ]; then
+              echo "LOG: Upload URL generated successfully."
+              
+              echo "::group::Packaging Module Artifact"
+              cd "$DIR"
+              echo "Files being included in tarball:"
+              ls -R .
+              tar -czf ../../../module_upload.tar.gz .
+              cd - > /dev/null
+              echo "::endgroup::"
+
+              echo "LOG: Uploading to HCP Archivist..."
+              UPLOAD_RESULT=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --request PUT \
+                   --header "Content-Type: application/octet-stream" \
+                   --data-binary @module_upload.tar.gz \
+                   "$UPLOAD_URL")
+              
+              echo "ARCHIVIST RESPONSE: $UPLOAD_RESULT"
+              rm module_upload.tar.gz
+              echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION is now live."
+            else
+              echo "ERROR: Failed to obtain Upload URL for $MODULE_NAME."
+              echo "FULL API ERROR RESPONSE: $RESPONSE"
+            fi
+            echo "------------------------------------------------"
+          done

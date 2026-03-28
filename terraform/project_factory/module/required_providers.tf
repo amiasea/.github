@@ -32,29 +32,3 @@ terraform {
     }
   }
 }
-
-provider "azurerm" {
-  subscription_id = var.subscription_id
-  features {
-  }
-}
-
-provider "azuread" {
-  use_oidc  = true
-
-}
-
-provider "github" {
-  owner = "amiasea"
-}
-
-provider "azapi" {
-  subscription_id = var.subscription_id
-  skip_provider_registration = false
-}
-
-provider "tfe" {
-  hostname = "app.terraform.io"
-}
-
-provider "terracurl" {}

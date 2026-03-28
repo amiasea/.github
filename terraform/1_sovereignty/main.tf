@@ -55,6 +55,21 @@ resource "azuread_application_flexible_federated_identity_credential" "sovereign
   claims_matching_expression = "claims['sub'] matches '*job_workflow_ref:amiasea/.github/.github/workflows/vending-machine.yml@refs/heads/main*'"
 }
 
+resource "azuread_application_federated_identity_credential" "hcp_stack" {
+  application_id = azuread_application.delegated_permissions.id
+  display_name   = "vending-machine-hcp-stack"
+  description    = "Trust for HCP Terraform Stacks"
+  
+  # MUST be exactly this for HCP Terraform
+  issuer   = "https://app.terraform.io"
+  audiences = ["api://AzureADTokenExchange"]
+
+  # Format: organization:<ORG>:project:<PROJ>:stack:<STACK>:deployment:<DEPLOY>:operation:<PLAN|APPLY|DESTROY>
+  # You can use a wildcard (*) at the end if using 'flexible' version to cover plan/apply
+  subject  = "organization:amiasea:project:amiasea:stack:Vending-Machine:deployment:prod:operation:apply"
+}
+
+
 # --- KEY VAULT ---
 resource "azurerm_key_vault" "vault" {
   name                       = var.key_vault_name
