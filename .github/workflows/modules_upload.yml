@@ -47,28 +47,27 @@ jobs:
           CHANGED_MODULES=$(echo "$CHANGED_FILES" | grep "^${{ env.MODULES_ROOT }}/" | cut -d/ -f3 | sort -u)
           
           if [ -z "$CHANGED_MODULES" ]; then
-            echo "NOTICE: No module changes detected in ${{ env.MODULES_ROOT }}. Exiting."
+            echo "LOG: No module changes detected in ${{ env.MODULES_ROOT }}. Exiting."
             exit 0
           fi
-          echo "ACTION: Modules identified for update: $CHANGED_MODULES"
+          echo "LOG: Modules identified for update: $CHANGED_MODULES"
           echo "::endgroup::"
 
           for MODULE_NAME in $CHANGED_MODULES; do
-            echo "================================================================"
-            echo " MODULE: $MODULE_NAME"
-            echo "================================================================"
+            echo "################################################################"
+            echo " PROCESSING: $MODULE_NAME"
+            echo "################################################################"
             
             DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
 
             if ! ls "$DIR"/*.tf >/dev/null 2>&1; then
-              echo "SKIP: $MODULE_NAME - No .tf files found. Nothing to publish."
+              echo "LOG: Skipping $MODULE_NAME - No .tf files found in directory."
               continue
             fi
             
-            echo "STEP 1: Checking Registry Shell..."
-            SHELL_URL="https://app.terraform.io"
-            SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" \
-                 --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
+            echo "LOG: [1/4] Ensuring Registry Shell exists..."
+            SHELL_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
+            SHELL_RESP=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
                  --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"$MODULE_NAME\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\",\"no-code\":false}}}" \
@@ -76,22 +75,18 @@ jobs:
             
             HTTP_STATUS=$(echo "$SHELL_RESP" | grep "HTTP_STATUS" | cut -d' ' -f2)
             if [ "$HTTP_STATUS" == "422" ]; then
-              echo "INFO: Module '$MODULE_NAME' already exists in registry. Continuing..."
-            elif [ "$HTTP_STATUS" == "201" ]; then
-              echo "SUCCESS: Created new registry shell for '$MODULE_NAME'."
+              echo "LOG: Module shell already exists (422). Proceeding to check version."
             else
-              echo "WARNING: Unexpected shell status $HTTP_STATUS."
-              echo "DEBUG: $SHELL_RESP"
+              echo "API RESPONSE (Shell): $SHELL_RESP"
             fi
 
-            echo "STEP 2: Determining Versions..."
-            META_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
+            echo "LOG: [2/4] Fetching current version metadata..."
+            META_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
             MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
             
             LATEST_VERSION=$(echo "$MODULE_META" | jq -r '.data.attributes."latest-version" // "0.0.0"')
             if [ "$LATEST_VERSION" == "null" ]; then LATEST_VERSION="0.0.0"; fi
-            
-            echo "INFO: Latest Registry Version: $LATEST_VERSION"
+            echo "LOG: Current latest version in Registry: $LATEST_VERSION"
             
             if [ "$LATEST_VERSION" == "0.0.0" ]; then
               NEXT_VERSION="1.0.0"
@@ -99,10 +94,10 @@ jobs:
               MAJOR=$(echo $LATEST_VERSION | cut -d. -f1)
               NEXT_VERSION="$((MAJOR + 1)).0.0"
             fi
-            echo "ACTION: Targeting Next Version -> v$NEXT_VERSION"
+            echo "LOG: Calculated next version: $NEXT_VERSION"
 
-            echo "STEP 3: Requesting Upload URL..."
-            VER_URL="https://app.terraform.io/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
+            echo "LOG: [3/4] Requesting upload URL for v$NEXT_VERSION..."
+            VER_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER/versions"
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
                  --header "Content-Type: application/vnd.api+json" \
                  --request POST \
@@ -112,30 +107,28 @@ jobs:
             UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // .data.attributes."upload-url" // empty')
 
             if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
-              echo "::group::STEP 4: Packaging & Uploading Artifact"
-              echo "Packing files from $DIR..."
+              echo "LOG: Upload URL generated successfully."
+              
+              echo "::group::[4/4] Packaging & Uploading Module"
               cd "$DIR"
-              tar -cvzf ../../../module_upload.tar.gz .
+              echo "Files being included in tarball:"
+              ls -R .
+              tar -czf ../../../module_upload.tar.gz .
               cd - > /dev/null
               
-              echo "Uploading to HCP Archivist..."
-              UPLOAD_RESULT=$(curl -s -o /dev/null -w "%{http_code}" --request PUT \
+              echo "LOG: Uploading to HCP Archivist..."
+              UPLOAD_RESULT=$(curl -s -w "\nHTTP_STATUS: %{http_code}" --request PUT \
                    --header "Content-Type: application/octet-stream" \
                    --data-binary @module_upload.tar.gz \
                    "$UPLOAD_URL")
               
-              if [ "$UPLOAD_RESULT" == "200" ] || [ "$UPLOAD_RESULT" == "204" ]; then
-                echo "SUCCESS: v$NEXT_VERSION of $MODULE_NAME uploaded successfully (HTTP $UPLOAD_RESULT)."
-              else
-                echo "ERROR: Archivist upload failed with status $UPLOAD_RESULT."
-              fi
-              
+              echo "ARCHIVIST RESPONSE: $UPLOAD_RESULT"
               rm module_upload.tar.gz
               echo "::endgroup::"
-              echo "FINAL: $MODULE_NAME v$NEXT_VERSION is now live."
+              echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION is now live."
             else
-              echo "FATAL ERROR: Failed to obtain Upload URL for v$NEXT_VERSION."
-              echo "API ERROR DETAIL: $RESPONSE"
+              echo "ERROR: Failed to obtain Upload URL for $MODULE_NAME."
+              echo "FULL API ERROR RESPONSE: $RESPONSE"
             fi
             echo "----------------------------------------------------------------"
           done
