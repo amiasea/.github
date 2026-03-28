@@ -34,18 +34,17 @@ jobs:
         run: |
           echo "LOG: Fetching Terraform Token and GitHub App Private Key..."
           
-          # Fetch TF Token
+          # Fetch TF Token using the versionless ID
           RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
           echo "::add-mask::$RAW_TOKEN"
           echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
           
-          # Fetch GitHub App PEM Key (amiasea-github-private-key)
-          # Note: We use the Vault name from your vars if available, or the direct secret name
-          PEM_KEY=$(az keyvault secret show --vault-name "amiasea-kv" --name "amiasea-github-private-key" --query value -o tsv)
+          # Fetch GitHub App PEM Key using the versionless ID variable
+          PEM_KEY=$(az keyvault secret show --id "${{ vars.AMIASEA_PRIVATE_KEY_VERSIONLESS_ID }}" --query value -o tsv)
           echo "::add-mask::$PEM_KEY"
           
-          # Export as TF_VAR so the Stack Component can pick it up automatically
-          # We use multi-line syntax to ensure the PEM formatting is preserved
+          # Export as TF_VAR so the Stack Component picks it up automatically via environment injection
+          # Heredoc ensures the multi-line RSA PEM structure is preserved
           echo "TF_VAR_gh_app_pem_file<<EOF" >> $GITHUB_ENV
           echo "$PEM_KEY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
