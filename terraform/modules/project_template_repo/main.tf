@@ -4,7 +4,7 @@ resource "github_repository" "project_template" {
   visibility  = "private"
 
   is_template = true
-
+  
   security_and_analysis {
     advanced_security {
       status = "enabled"
