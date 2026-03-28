@@ -21,7 +21,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        # We removed fetch-depth because we are no longer relying on git diff
 
       - name: 'Az CLI Login'
         uses: azure/login@v2
@@ -45,8 +44,6 @@ jobs:
       - name: Sync All Stacks from Filesystem
         run: |
           echo "::group::Stack Discovery"
-          # Find all directories that contain at least one stack file
-          # This replaces 'git diff' entirely
           ALL_STACKS=$(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
           
           if [ -z "$ALL_STACKS" ]; then
@@ -68,21 +65,27 @@ jobs:
               continue
             fi
 
+            # Move INTO the directory so the tarball is created from the correct root
             cd "$STACK_DIR"
+
+            # Audit files before upload
+            HCL_COUNT=$(ls -1 *.hcl 2>/dev/null | wc -l)
+            echo "LOG: Found $HCL_COUNT .hcl files in $(pwd)"
+            ls -F
 
             echo "LOG: [1/3] Initializing & Validating..."
             terraform stacks init
             terraform stacks validate
 
             echo "LOG: [2/3] Ensuring Stack Shell exists..."
-            # If the shell is missing, this creates it. If it exists, it continues.
             terraform stacks create \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
-              -stack-name "$STACK_NAME" || echo "INFO: Shell already exists for $STACK_NAME"
+              -stack-name "$STACK_NAME" || echo "INFO: Shell already exists."
 
             echo "LOG: [3/3] Forcing Configuration Upload (Speculative)..."
-            # Since we aren't checking diffs, this always uploads the current local state.
+            # The CLI packages the CURRENT directory. 
+            # Being inside the folder ensures .tfcomponent.hcl is at the tarball root.
             terraform stacks configuration upload \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \

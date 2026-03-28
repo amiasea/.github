@@ -4,7 +4,7 @@ component "template" {
 
   providers = { github = provider.github.main }
 }
-
+  
 component "factory" {
   source = "app.terraform.io/amiasea/projects/github"
   version = "~> 1.0.0"
