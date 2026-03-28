@@ -44,7 +44,6 @@ jobs:
 
       - name: Sync All Stacks from Filesystem
         run: |
-          # Use find to locate all directories in the stacks root
           for STACK_NAME in $(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;) ; do
             echo "################################################################"
             echo " SYNCING STACK: $STACK_NAME"
@@ -54,37 +53,32 @@ jobs:
             cd "$STACK_DIR"
 
             # 1. PRE-UPLOAD AUDIT
-            echo "LOG: Current files in $STACK_NAME:"
+            echo "LOG: Files in $STACK_NAME before init:"
             ls -F
 
-            # 2. INIT & VALIDATE (Required to ensure HCL is correct)
+            # 2. INIT & VALIDATE
+            # This creates .terraform/modules which is MANDATORY for the upload command
             echo "LOG: [1/3] Initializing & Validating..."
             terraform stacks init
             terraform stacks validate
 
-            # 3. THE "CLEAN PACK" TRICK
-            # We MUST remove .terraform before upload because the CLI's internal 
-            # packager will include it, often obscuring the root HCL files.
-            echo "LOG: Cleaning up provider binaries to ensure a clean upload..."
-            rm -rf .terraform .terraform.lock.hcl
-
-            # 4. ENSURE SHELL
+            # 3. ENSURE SHELL
             echo "LOG: [2/3] Ensuring Stack Shell exists..."
             terraform stacks create \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
               -stack-name "$STACK_NAME" || echo "INFO: Shell exists."
 
-            # 5. UPLOAD (Using native CLI packaging from the stack root)
+            # 4. UPLOAD
+            # We keep .terraform/modules so the CLI can verify the source bundle.
+            # The CLI automatically excludes the heavy provider binaries.
             echo "LOG: [3/3] Uploading configuration (Speculative)..."
-            # We removed the -file flag as it is not supported by 'stacks configuration upload'
             terraform stacks configuration upload \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
               -stack-name "$STACK_NAME" \
               -speculative
 
-            # Return to repository root for next iteration
             cd - > /dev/null
             echo "SUCCESS: $STACK_NAME processed."
             echo "----------------------------------------------------------------"
