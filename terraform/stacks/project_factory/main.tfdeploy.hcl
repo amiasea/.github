@@ -4,7 +4,11 @@ deployment "projects" {
     ]
   }
 
-  variables = {
-    GITHUB_OWNER = "amiasea"
+  orchestrate {
+    globals {
+      variables = {
+        GITHUB_OWNER = "amiasea"
+      }
+    }
   }
 }
