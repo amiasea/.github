@@ -1,6 +1,6 @@
 component "template" {
   source = "app.terraform.io/amiasea/project_template_repo/github"
-  version = "~> 6.0.0"
+  version = "~> 7.0.0"
 
   providers = { github = provider.github.main }
 }
