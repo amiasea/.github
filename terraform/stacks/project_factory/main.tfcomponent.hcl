@@ -3,7 +3,7 @@ component "genie" {
   version = "~> 2.0.0"
 
   inputs = {
-    key_name = "amiasea-github-private-key"
+    secret_name = "amiasea-github-private-key"
   }
 
   providers = { azurerm = provider.azurerm.main }
