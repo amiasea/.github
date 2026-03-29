@@ -2,6 +2,10 @@ component "genie" {
   source = "app.terraform.io/amiasea/project_template_repo/github"
   version = "~> 1.0.0"
 
+  inputs = {
+    key_name = "amiasea-github-private-key"
+  }
+
   providers = { azurerm = provider.azurerm.main }
 }
 
