@@ -6,7 +6,9 @@ identity_token "azure" {
 deployment "projects" {
   inputs = {
     project_list = [
-      "test"
+      {
+        name :"test"
+      }
     ]
     azure_oidc_token = identity_token.azure.jwt
   }
