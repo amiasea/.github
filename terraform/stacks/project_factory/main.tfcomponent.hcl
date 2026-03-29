@@ -1,3 +1,10 @@
+component "genie" {
+  source = "app.terraform.io/amiasea/project_template_repo/github"
+  version = "~> 1.0.0"
+
+  providers = { azurerm = provider.azurerm.main }
+}
+
 component "template" {
   source = "app.terraform.io/amiasea/project_template_repo/github"
   version = "~> 7.0.0"
@@ -16,6 +23,6 @@ component "factory" {
 
   providers = {
     github = provider.github.main
-    tfe    = provider.tfe.main
+    # tfe    = provider.tfe.main
   }
 }

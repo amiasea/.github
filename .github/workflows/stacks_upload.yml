@@ -1,9 +1,9 @@
 name: Stacks Upload
 
 on:
-  workflow_run:
-    workflows: ["Modules Upload"]
-    types: [completed]
+  # workflow_run:
+  #   workflows: ["Modules Upload"]
+  #   types: [completed]
   workflow_dispatch:
 
 jobs:

@@ -33,28 +33,18 @@ data "tfe_project" "amiasea" {
   organization = "amiasea"
 }
 
-locals {
-  # Path to the local credentials file
-  creds_file = pathexpand("~/.terraform.d/credentials.tfrc.json")
-  
-  # Decode the file and grab the token for app.terraform.io
-  # Use try() to avoid errors if the file doesn't exist yet
-  tfe_token = try(jsondecode(file(local.creds_file))["credentials"]["app.terraform.io"]["token"], "")
+resource "hcp_service_principal" "deployment_sp" {
+  name = "my-app-deployer"
 }
 
-data "github_repository" "app_repo" {
-  full_name = "amiasea/.github"
-}
+resource "hcp_iam_workload_identity_provider" "example" {
+  name              = "github-example"
+  service_principal = hcp_service_principal.deployment_sp.resource_name
+  description       = "Allow acme-repo deploy workflow to access my-app-runtime service principal"
 
-resource "tfe_stack" "test-stack" {
-  name                = "my-stack"
-  description         = "A Terraform Stack using two components with two environments"
-  project_id          = data.tfe_project.amiasea.id
-  speculative_enabled = true
-
-  vcs_repo {
-    branch         = "main"
-    identifier     = "amiasea/.github"
-    github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
   }
+
+  conditional_access = "<CONDITION>"
 }
