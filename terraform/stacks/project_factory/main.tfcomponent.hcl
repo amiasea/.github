@@ -1,5 +1,5 @@
 component "genie" {
-  source = "app.terraform.io/amiasea/project_template_repo/github"
+  source = "app.terraform.io/amiasea/whisper_genie/github"
   version = "~> 2.0.0"
 
   inputs = {
