@@ -15,17 +15,11 @@ resource "github_repository" "project_repos" {
   source_owner = "amiasea"
 }
 
-data "github_app" "terraform_cloud_app" {
+data "github_app" "amiasea_app" {
   slug = "amiasea"
 }
 
-# This is now a TFE data source
-# data "tfe_github_app_installation" "hcp_terraform" {
-#   name = data.github_app.terraform_cloud_app.name
-# }
-
-resource "github_app_installation_repositories" "hcp_tf_permissions" {
-  # The GitHub provider resource uses the ID found by the TFE data source
+resource "github_app_installation_repositories" "amiasea_permissions" {
   installation_id = "105130264"
 
   selected_repositories = concat(

@@ -19,7 +19,7 @@ provider "github" "main" {
 
     app_auth {
       id              = var.gh_app_id
-      installation_id = var.gh_app_installation
+      installation_id = var.gh_app_installation_id
       pem_file        = component.genie.secret_value
     }
   }

@@ -15,7 +15,7 @@ variable "gh_app_id" {
   default = "2670685"
 }
 
-variable "gh_app_installation" {
+variable "gh_app_installation_id" {
   type = string
   default = "105130264"
 }
