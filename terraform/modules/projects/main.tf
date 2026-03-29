@@ -14,16 +14,3 @@ resource "github_repository" "project_repos" {
   auto_init    = false
   source_owner = "amiasea"
 }
-
-data "github_app" "amiasea_app" {
-  slug = "amiasea"
-}
-
-resource "github_app_installation_repositories" "amiasea_permissions" {
-  installation_id = "105130264"
-
-  selected_repositories = concat(
-    [var.template_repo_name],
-    [for repo in github_repository.project_repos : repo.name]
-  )
-}
