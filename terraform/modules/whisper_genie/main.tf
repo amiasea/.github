@@ -5,6 +5,6 @@ data "azurerm_key_vault" "vault" {
 
 data "azurerm_key_vault_secret" "whisper_genie" {
   name         = var.secret_name
-  key_vault_id = data.azurerm_key_vault.vault
+  key_vault_id = data.azurerm_key_vault.vault.id
 }
  
