@@ -7,6 +7,7 @@ variable "project_list" {
 
 variable "azure_oidc_token" {
     type = string
+    ephemeral = true
 }
 
 variable "gh_app_id" {
