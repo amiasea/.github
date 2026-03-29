@@ -21,7 +21,7 @@ component "factory" {
   version = "~> 3.0.0"
  
   inputs = {
-    template_repo_name = component.template.outputs.repository_name
+    template_repo_name = component.template.repository_name
     projects      = var.project_list
   }
 
