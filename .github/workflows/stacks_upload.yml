@@ -80,8 +80,7 @@ jobs:
             terraform stacks configuration upload \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
-              -stack-name "$STACK_NAME" \
-              -speculative
+              -stack-name "$STACK_NAME"
 
             cd - > /dev/null
             echo "SUCCESS: $STACK_NAME processed."
