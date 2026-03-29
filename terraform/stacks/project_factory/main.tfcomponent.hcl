@@ -27,6 +27,5 @@ component "factory" {
 
   providers = {
     github = provider.github.main
-    # tfe    = provider.tfe.main
   }
 }

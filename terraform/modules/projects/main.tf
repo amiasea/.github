@@ -5,12 +5,6 @@ resource "github_repository" "project_repos" {
   visibility  = "private"
   is_template = false
 
-  security_and_analysis {
-    advanced_security {
-      status = "enabled"
-    }
-  }
-
   template {
     owner                = "amiasea"
     repository           = var.template_repo_name
