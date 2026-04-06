@@ -1,6 +1,12 @@
+data "neon_branch" "root" {
+  project_id = var.neon_project_id
+  name       = "main" # Neon's default name
+}
+
 resource "neon_branch" "env_branch" {
   project_id = var.neon_project_id
-  name       = var.environment
+  name       = var.environment # "prod", "dev", etc.
+  parent_id  = data.neon_branch.root.id
 }
 
 # 2. Create the SPIRE database on that branch
@@ -9,16 +15,4 @@ resource "neon_database" "spire_db" {
   branch_id  = neon_branch.env_branch.id
   name       = "spire_server"
   owner_name = "neondb_owner" # Default owner
-}
-
-resource "kubernetes_secret" "spire_db_config" {
-  metadata {
-    name      = "spire-db-config"
-    namespace = "spire"
-  }
-
-  data = {
-    # Dynamically grab the URI from the Neon provider
-    connection_string = neon_branch.env_branch.connection_uri
-  }
 }
