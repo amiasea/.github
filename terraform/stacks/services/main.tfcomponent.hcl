@@ -1,11 +1,23 @@
-component "k8_cluster" {
-  source = "app.terraform.io/amiasea/k8_cluster/github"
+component "genie" {
+  source = "app.terraform.io/amiasea/whisper_genie/github"
+  version = "~> 5.0.0"
+
+  inputs = {
+    secret_name = "neon-org-api-key"
+  }
+
+  providers = { azurerm = provider.azurerm.main }
+}
+
+component "aks_cluster" {
+  source = "app.terraform.io/amiasea/aks_cluster/github"
   version = "~> 1.0.0"
 
   inputs = {
     environment = var.environment
     rg_name     = var.rg_name
     location    = var.location
+    k8_admin_group_id = var.k8_admin_group_id
   }
 
   providers = { azurerm = provider.azurerm.main }
@@ -16,11 +28,11 @@ component "spire" {
   version = "~> 1.0.0"
  
   inputs = {
-    environment      = var.environment
-    projects      = var.project_list
+    environment = var.environment
+    neon_project_id = var.neon_project_id
   }
 
   providers = {
-    github = provider.github.main
+    kubernetes = provider.kubernetes.main
   }
 }

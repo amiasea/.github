@@ -26,10 +26,6 @@ terraform {
       source  = "hashicorp/tfe"
       version = "~> 0.74.1"
     }
-    terracurl = {
-      source  = "devops-rob/terracurl"
-      version = "~> 1.1.0" # Or current latest
-    }
     neon = {
       source  = "kislerdm/neon"
       version = "~> 0.13.0" # Latest stable version
@@ -59,25 +55,4 @@ provider "azapi" {
 
 provider "tfe" {
   hostname = "app.terraform.io"
-}
-
-provider "terracurl" {}
-
-provider "neon" {}
-
-provider "kubernetes" {
-  alias = "dev"
-  host  = azurerm_kubernetes_cluster.platform["dev"].kube_config.0.host
-  client_certificate     = base64decode(azurerm_kubernetes_cluster.platform["dev"].kube_config.0.client_certificate)
-  client_key             = base64decode(azurerm_kubernetes_cluster.platform["dev"].kube_config.0.client_key)
-  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.platform["dev"].kube_config.0.cluster_ca_certificate)
-}
-
-# Prod Provider
-provider "kubernetes" {
-  alias = "prod"
-  host  = azurerm_kubernetes_cluster.platform["prod"].kube_config.0.host
-  client_certificate     = base64decode(azurerm_kubernetes_cluster.platform["prod"].kube_config.0.client_certificate)
-  client_key             = base64decode(azurerm_kubernetes_cluster.platform["prod"].kube_config.0.client_key)
-  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.platform["prod"].kube_config.0.cluster_ca_certificate)
 }

@@ -1,12 +1,16 @@
-data "neon_branch" "root" {
+data "neon_branches" "all" {
   project_id = var.neon_project_id
-  name       = "main" # Neon's default name
+}
+  
+locals {
+  # Filters the list of branches to find the one designated as primary (the root)
+  root_branch = [for b in data.neon_branches.all.branches : b if b.primary][0]
 }
 
 resource "neon_branch" "env_branch" {
   project_id = var.neon_project_id
   name       = var.environment # "prod", "dev", etc.
-  parent_id  = data.neon_branch.root.id
+  parent_id  = local.root_branch.id
 }
 
 # 2. Create the SPIRE database on that branch

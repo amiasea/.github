@@ -77,6 +77,11 @@ variable "amiasea_github_private_key" {
   ephemeral = true
 }
 
+variable "neon_org_api_key" {
+  type      = string
+  ephemeral = true
+}
+
 variable "prefix" {
   type        = string
   description = "Prefix"

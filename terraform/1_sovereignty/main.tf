@@ -15,13 +15,6 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
-resource "azuread_group" "sql_admins" {
-  display_name     = "Amiasea-SQL-Admins"
-  owners           = [data.azuread_client_config.current.object_id]
-  security_enabled = true
-  description      = "Members of this group are AD Admins for all vended SQL environments."
-}
-
 resource "github_actions_organization_oidc_subject_claim_customization_template" "main" {
   # This tells GitHub to pack these specific pieces of data into the 'sub' claim
   include_claim_keys = [
@@ -121,30 +114,10 @@ resource "azurerm_key_vault_secret" "amiasea_github_private_key" {
   key_vault_id     = azurerm_key_vault.vault.id
 }
 
-module "k8_dev" {
-  source    = "./k8"
-  providers = { kubernetes = kubernetes.dev }
-  host = azurerm_kubernetes_cluster.platform["dev"].kube_config.0.host
-  client_certificate = base64decode(azurerm_kubernetes_cluster.platform["dev"].kube_config.0.client_certificate)
-  client_key = base64decode(azurerm_kubernetes_cluster.platform["dev"].kube_config.0.client_key)
-  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.platform["dev"].kube_config.0.cluster_ca_certificate)
-
-  location = var.location
-  environment = "dev"
-  rg_name = "${var.resource_group_name}-dev"
-  subscription_id = var.subscription_id
-}
-
-module "k8_prod" {
-  source    = "./k8"
-  providers = { kubernetes = kubernetes.prod }
-  host = azurerm_kubernetes_cluster.platform["prod"].kube_config.0.host
-  client_certificate = base64decode(azurerm_kubernetes_cluster.platform["prod"].kube_config.0.client_certificate)
-  client_key = base64decode(azurerm_kubernetes_cluster.platform["prod"].kube_config.0.client_key)
-  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.platform["prod"].kube_config.0.cluster_ca_certificate)
-
-  location = var.location
-  environment = "prod"
-  rg_name = "${var.resource_group_name}-prod"
-  subscription_id = var.subscription_id
+resource "azurerm_key_vault_secret" "neon_org_api_key" {
+  depends_on       = [azurerm_role_assignment.terraform_kv_admin]
+  name             = "neon-org-api-key"
+  value_wo         = var.neon_org_api_key
+  value_wo_version = 1
+  key_vault_id     = azurerm_key_vault.vault.id
 }

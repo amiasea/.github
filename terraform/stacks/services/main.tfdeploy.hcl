@@ -3,13 +3,17 @@ identity_token "azure" {
   audience = ["api://AzureADTokenExchange"]
 }
 
-deployment "projects" {
+deployment "development" {
   inputs = {
-    project_list = [
-      {
-        name :"test"
-      }
-    ]
+    rg_name = "rg-amiasea-dev"
+    environment = "dev"
+    location = "centralus"
     azure_oidc_token = identity_token.azure.jwt
+    k8_admin_group_id = store.varset.azure_ids.k8_admin_group_id
   }
+}
+
+store "varset" "azure_ids" {
+  name     = "Stack-Specific Credentials"
+  category = "env"
 }

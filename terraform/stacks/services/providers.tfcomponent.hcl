@@ -14,10 +14,10 @@ required_providers {
 }
 
 provider "kubernetes" "main" {
-  host                   = component.k8_cluster.host
-  client_certificate     = component.k8_cluster.client_certificate
-  client_key             = component.k8_cluster.client_key
-  cluster_ca_certificate = component.k8_cluster.cluster_ca_certificate
+  host                   = component.aks_cluster.host
+  client_certificate     = component.aks_cluster.client_certificate
+  client_key             = component.aks_cluster.client_key
+  cluster_ca_certificate = component.aks_cluster.cluster_ca_certificate
 }
 
 provider "azurerm" "main" {
@@ -30,5 +30,11 @@ provider "azurerm" "main" {
 
     features {
     }
+  }
+}
+
+provider "neon" "main" {
+  config {
+    api_key = component.genie.secret_value
   }
 }

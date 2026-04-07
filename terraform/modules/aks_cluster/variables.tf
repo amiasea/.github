@@ -9,3 +9,7 @@ variable "rg_name" {
 variable "environment" {
     type = string
 }
+
+variable "k8_admin_group_id" {
+    type = string
+}
