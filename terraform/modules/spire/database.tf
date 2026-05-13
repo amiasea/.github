@@ -18,7 +18,7 @@ resource "neon_database" "spire_db" {
   project_id = var.neon_project_id
   branch_id  = neon_branch.env_branch.id
   name       = "spire_server"
-  owner_name = "neondb_owner" # Default owner
+  owner_name = neon_role.spire_owner.name
 }
 
 # 3. Create the SpiceDB database on the same branch

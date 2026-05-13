@@ -4,7 +4,12 @@ resource "kubernetes_namespace" "spire" {
   }
 }
 
-# 1. Fetch endpoints using the correct pluralized data source name
+resource "neon_role" "spire_owner" {
+  project_id = var.neon_project_id
+  branch_id  = neon_branch.env_branch.id
+  name       = "spire_admin"
+}
+
 data "neon_branch_endpoints" "env_endpoints" {
   project_id = var.neon_project_id
   branch_id  = neon_branch.env_branch.id
@@ -19,6 +24,6 @@ resource "kubernetes_secret" "spire_db_config" {
 
   data = {
     # Schema format: postgresql://<user>:<password>@<endpoint_host>/<database_name>?sslmode=require
-    connection_string = "postgresql://${neon_database.spire_db.owner_name}:${data.neon_branch_endpoints.env_endpoints.endpoints[0].database_password}@${data.neon_branch_endpoints.env_endpoints.endpoints[0].host}/${neon_database.spire_db.name}?sslmode=require"
+    connection_string = "postgresql://${neon_role.spire_owner.name}:${neon_role.spire_owner.password}@${neon_endpoint.env_endpoint.host}/${neon_database.spire_db.name}?sslmode=require"
   }
 }
