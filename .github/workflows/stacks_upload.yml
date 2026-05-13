@@ -76,7 +76,8 @@ jobs:
             terraform stacks create \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
-              -stack-name "$STACK_NAME" || echo "INFO: Shell exists."
+              -stack-name "$STACK_NAME" \
+              -ignore-existing
 
             echo "LOG: [3/3] Uploading configuration..."
             # The TF_VAR_gh_app_pem_file is now in the environment for the upload/plan
