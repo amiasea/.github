@@ -64,9 +64,6 @@ jobs:
           
           # Move the binary into a system path folder already present in the runner's $PATH
           sudo mv tfstacks /usr/local/bin/
-          
-          # Verify the tool executes properly outside of the automatic provider cache download chain
-          tfstacks --version
 
       - name: Sync All Stacks from Filesystem
         run: |
