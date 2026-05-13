@@ -52,7 +52,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.14.8"
+          terraform_version: "1.15.3"
           cli_config_credentials_token: ${{ env.TF_TOKEN_app_terraform_io }}
 
       - name: Sync All Stacks from Filesystem
