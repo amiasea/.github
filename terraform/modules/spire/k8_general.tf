@@ -4,14 +4,20 @@ resource "kubernetes_namespace" "spire" {
   }
 }
 
+# Fetch the automatically generated default compute endpoint for your new branch
+data "neon_endpoint" "env_endpoint" {
+  project_id = var.neon_project_id
+  branch_id  = neon_branch.env_branch.id
+}
+
 resource "kubernetes_secret" "spire_db_config" {
   metadata {
     name      = "spire-db-config"
-    namespace = "spire"
+    namespace = kubernetes_namespace.spire.metadata[0].name
   }
 
   data = {
-    # Dynamically grab the URI from the Neon provider
-    connection_string = neon_branch.env_branch.connection_uri
+    # Schema format: postgresql://<user>:<password>@<endpoint_host>/<database_name>?sslmode=require
+    connection_string = "postgresql://${neon_database.spire_db.owner_name}:${data.neon_endpoint.env_endpoint.database_password}@${data.neon_endpoint.env_endpoint.database_host}/${neon_database.spire_db.name}?sslmode=require"
   }
 }

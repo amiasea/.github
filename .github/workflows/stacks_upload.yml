@@ -57,6 +57,9 @@ jobs:
 
       - name: Sync All Stacks from Filesystem
         run: |
+          # Enable strict error-checking inside the shell environment
+          set -e
+
           for STACK_NAME in $(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;) ; do
             echo "################################################################"
             echo " SYNCING STACK: $STACK_NAME"
