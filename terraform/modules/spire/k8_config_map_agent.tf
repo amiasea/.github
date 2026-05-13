@@ -1,7 +1,7 @@
 resource "kubernetes_config_map" "spire_agent_config" {
   metadata {
     name      = "spire-agent-config"
-    namespace = kubernetes_namespace.spire.metadata.name
+    namespace = kubernetes_namespace.spire.metadata[0].name
   }
 
   data = {

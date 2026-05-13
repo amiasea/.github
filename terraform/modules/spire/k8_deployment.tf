@@ -1,7 +1,7 @@
 resource "kubernetes_deployment" "spire_server" {
   metadata {
     name      = "spire-server"
-    namespace = kubernetes_namespace.spire.metadata.name
+    namespace = kubernetes_namespace.spire.metadata[0].name
     labels    = { app = "spire-server" }
   }
 
@@ -13,7 +13,7 @@ resource "kubernetes_deployment" "spire_server" {
       metadata { labels = { app = "spire-server" } }
 
       spec {
-        service_account_name = kubernetes_service_account.spire_server.metadata.name
+        service_account_name = kubernetes_service_account.spire_server.metadata[0].name
 
         # CONTAINER 1: SPIRE Server
         container {
@@ -24,7 +24,7 @@ resource "kubernetes_deployment" "spire_server" {
             name = "SP_DB_URL"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.spire_db_config.metadata.name
+                name = kubernetes_secret.spire_db_config.metadata[0].name
                 key  = "connection_string"
               }
             }
@@ -69,7 +69,7 @@ resource "kubernetes_deployment" "spire_server" {
         volume {
           name = "server-config"
           config_map {
-            name = kubernetes_config_map.spire_server_config.metadata.name
+            name = kubernetes_config_map.spire_server_config.metadata[0].name
           }
         }
 
@@ -77,7 +77,7 @@ resource "kubernetes_deployment" "spire_server" {
         volume {
           name = "registrar-config"
           config_map {
-            name = kubernetes_config_map.spire_registrar_config.metadata.name
+            name = kubernetes_config_map.spire_registrar_config.metadata[0].name
           }
         }
 

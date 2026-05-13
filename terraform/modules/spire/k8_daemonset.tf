@@ -1,7 +1,7 @@
 resource "kubernetes_daemonset" "spire_agent" {
   metadata {
     name      = "spire-agent"
-    namespace = kubernetes_namespace.spire.metadata.name
+    namespace = kubernetes_namespace.spire.metadata[0].name
     labels    = { app = "spire-agent" }
   }
 
@@ -47,12 +47,12 @@ resource "kubernetes_daemonset" "spire_agent" {
           }
         }
 
-        service_account_name = kubernetes_service_account.spire_agent.metadata.name
+        service_account_name = kubernetes_service_account.spire_agent.metadata[0].name
 
         volume {
           name = "agent-config"
           config_map {
-            name = kubernetes_config_map.spire_agent_config.metadata.name
+            name = kubernetes_config_map.spire_agent_config.metadata[0].name
           }
         }
 
