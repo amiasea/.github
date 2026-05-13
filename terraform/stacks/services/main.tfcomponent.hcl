@@ -34,5 +34,6 @@ component "spire" {
 
   providers = {
     kubernetes = provider.kubernetes.main
+    neon       = provider.neon.main
   }
 }

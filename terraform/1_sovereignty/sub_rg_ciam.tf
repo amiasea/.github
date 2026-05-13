@@ -4,6 +4,7 @@ data "azurerm_billing_mca_account_scope" "billing_scope" {
   invoice_section_name = var.billing_profile_invoice_section_id
 }
 
+
 resource "azurerm_subscription" "env_sub" {
   for_each          = toset(var.environments)
   alias             = "${var.prefix}-${each.value}"

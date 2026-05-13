@@ -6,7 +6,7 @@ terraform {
       source  = "kislerdm/neon"
       version = "~> 0.13.0" # Latest stable version
     }
-    kuberbetes = {
+    kubernetes = {
       source = "hashicorp/kubernetes"
       version = "~> 3.0.1"
     }

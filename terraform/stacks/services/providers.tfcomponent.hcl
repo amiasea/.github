@@ -7,17 +7,19 @@ required_providers {
     source  = "kislerdm/neon"
     version = "~> 0.13.0"
   }
-  kuberbetes = {
+  kubernetes = {
     source  = "hashicorp/kubernetes"
     version = "~> 3.0.1"
   }
 }
 
 provider "kubernetes" "main" {
-  host                   = component.aks_cluster.host
-  client_certificate     = component.aks_cluster.client_certificate
-  client_key             = component.aks_cluster.client_key
-  cluster_ca_certificate = component.aks_cluster.cluster_ca_certificate
+  config {
+    host                   = component.aks_cluster.host
+    client_certificate     = component.aks_cluster.client_certificate
+    client_key             = component.aks_cluster.client_key
+    cluster_ca_certificate = component.aks_cluster.cluster_ca_certificate
+  }
 }
 
 provider "azurerm" "main" {
