@@ -14,10 +14,6 @@ data "tfe_organization" "organization" {
   name = var.organization_name
 }
 
-data "tfe_github_app_installation" "gha_installation" {
-  name = data.tfe_organization.organization.name
-}
-
 data "tfe_project" "amiasea" {
   name         = "amiasea"
   organization = "amiasea"
@@ -34,7 +30,7 @@ resource "tfe_variable_set" "stack_variable_set" {
 # 3. Apply the set to the PROJECT (This gives Stacks inside access)
 resource "tfe_project_variable_set" "project_link" {
   variable_set_id = tfe_variable_set.stack_variable_set.id
-  project_id      = data.tfe_project.spire_project.id
+  project_id      = data.tfe_project.amiasea.id
 }
 
 # 4. Add the variables
