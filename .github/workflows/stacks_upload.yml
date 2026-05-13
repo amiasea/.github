@@ -55,6 +55,19 @@ jobs:
           terraform_version: "1.14.8"
           cli_config_credentials_token: ${{ env.TF_TOKEN_app_terraform_io }}
 
+      - name: Install tfstacks CLI
+        run: |
+          echo "LOG: Fetching explicit tfstacks binary to bypass runner GPG validation bug..."
+          curl -sSL -o tfstacks.zip https://releases.hashicorp.com/tfstacks/1.2.0/tfstacks_1.2.0_linux_amd64.zip
+          unzip tfstacks.zip
+          rm tfstacks.zip
+          
+          # Move the binary into a system path folder already present in the runner's $PATH
+          sudo mv tfstacks /usr/local/bin/
+          
+          # Verify the tool executes properly outside of the automatic provider cache download chain
+          tfstacks --version
+
       - name: Sync All Stacks from Filesystem
         run: |
           # Enable strict error-checking inside the shell environment
