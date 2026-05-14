@@ -22,7 +22,7 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
 
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
-  local_account_disabled     = true
+  local_account_disabled     = false
   azure_policy_enabled       = true
 
   identity {
@@ -41,15 +41,23 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
   ]
 }
 
-resource "azapi_resource_action" "get_aks_token" {
-  type        = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
-  resource_id = azurerm_user_assigned_identity.uami.id
-  action      = "listAssociatedResources" # Handled natively by Azure to generate a scoped JWT
+# resource "azapi_resource_action" "get_aks_token" {
+#   type        = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
+#   resource_id = azurerm_user_assigned_identity.uami.id
+#   action      = "listAssociatedResources" # Handled natively by Azure to generate a scoped JWT
 
-  # We request a token specifically for the universal AKS Application ID
-  body = {
-    scope = "6dae42f8-4368-4678-94ff-3960e28e3630/.default"
-  }
+#   # We request a token specifically for the universal AKS Application ID
+#   body = {
+#     scope = "6dae42f8-4368-4678-94ff-3960e28e3630/.default"
+#   }
+# }
+
+resource "azurerm_federated_identity_credential" "stack_runner_trust" {
+  name                = "fic-stack-runner-${var.environment}"
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = "https://hashicorp.cloud"
+  subject             = "organization:amiasea:project:*:stack:*:deployment:*:operation:*"
+  parent_id           = azurerm_user_assigned_identity.uami.id
 }
 
 resource "azurerm_user_assigned_identity" "uami" {

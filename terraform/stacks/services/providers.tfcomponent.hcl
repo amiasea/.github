@@ -11,19 +11,14 @@ required_providers {
     source  = "hashicorp/kubernetes"
     version = "~> 3.0.1"
   }
-  azapi = {
-    source  = "azure/azapi"
-    version = "~> 2.0" 
-  }
 }
 
 provider "kubernetes" "main" {
   config {
     host                   = component.aks_cluster.host
     cluster_ca_certificate = base64decode(component.aks_cluster.cluster_ca_certificate)
-    # client_certificate     = base64decode(component.aks_cluster.client_certificate)
-    # client_key             = base64decode(component.aks_cluster.client_key)
-    token                  = component.aks_cluster.aks_entra_token
+    client_certificate     = base64decode(component.aks_cluster.client_certificate)
+    client_key             = base64decode(component.aks_cluster.client_key)
   }
 }
 
@@ -48,16 +43,6 @@ provider "azurerm" "scoped_sub" {
     tenant_id       = "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
     oidc_token      = var.azure_oidc_token
     features {}
-  }
-}
-
-provider "azapi" "main" {
-  config {
-    use_oidc        = true
-    subscription_id = var.env_subscription_id
-    client_id       = "e5979a4b-0875-4f8c-9688-f9e10a6c7aaf"
-    tenant_id       = "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
-    oidc_token      = var.azure_oidc_token
   }
 }
 
