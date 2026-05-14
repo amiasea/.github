@@ -9,7 +9,7 @@ deployment "development" {
     environment = "dev"
     location = "centralus"
     azure_oidc_token = identity_token.azure.jwt
-    k8_admin_group_id = store.varset.azure_ids.k8_admin_group_id
+    k8_admin_group_id = tostring(store.varset.azure_ids.k8_admin_group_id)
   }
 }
 

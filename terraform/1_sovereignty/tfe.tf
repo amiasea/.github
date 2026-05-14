@@ -38,6 +38,5 @@ resource "tfe_variable" "k8_admin_group_id" {
   key             = "k8_admin_group_id"
   value           = azuread_group.k8_admins.object_id
   category        = "env"
-  sensitive       = true
   variable_set_id = tfe_variable_set.stack_variable_set.id
 }
