@@ -1,14 +1,17 @@
 # 1. Fetch the built-in Azure Policy Set (Initiative) Definition for K8s Baseline PSS
 data "azurerm_policy_set_definition" "k8s_baseline" {
   display_name = "Kubernetes cluster pod security baseline standards for Linux-based workloads"
+  provider = azurerm.scoped_sub
 }
 
 data "azurerm_resource_group" "target_rg" {
+  provider = azurerm.scoped_sub 
   name = var.rg_name
 }
 
 # 2. Assign the policy at the Resource Group scope with custom namespace parameters
 resource "azurerm_resource_group_policy_assignment" "aks_pss_baseline" {
+  provider             = azurerm.scoped_sub 
   name                 = "aks-pss-baseline-${var.environment}"
   resource_group_id    = data.azurerm_resource_group.target_rg.id 
   policy_definition_id = data.azurerm_policy_set_definition.k8s_baseline.id

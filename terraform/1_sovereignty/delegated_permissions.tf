@@ -45,8 +45,16 @@ resource "azurerm_role_assignment" "delegated_permissions_app_creator" {
   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
 }
 
+# resource "azurerm_role_assignment" "delegated_permissions_app_contributor" {
+#   scope                = data.azurerm_subscription.amiasea.id
+#   role_definition_name = "Contributor"
+#   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
+# }
+
 resource "azurerm_role_assignment" "delegated_permissions_app_contributor" {
-  scope                = data.azurerm_subscription.amiasea.id
+  for_each = { for sub in data.azurerm_subscriptions.search.subscriptions : sub.subscription_id => sub }
+
+  scope                = "/subscriptions/${each.key}"
   role_definition_name = "Contributor"
   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
 }
