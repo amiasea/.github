@@ -58,7 +58,9 @@ provider "azurerm" "prod_subscription" {
 }
 
 provider "azurerm" "scoped_sub" {
-  config {}   # intentionally empty — will be overridden by the deployment
+  config {
+    features {}
+  }   # intentionally empty — will be overridden by the deployment
 }
 
 provider "neon" "main" {
