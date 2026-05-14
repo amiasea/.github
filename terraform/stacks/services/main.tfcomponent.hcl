@@ -13,7 +13,7 @@ component "genie" {
 component "aks_cluster" {
   source  = "app.terraform.io/amiasea/aks_cluster/github"
   # TRACKS LATEST V7: Pulls your newest v7.x releases automatically
-  version = ">= 13.0.0"
+  version = ">= 11.0.0"
 
   inputs = {
     environment       = var.environment

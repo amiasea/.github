@@ -24,7 +24,7 @@ component "template" {
 component "factory" {
   source  = "app.terraform.io/amiasea/projects/github"
   # TRACKS LATEST V23: Pulls your newest v23.x releases automatically
-  version = ">= 29.0.0"
+  version = ">= 30.0.0"
 
   inputs = {
     template_repo_name = component.template.repository_name
