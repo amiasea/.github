@@ -23,7 +23,8 @@ component "aks_cluster" {
     k8_admin_group_id = var.k8_admin_group_id
   }
   providers = {
-    azurerm = provider.azurerm.main
+    azurerm           = provider.azurerm.main
+    azurerm.scoped_sub = provider.azurerm.scoped_sub
   }
 }
 

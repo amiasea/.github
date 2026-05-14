@@ -11,6 +11,10 @@ deployment "development" {
     azure_oidc_token = identity_token.azure.jwt
     k8_admin_group_id = store.varset.azure_ids.stable.k8_admin_group_id
   }
+
+  providers = {
+    "azurerm.scoped_sub" = provider.azurerm.dev_subscription
+  }
 }
 
 store "varset" "azure_ids" {
