@@ -30,10 +30,10 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
     identity_ids = [azurerm_user_assigned_identity.uami.id]
   }
 
-  azure_active_directory_role_based_access_control {
-    azure_rbac_enabled     = false
-    admin_group_object_ids = [var.k8_admin_group_id]
-  }
+  # azure_active_directory_role_based_access_control {
+  #   azure_rbac_enabled     = false
+  #   admin_group_object_ids = [var.k8_admin_group_id]
+  # }
 
   depends_on = [
     azurerm_role_assignment.network_contributor,
@@ -52,13 +52,13 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
 #   }
 # }
 
-resource "azurerm_federated_identity_credential" "stack_runner_trust" {
-  name                = "fic-stack-runner-${var.environment}"
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = "https://hashicorp.cloud"
-  subject             = "organization:amiasea:project:*:stack:*:deployment:*:operation:*"
-  parent_id           = azurerm_user_assigned_identity.uami.id
-}
+# resource "azurerm_federated_identity_credential" "stack_runner_trust" {
+#   name                = "fic-stack-runner-${var.environment}"
+#   audience            = ["api://AzureADTokenExchange"]
+#   issuer              = "https://hashicorp.cloud"
+#   subject             = "organization:amiasea:project:*:stack:*:deployment:*:operation:*"
+#   parent_id           = azurerm_user_assigned_identity.uami.id
+# }
 
 resource "azurerm_user_assigned_identity" "uami" {
   name                = "uami-k8-cluster-${var.environment}"
