@@ -12,4 +12,5 @@ variable "environment" {
 
 variable "k8_admin_group_id" {
     type = string
+    ephemeral = true
 }
