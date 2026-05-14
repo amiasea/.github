@@ -12,7 +12,7 @@ variable "location" {
 
 variable "azure_oidc_token" {
     type = string
-    ephemeral = true
+    sensitive = true
 }
 
 variable "neon_project_id" {
@@ -22,5 +22,5 @@ variable "neon_project_id" {
 
 variable "k8_admin_group_id" {
     type = string
-    ephemeral = true
+    sensitive = true
 }
