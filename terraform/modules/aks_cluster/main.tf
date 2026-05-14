@@ -20,6 +20,9 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
     dns_service_ip     = "172.16.0.10"
   }
 
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.uami.id]
