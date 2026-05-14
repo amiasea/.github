@@ -19,6 +19,9 @@ component "aks_cluster" {
     rg_name           = var.rg_name
     location          = var.location
     k8_admin_group_id = var.k8_admin_group_id
+    vm_size           = var.vm_size
+    os_disk_type      = var.os_disk_type
+    os_disk_size_gb   = var.os_disk_size_gb
   }
   providers = {
     azurerm           = provider.azurerm.scoped_sub
