@@ -8,7 +8,7 @@ deployment "development" {
     rg_name = "rg-amiasea-dev"
     environment = "dev"
     location = "centralus"
-    vm_size          = "Standard_D2as_v5"     # ← Best chance right now
+    vm_size          = "Standard_D2ads_v5"     # ← Best chance right now
     os_disk_type     = "Ephemeral"            # Better + cheaper than Managed
     os_disk_size_gb  = 30
     azure_oidc_token = identity_token.azure.jwt
