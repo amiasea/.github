@@ -20,17 +20,13 @@ provider "kubernetes" "main" {
 
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "kubelogin"
+      command     = "az"
       args = [
-        "get-token",
-        "--environment", "AzurePublicCloud",
-        "--server-id", "6dae42f8-4368-4678-94ff-3960e28e3630", 
-        "--client-id", "e5979a4b-0875-4f8c-9688-f9e10a6c7aaf",
-        "--tenant-id", "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
+        "account",
+        "get-access-token",
+        "--resource",
+        "6dae42f8-4368-4678-94ff-3960e28e3630" # Universal static token resource ID for Azure AKS API
       ]
-      env = {
-        "AAD_FEDERATED_TOKEN" = var.azure_oidc_token
-      }
     }
   }
 }
