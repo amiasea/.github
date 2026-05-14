@@ -16,4 +16,8 @@ deployment "development" {
 store "varset" "azure_ids" {
   name     = "Stack-Specific Credentials"
   category = "env"
+
+  variable "k8_admin_group_id" {
+    stable = true
+  }
 }
