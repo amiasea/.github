@@ -9,12 +9,11 @@ deployment "development" {
     environment = "dev"
     location = "centralus"
     azure_oidc_token = identity_token.azure.jwt
-    k8_admin_group_id = store.varset.azure_ids.k8_admin_group_id
+    k8_admin_group_id = store.varset.azure_ids.stable.k8_admin_group_id
   }
 }
 
 store "varset" "azure_ids" {
   name     = "Stack-Specific Credentials"
   category = "env"
-  stable = true
 }
