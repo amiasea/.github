@@ -23,4 +23,5 @@ variable "neon_project_id" {
 
 variable "k8_admin_group_id" {
     type = string
+    sensitive = true
 }
