@@ -30,4 +30,9 @@ resource "azurerm_resource_group_policy_assignment" "aks_pss_baseline" {
       value = ["kube-system", "gatekeeper-system", "spire"]
     }
   })
+
+  depends_on = [
+    # Reference the dynamic RBAC loop we set up in File 2
+    azurerm_role_assignment.delegated_permissions_app_contributor 
+  ]
 }
