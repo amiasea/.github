@@ -8,9 +8,9 @@ deployment "development" {
     rg_name = "rg-amiasea-dev"
     environment = "dev"
     location = "centralus"
-    vm_size = "standard_b2as_v2"
-    os_disk_type = "Managed"
-    os_disk_size_gb = 30
+    vm_size          = "Standard_D2as_v5"     # ← Best chance right now
+    os_disk_type     = "Ephemeral"            # Better + cheaper than Managed
+    os_disk_size_gb  = 30
     azure_oidc_token = identity_token.azure.jwt
     k8_admin_group_id = store.varset.azure_ids.stable.k8_admin_group_id
     env_subscription_id = "bd0f2cca-0676-49e6-a8c2-cae21ea7216b"
