@@ -31,7 +31,7 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
   }
 
   azure_active_directory_role_based_access_control {
-    azure_rbac_enabled     = true # Allows using Azure IAM for K8s permissions
+    azure_rbac_enabled     = false
     admin_group_object_ids = [var.k8_admin_group_id]
   }
 
