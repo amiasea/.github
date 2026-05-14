@@ -1,6 +1,6 @@
 component "genie" {
   source  = "app.terraform.io/amiasea/whisper_genie/github"
-  version = ">= 28.0.0" 
+  version = ">= 29.0.0" 
 
   inputs = {
     secret_name = "neon-org-api-key"
@@ -12,8 +12,7 @@ component "genie" {
 
 component "aks_cluster" {
   source  = "app.terraform.io/amiasea/aks_cluster/github"
-  # TRACKS LATEST V7: Pulls your newest v7.x releases automatically
-  version = ">= 14.0.0"
+  version = ">= 15.0.0"
 
   inputs = {
     environment       = var.environment
@@ -28,8 +27,7 @@ component "aks_cluster" {
 
 component "spire" {
   source  = "app.terraform.io/amiasea/spire/github"
-  # TRACKS LATEST V1: Pulls your newest v1.x releases automatically
-  version = ">= 10.0.0"
+  version = ">= 11.0.0"
 
   inputs = {
     environment     = var.environment
