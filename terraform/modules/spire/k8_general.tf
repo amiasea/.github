@@ -8,6 +8,8 @@ resource "neon_role" "spire_owner" {
   project_id = var.neon_project_id
   branch_id  = neon_branch.env_branch.id
   name       = "spire_admin"
+
+  depends_on = [neon_endpoint.env_endpoint] 
 }
 
 data "neon_branch_endpoints" "env_endpoints" {
@@ -26,7 +28,6 @@ resource "kubernetes_secret" "spire_db_config" {
 
   data = {
     # Schema format: postgresql://<user>:<password>@<endpoint_host>/<database_name>?sslmode=require
-    # Uses a conditional length validation check to stop index [0] from breaking during the plan phase
-    connection_string = length(data.neon_branch_endpoints.env_endpoints.endpoints) > 0 ? "postgresql://${neon_role.spire_owner.name}:${neon_role.spire_owner.password}@${data.neon_branch_endpoints.env_endpoints.endpoints[0].host}/${neon_database.spire_db.name}?sslmode=require" : "postgresql://${neon_role.spire_owner.name}:${neon_role.spire_owner.password}@placeholder-during-plan.neon.tech/${neon_database.spire_db.name}?sslmode=require"
+    connection_string = "postgresql://${neon_role.spire_owner.name}:${neon_role.spire_owner.password}@${neon_endpoint.env_endpoint.host}/${neon_database.spire_db.name}?sslmode=require"
   }
 }
