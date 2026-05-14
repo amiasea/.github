@@ -8,10 +8,10 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
   default_node_pool {
     name            = "system"
     node_count      = 1
-    vm_size         = "standard_b2as_v2"
+    vm_size         = var.vm_size
     vnet_subnet_id  = azurerm_subnet.aks_subnet.id
-    os_disk_type    = "Ephemeral"
-    os_disk_size_gb = 30
+    os_disk_type    = var.os_disk_type
+    os_disk_size_gb = var.os_disk_size_gb
   }
 
   identity {

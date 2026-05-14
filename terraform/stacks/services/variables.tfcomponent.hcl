@@ -27,3 +27,15 @@ variable "k8_admin_group_id" {
     type = string
     sensitive = true
 }
+
+variable "vm_size" {
+    type = string
+}
+
+variable "os_disk_type" {
+    type = string
+}
+
+variable "os_disk_size_gb" {
+    type = number
+}
