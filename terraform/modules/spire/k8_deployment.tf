@@ -31,7 +31,9 @@ resource "kubernetes_deployment" "spire_server" {
           name  = "spire-server"
           image = "ghcr.io/spiffe/spire-server:1.8.0"
 
-          # FIX: Directly mapping to SPIRE's native environment listener variable
+          # FIX: Command-line parameter instructing SPIRE where to look for server.conf
+          args  = ["run", "-config", "/run/spire/config/server.conf"]
+
           env {
             name = "SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
             value_from {
