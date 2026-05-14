@@ -16,5 +16,4 @@ deployment "development" {
 store "varset" "azure_ids" {
   name     = "Stack-Specific Credentials"
   category = "env"
-  stable = true
 }
