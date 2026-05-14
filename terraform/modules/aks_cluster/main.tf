@@ -22,7 +22,7 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
 
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
-  local_account_disabled     = true
+  local_account_disabled     = false
   azure_policy_enabled       = true
 
   identity {

@@ -17,8 +17,8 @@ provider "kubernetes" "main" {
   config {
     host                   = component.aks_cluster.host
     cluster_ca_certificate = base64decode(component.aks_cluster.cluster_ca_certificate)
-
-    token = var.azure_oidc_token
+    client_certificate     = base64decode(component.aks_cluster.client_certificate)
+    client_key             = base64decode(component.aks_cluster.client_key)
   }
 }
 
