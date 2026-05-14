@@ -1,7 +1,7 @@
 component "genie" {
   source  = "app.terraform.io/amiasea/whisper_genie/github"
   # TRACKS LATEST V18: Pulls your newest v18.x releases automatically
-  version = ">= 27.0.0" 
+  version = ">= 28.0.0" 
 
   inputs = {
     secret_name = "amiasea-github-private-key"
@@ -14,7 +14,7 @@ component "genie" {
 component "template" {
   source  = "app.terraform.io/amiasea/project_template_repo/github"
   # TRACKS LATEST V27: Pulls your newest v27.x releases automatically
-  version = ">= 36.0.0"
+  version = ">= 37.0.0"
 
   providers = {
     github = provider.github.main
@@ -24,7 +24,7 @@ component "template" {
 component "factory" {
   source  = "app.terraform.io/amiasea/projects/github"
   # TRACKS LATEST V23: Pulls your newest v23.x releases automatically
-  version = ">= 32.0.0"
+  version = ">= 33.0.0"
 
   inputs = {
     template_repo_name = component.template.repository_name

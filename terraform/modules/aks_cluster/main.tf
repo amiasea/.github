@@ -29,7 +29,10 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
     admin_group_object_ids = [var.k8_admin_group_id]
   }
 
-  depends_on = [azurerm_role_assignment.network_contributor]
+  depends_on = [
+    azurerm_role_assignment.network_contributor,
+    azurerm_subnet.aks_subnet
+  ]
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
