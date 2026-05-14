@@ -14,6 +14,12 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
     os_disk_size_gb = var.os_disk_size_gb
   }
 
+  network_profile {
+    network_plugin     = "azure"
+    service_cidr       = "172.16.0.0/16"
+    dns_service_ip     = "172.16.0.10"
+  }
+
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.uami.id]
