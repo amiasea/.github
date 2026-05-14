@@ -13,18 +13,27 @@ resource "neon_branch" "env_branch" {
   parent_id  = local.root_branch.id
 }
 
-# 2. Create the SPIRE database on that branch
+resource "neon_endpoint" "env_endpoint" {
+  project_id              = var.neon_project_id
+  branch_id               = neon_branch.env_branch.id
+  type                    = "read_write" #
+  suspend_timeout_seconds = 0              # Prevents Neon compute from sleeping during active K8s runtimes
+}
+
 resource "neon_database" "spire_db" {
   project_id = var.neon_project_id
   branch_id  = neon_branch.env_branch.id
   name       = "spire_server"
   owner_name = neon_role.spire_owner.name
+
+  depends_on = [neon_endpoint.env_endpoint] 
 }
 
-# 3. Create the SpiceDB database on the same branch
 resource "neon_database" "spicedb_db" {
   project_id  = var.neon_project_id
   branch_id   = neon_branch.env_branch.id
   name        = "spicedb"
   owner_name  = "neondb_owner"
+
+  depends_on = [neon_endpoint.env_endpoint] 
 }
