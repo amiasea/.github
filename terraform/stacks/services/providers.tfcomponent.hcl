@@ -11,6 +11,10 @@ required_providers {
     source  = "hashicorp/kubernetes"
     version = "~> 3.0.1"
   }
+  azapi = {
+    source  = "azure/azapi"
+    version = "~> 2.0" 
+  }
 }
 
 provider "kubernetes" "main" {
@@ -44,6 +48,16 @@ provider "azurerm" "scoped_sub" {
     tenant_id       = "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
     oidc_token      = var.azure_oidc_token
     features {}
+  }
+}
+
+provider "azapi" "main" {
+  config {
+    use_oidc        = true
+    subscription_id = var.env_subscription_id
+    client_id       = "e5979a4b-0875-4f8c-9688-f9e10a6c7aaf"
+    tenant_id       = "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
+    oidc_token      = var.azure_oidc_token
   }
 }
 
