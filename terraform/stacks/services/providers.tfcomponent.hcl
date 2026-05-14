@@ -19,8 +19,7 @@ provider "kubernetes" "main" {
     cluster_ca_certificate = base64decode(component.aks_cluster.cluster_ca_certificate)
     # client_certificate     = base64decode(component.aks_cluster.client_certificate)
     # client_key             = base64decode(component.aks_cluster.client_key)
-    username = component.aks_cluster.admin_username
-    token                  = component.aks_cluster.admin_token
+    token                  = component.aks_cluster.aks_entra_token
   }
 }
 

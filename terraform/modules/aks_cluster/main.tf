@@ -22,7 +22,7 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
 
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
-  local_account_disabled     = false
+  local_account_disabled     = true
   azure_policy_enabled       = true
 
   identity {
@@ -39,6 +39,17 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
     azurerm_role_assignment.network_contributor,
     azurerm_subnet.aks_subnet
   ]
+}
+
+resource "azapi_resource_action" "get_aks_token" {
+  type        = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
+  resource_id = azurerm_user_assigned_identity.uami.id
+  action      = "listAssociatedResources" # Handled natively by Azure to generate a scoped JWT
+
+  # We request a token specifically for the universal AKS Application ID
+  body = jsonencode({
+    scope = "6dae42f8-4368-4678-94ff-3960e28e3630/.default"
+  })
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
