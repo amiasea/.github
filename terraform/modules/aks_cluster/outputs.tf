@@ -22,3 +22,8 @@ output "admin_token" {
   value     = azurerm_kubernetes_cluster.app_cluster.kube_config.0.password
   sensitive = true
 }
+
+output "admin_username" {
+  value     = azurerm_kubernetes_cluster.app_cluster.kube_config.0.username
+  sensitive = true
+}
