@@ -16,6 +16,8 @@ variable "azure_oidc_token" {
     ephemeral = true
 }
 
+variable "env_subscription_id" { type = string }
+
 variable "neon_project_id" {
     type = string
     default = "gentle-butterfly-81025773"
