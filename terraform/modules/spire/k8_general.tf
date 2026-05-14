@@ -13,6 +13,8 @@ resource "neon_role" "spire_owner" {
 data "neon_branch_endpoints" "env_endpoints" {
   project_id = var.neon_project_id
   branch_id  = neon_branch.env_branch.id
+
+  depends_on = [neon_database.spire_db] 
 }
 
 # 2. Extract the connection information from the first returned endpoint object

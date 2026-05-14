@@ -3,10 +3,14 @@ data "azurerm_policy_set_definition" "k8s_baseline" {
   display_name = "Kubernetes cluster pod security baseline standards for Linux-based workloads"
 }
 
+data "azurerm_resource_group" "target_rg" {
+  name = var.rg_name
+}
+
 # 2. Assign the policy at the Resource Group scope with custom namespace parameters
 resource "azurerm_resource_group_policy_assignment" "aks_pss_baseline" {
   name                 = "aks-pss-baseline-${var.environment}"
-  resource_group_id    = var.rg_name # Or use data.azurerm_resource_group.rg.id if available
+  resource_group_id    = data.azurerm_resource_group.target_rg.id 
   policy_definition_id = data.azurerm_policy_set_definition.k8s_baseline.id
   display_name         = "AKS Pod Security Baseline Standards (${var.environment})"
   description          = "Enforces standard K8s pod baseline profiles while exempting infrastructure layers like SPIRE."

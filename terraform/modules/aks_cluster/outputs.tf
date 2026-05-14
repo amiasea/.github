@@ -1,6 +1,7 @@
 output "host" {
   description = "The Kubernetes API server endpoint (URL) used to communicate with the cluster."
   value       = azurerm_kubernetes_cluster.app_cluster.kube_config.0.host
+  sensitive   = true
 }
 
 output "client_certificate" {
