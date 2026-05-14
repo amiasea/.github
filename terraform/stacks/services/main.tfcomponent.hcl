@@ -1,6 +1,6 @@
 component "genie" {
   source  = "app.terraform.io/amiasea/whisper_genie/github"
-  version = ">= 34.0.0" 
+  version = ">= 36.0.0" 
 
   inputs = {
     secret_name = "neon-org-api-key"
