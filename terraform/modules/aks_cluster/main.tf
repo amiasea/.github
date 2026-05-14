@@ -47,9 +47,9 @@ resource "azapi_resource_action" "get_aks_token" {
   action      = "listAssociatedResources" # Handled natively by Azure to generate a scoped JWT
 
   # We request a token specifically for the universal AKS Application ID
-  body = jsonencode({
+  body = {
     scope = "6dae42f8-4368-4678-94ff-3960e28e3630/.default"
-  })
+  }
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
