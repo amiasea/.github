@@ -14,4 +14,10 @@ resource "kubernetes_cluster_role" "spire_server_trust" {
     resources  = ["nodes", "pods"]
     verbs      = ["get", "list"]
   }
+
+  rule {
+    api_groups = [""]
+    resources  = ["serviceaccounts"]
+    verbs      = ["get", "list", "watch"]
+  }
 }

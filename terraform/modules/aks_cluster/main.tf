@@ -22,16 +22,13 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
 
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
+  local_account_disabled     = true
+  azure_policy_enabled       = true
 
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.uami.id]
   }
-
-  # Required to allow high-privilege host paths for the SPIRE Agent
-  azure_policy_enabled = true
-
-  local_account_disabled = true
 
   azure_active_directory_role_based_access_control {
     azure_rbac_enabled     = true # Allows using Azure IAM for K8s permissions
@@ -51,7 +48,7 @@ resource "azurerm_user_assigned_identity" "uami" {
 }
 
 resource "azurerm_role_assignment" "network_contributor" {
-  scope                = azurerm_virtual_network.vnet.id
+  scope                = azurerm_subnet.aks_subnet.id
   role_definition_name = "Network Contributor"
   principal_id         = azurerm_user_assigned_identity.uami.principal_id
   

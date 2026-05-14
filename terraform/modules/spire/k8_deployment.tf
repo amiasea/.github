@@ -2,15 +2,26 @@ resource "kubernetes_deployment" "spire_server" {
   metadata {
     name      = "spire-server"
     namespace = kubernetes_namespace.spire.metadata[0].name
-    labels    = { app = "spire-server" }
+    labels = {
+      app = "spire-server"
+    }
   }
 
   spec {
     replicas = 1
-    selector { match_labels = { app = "spire-server" } }
+
+    selector {
+      match_labels = {
+        app = "spire-server"
+      }
+    }
 
     template {
-      metadata { labels = { app = "spire-server" } }
+      metadata {
+        labels = {
+          app = "spire-server"
+        }
+      }
 
       spec {
         service_account_name = kubernetes_service_account.spire_server.metadata[0].name
@@ -20,8 +31,9 @@ resource "kubernetes_deployment" "spire_server" {
           name  = "spire-server"
           image = "ghcr.io/spiffe/spire-server:1.8.0"
 
+          # FIX: Directly mapping to SPIRE's native environment listener variable
           env {
-            name = "SP_DB_URL"
+            name = "SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
             value_from {
               secret_key_ref {
                 name = kubernetes_secret.spire_db_config.metadata[0].name
@@ -30,7 +42,9 @@ resource "kubernetes_deployment" "spire_server" {
             }
           }
 
-          port { container_port = 8081 }
+          port {
+            container_port = 8081
+          }
 
           volume_mount {
             name       = "server-config"

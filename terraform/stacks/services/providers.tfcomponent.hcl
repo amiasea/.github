@@ -16,9 +16,22 @@ required_providers {
 provider "kubernetes" "main" {
   config {
     host                   = component.aks_cluster.host
-    client_certificate     = component.aks_cluster.client_certificate
-    client_key             = component.aks_cluster.client_key
-    cluster_ca_certificate = component.aks_cluster.cluster_ca_certificate
+    cluster_ca_certificate = base64decode(component.aks_cluster.cluster_ca_certificate)
+
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "kubelogin"
+      args = [
+        "get-token",
+        "--environment", "AzurePublicCloud",
+        "--server-id", "6dae42f8-4368-4678-94ff-3960e28e3630", 
+        "--client-id", "e5979a4b-0875-4f8c-9688-f9e10a6c7aaf",
+        "--tenant-id", "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
+      ]
+      env = {
+        "AAD_FEDERATED_TOKEN" = var.azure_oidc_token
+      }
+    }
   }
 }
 
