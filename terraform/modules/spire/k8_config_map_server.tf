@@ -4,6 +4,7 @@ resource "kubernetes_config_map" "spire_server_config" {
     namespace = kubernetes_namespace.spire.metadata[0].name
   }
 
+  # FIX: Change the data key from a path to a simple file key name
   data = {
     "server.conf" = <<EOT
 server {
@@ -21,13 +22,11 @@ plugins {
       database_type = "postgres"
     }
   }
-
   NodeAttestor "k8s_psat" {
     plugin_data {
       cluster = "app-${var.environment}-cluster"
     }
   }
-
   KeyManager "memory" {
     plugin_data {}
   }

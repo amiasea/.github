@@ -50,7 +50,8 @@ resource "kubernetes_deployment" "spire_server" {
 
           volume_mount {
             name       = "server-config"
-            mount_path = "/run/spire/config"
+            mount_path = "/run/spire/config/server.conf"
+            sub_path   = "server.conf"     
             read_only  = true
           }
 
