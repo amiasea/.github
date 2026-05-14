@@ -1,7 +1,6 @@
 component "genie" {
   source  = "app.terraform.io/amiasea/whisper_genie/github"
-  # TRACKS LATEST V18: Pulls your newest v18.x releases automatically
-  version = ">= 22.0.0, < 23.0.0" 
+  version = ">= 25.0.0" 
 
   inputs = {
     secret_name = "neon-org-api-key"
@@ -14,7 +13,7 @@ component "genie" {
 component "aks_cluster" {
   source  = "app.terraform.io/amiasea/aks_cluster/github"
   # TRACKS LATEST V7: Pulls your newest v7.x releases automatically
-  version = ">= 10.0.0, < 11.0.0"
+  version = ">= 13.0.0"
 
   inputs = {
     environment       = var.environment
@@ -23,15 +22,14 @@ component "aks_cluster" {
     k8_admin_group_id = var.k8_admin_group_id
   }
   providers = {
-    azurerm           = provider.azurerm.main
-    azurerm.scoped_sub = provider.azurerm.scoped_sub
+    azurerm           = provider.azurerm.scoped_sub
   }
 }
 
 component "spire" {
   source  = "app.terraform.io/amiasea/spire/github"
   # TRACKS LATEST V1: Pulls your newest v1.x releases automatically
-  version = ">= 5.0.0, < 6.0.0"
+  version = ">= 8.0.0"
 
   inputs = {
     environment     = var.environment

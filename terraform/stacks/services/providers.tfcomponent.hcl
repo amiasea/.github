@@ -35,17 +35,6 @@ provider "azurerm" "main" {
   }
 }
 
-provider "azurerm" "dev_subscription" {
-  config {
-    use_oidc        = true
-    subscription_id = "bd0f2cca-0676-49e6-a8c2-cae21ea7216b" 
-    client_id       = "e5979a4b-0875-4f8c-9688-f9e10a6c7aaf" # Uses the same App Registration identity
-    tenant_id       = "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
-    oidc_token      = var.azure_oidc_token
-    features {}
-  }
-}
-
 provider "azurerm" "scoped_sub" {
   config {
     use_oidc        = true
