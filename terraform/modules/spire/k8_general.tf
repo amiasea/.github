@@ -23,7 +23,7 @@ data "neon_branch_endpoints" "env_endpoints" {
 resource "kubernetes_secret" "spire_db_config" {
   metadata {
     name      = "spire-db-config"
-    namespace = kubernetes_namespace.spire.metadata[0].name
+    namespace = "spire"
   }
 
   data = {

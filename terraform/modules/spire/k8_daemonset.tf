@@ -1,62 +1,50 @@
 resource "kubernetes_daemonset" "spire_agent" {
   metadata {
     name      = "spire-agent"
-    namespace = kubernetes_namespace.spire.metadata[0].name
+    namespace = "spire"
     labels    = { app = "spire-agent" }
   }
 
   spec {
-    selector {
-      match_labels = { app = "spire-agent" }
-    }
-
+    selector { match_labels = { app = "spire-agent" } }
     template {
-      metadata {
-        labels = { app = "spire-agent" }
-      }
-
+      metadata { labels = { app = "spire-agent" } }
       spec {
-        # The Agent needs to see processes on the host to identify them
-        host_pid = true
+        host_pid     = true
         host_network = true
-        dns_policy = "ClusterFirstWithHostNet"
+        dns_policy   = "ClusterFirstWithHostNet"
+        service_account_name = "spire-agent"
 
         container {
           name  = "spire-agent"
-          image = "ghcr.io/spiffe/spire-agent:1.8.0" # Note: agent-specific image
-          args  = ["run", "-config", "/run/spire/config/agent.conf"]
-
-          # The Agent provides a Unix Socket that your apps will connect to
-          volume_mount {
-            name       = "spire-bundle"
-            mount_path = "/run/spire/bundle"
-            read_only  = true
-          }
+          image = "ghcr.io/spiffe/spire-agent:1.8.0"
+          args  = ["run", "-config", "/opt/spire/conf/agent/agent.conf"]
 
           volume_mount {
             name       = "agent-config"
-            mount_path = "/run/spire/config"
+            mount_path = "/opt/spire/conf/agent/agent.conf"
+            sub_path   = "agent.conf"
             read_only  = true
           }
 
-          # This socket is where your apps (API, DB) "ask" for their ID
           volume_mount {
             name       = "spire-agent-socket"
             mount_path = "/run/spire/sockets"
             read_only  = false
           }
-        }
 
-        service_account_name = kubernetes_service_account.spire_agent.metadata[0].name
-
-        volume {
-          name = "agent-config"
-          config_map {
-            name = kubernetes_config_map.spire_agent_config.metadata[0].name
+          volume_mount {
+            name       = "spire-bundle"
+            mount_path = "/run/spire/bundle"
+            read_only  = true
           }
         }
 
-        # Shared directory on the node so apps can talk to the agent
+        volume {
+          name = "agent-config"
+          config_map { name = "spire-agent-config" }
+        }
+
         volume {
           name = "spire-agent-socket"
           host_path {
@@ -67,9 +55,7 @@ resource "kubernetes_daemonset" "spire_agent" {
 
         volume {
           name = "spire-bundle"
-          config_map {
-            name = "spire-bundle" # Created by the Server automatically
-          }
+          config_map { name = "spire-bundle" }
         }
       }
     }

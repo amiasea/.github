@@ -1,7 +1,7 @@
 resource "kubernetes_config_map" "spire_server_config" {
   metadata {
     name      = "spire-server-config"
-    namespace = kubernetes_namespace.spire.metadata[0].name
+    namespace = "spire"
   }
 
   data = {
@@ -16,19 +16,19 @@ server {
 }
 
 plugins {
-plugins {
   DataStore "sql" {
     plugin_data {
       database_type = "postgres"
       connection_string = "$SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
     }
   }
-}
+
   NodeAttestor "k8s_psat" {
     plugin_data {
       cluster = "app-${var.environment}-cluster"
     }
   }
+
   KeyManager "memory" {
     plugin_data {}
   }

@@ -15,7 +15,6 @@ resource "kubernetes_deployment" "spire_server" {
       spec {
         service_account_name = "spire-server"
 
-        # CONTAINER 1: SPIRE Server
         container {
           name  = "spire-server"
           image = "ghcr.io/spiffe/spire-server:1.8.0"
@@ -47,7 +46,6 @@ resource "kubernetes_deployment" "spire_server" {
           }
         }
 
-        # CONTAINER 2: K8s Workload Registrar
         container {
           name  = "k8s-workload-registrar"
           image = "spiffe/k8s-workload-registrar:1.8.0"
@@ -67,23 +65,16 @@ resource "kubernetes_deployment" "spire_server" {
           }
         }
 
-        # VOLUME 1: Server Config (Pointed to ConfigMap, not Secret)
         volume {
           name = "server-config"
-          config_map {
-            name = "spire-server-config"
-          }
+          config_map { name = "spire-server-config" }
         }
 
-        # VOLUME 2: Registrar Config
         volume {
           name = "registrar-config"
-          config_map {
-            name = "spire-registrar-config"
-          }
+          config_map { name = "spire-registrar-config" }
         }
 
-        # VOLUME 3: Shared Socket
         volume {
           name = "server-socket"
           empty_dir {}
