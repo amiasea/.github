@@ -1,4 +1,4 @@
-resource "kubernetes_daemonset_v1" "spire_agent" {
+resource "kubernetes_daemon_set_v1" "spire_agent" {
   metadata {
     name      = "spire-agent"
     namespace = "spire"

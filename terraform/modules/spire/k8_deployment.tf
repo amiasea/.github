@@ -82,5 +82,5 @@ resource "kubernetes_deployment_v1" "spire_server" {
       }
     }
   }
-  depends_on = [kubernetes_namespace.spire]
+  depends_on = [kubernetes_namespace_v1.spire]
 }

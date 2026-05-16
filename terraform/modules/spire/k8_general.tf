@@ -1,4 +1,4 @@
-resource "kubernetes_namespace" "spire" {
+resource "kubernetes_namespace_v1" "spire" {
   metadata {
     name = "spire"
   }
