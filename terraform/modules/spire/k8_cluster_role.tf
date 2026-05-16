@@ -20,4 +20,11 @@ resource "kubernetes_cluster_role" "spire_server_trust" {
     resources  = ["serviceaccounts"]
     verbs      = ["get", "list", "watch"]
   }
+
+  # NEW: Allow SPIRE Server to create and update the trust bundle ConfigMap
+  rule {
+    api_groups = [""]
+    resources  = ["configmaps"]
+    verbs      = ["get", "patch", "update", "create"]
+  }
 }
