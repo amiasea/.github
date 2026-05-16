@@ -88,7 +88,7 @@ resource "kubernetes_deployment" "spire_server" {
         volume {
           name = "server-config"
           config_map {
-            name = kubernetes_config_map.spire_server_config.metadata[0].name
+            name = "spire-db-config"
           }
         }
 
@@ -96,7 +96,7 @@ resource "kubernetes_deployment" "spire_server" {
         volume {
           name = "registrar-config"
           config_map {
-            name = kubernetes_config_map.spire_registrar_config.metadata[0].name
+            name = "spire-registrar-config"
           }
         }
 

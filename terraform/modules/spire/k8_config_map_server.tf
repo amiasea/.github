@@ -1,4 +1,4 @@
-resource "kubernetes_config_map" "spire_server_config" {
+resource "kubernetes_config_map" "spire_server_config_new" {
   metadata {
     name      = "spire-server-config"
     namespace = kubernetes_namespace.spire.metadata[0].name
