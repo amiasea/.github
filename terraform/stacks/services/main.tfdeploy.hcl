@@ -16,10 +16,7 @@ deployment "development" {
     env_subscription_id = "bd0f2cca-0676-49e6-a8c2-cae21ea7216b"
   }
 
-  orchestrate {
-    # This automatically approves the plan and starts the apply
-    auto_approve = true
-  }
+  strategy = "auto-approve" 
 }
 
 store "varset" "azure_ids" {
