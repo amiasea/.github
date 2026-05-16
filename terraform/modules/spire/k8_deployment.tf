@@ -1,41 +1,26 @@
 resource "kubernetes_deployment" "spire_server" {
   metadata {
     name      = "spire-server"
-    namespace = kubernetes_namespace.spire.metadata[0].name
-    labels = {
-      app = "spire-server"
-    }
+    namespace = "spire"
+    labels    = { app = "spire-server" }
   }
 
   wait_for_rollout = false
 
   spec {
     replicas = 1
-
-    selector {
-      match_labels = {
-        app = "spire-server"
-      }
-    }
-
+    selector { match_labels = { app = "spire-server" } }
     template {
-      metadata {
-        labels = {
-          app = "spire-server"
-        }
-      }
-
+      metadata { labels = { app = "spire-server" } }
       spec {
-        service_account_name = kubernetes_service_account.spire_server.metadata[0].name
+        service_account_name = "spire-server"
 
         # CONTAINER 1: SPIRE Server
         container {
           name  = "spire-server"
           image = "ghcr.io/spiffe/spire-server:1.8.0"
-
-          # Command-line parameter instructing SPIRE where to look for server.conf
-          args = ["run", "-config", "/opt/spire/conf/server/server.conf"]
-
+          args  = ["run", "-config", "/opt/spire/conf/server/server.conf"]
+          
           env {
             name = "SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
             value_from {
@@ -46,18 +31,15 @@ resource "kubernetes_deployment" "spire_server" {
             }
           }
 
-          port {
-            container_port = 8081
-          }
+          port { container_port = 8081 }
 
           volume_mount {
             name       = "server-config"
-            mount_path = "/opt/spire/conf/server/server.conf" # Standard path
+            mount_path = "/opt/spire/conf/server/server.conf"
             sub_path   = "server.conf"
             read_only  = true
           }
 
-          # Shared socket for the registrar to talk to the server
           volume_mount {
             name       = "server-socket"
             mount_path = "/run/spire/sockets"
@@ -68,12 +50,13 @@ resource "kubernetes_deployment" "spire_server" {
         # CONTAINER 2: K8s Workload Registrar
         container {
           name  = "k8s-workload-registrar"
-          image = "ghcr.io/spiffe/k8s-workload-registrar:1.8.0"
+          image = "spiffe/k8s-workload-registrar:1.8.0"
           args  = ["-config", "/run/spire/config/registrar.conf"]
-
+          
           volume_mount {
             name       = "registrar-config"
-            mount_path = "/run/spire/config"
+            mount_path = "/run/spire/config/registrar.conf"
+            sub_path   = "registrar.conf"
             read_only  = true
           }
 
@@ -84,11 +67,11 @@ resource "kubernetes_deployment" "spire_server" {
           }
         }
 
-        # VOLUME 1: Server Config
+        # VOLUME 1: Server Config (Pointed to ConfigMap, not Secret)
         volume {
           name = "server-config"
           config_map {
-            name = "spire-db-config"
+            name = "spire-server-config"
           }
         }
 
@@ -100,7 +83,7 @@ resource "kubernetes_deployment" "spire_server" {
           }
         }
 
-        # VOLUME 3: Shared Socket (In-memory pipe between the two containers)
+        # VOLUME 3: Shared Socket
         volume {
           name = "server-socket"
           empty_dir {}
@@ -108,6 +91,5 @@ resource "kubernetes_deployment" "spire_server" {
       }
     }
   }
-
   depends_on = [kubernetes_namespace.spire]
 }
