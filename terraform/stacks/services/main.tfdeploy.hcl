@@ -15,8 +15,6 @@ deployment "development" {
     k8_admin_group_id = store.varset.azure_ids.stable.k8_admin_group_id
     env_subscription_id = "bd0f2cca-0676-49e6-a8c2-cae21ea7216b"
   }
-
-  strategy = "auto-approve" 
 }
 
 store "varset" "azure_ids" {

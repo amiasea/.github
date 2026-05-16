@@ -1,7 +1,7 @@
 resource "kubernetes_config_map_v1" "spire_registrar_config" {
   metadata {
     name      = "spire-registrar-config"
-    namespace = kubernetes_namespace.spire.metadata[0].name
+    namespace = kubernetes_namespace.spire.metadata.name
   }
 
   data = {
