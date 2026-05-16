@@ -40,7 +40,7 @@ resource "kubernetes_deployment" "spire_server" {
             name = "SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.spire_db_config.metadata[0].name
+                name = "spire-db-config"
                 key  = "connection_string"
               }
             }
@@ -108,4 +108,6 @@ resource "kubernetes_deployment" "spire_server" {
       }
     }
   }
+
+  depends_on = [kubernetes_namespace.spire]
 }
