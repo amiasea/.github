@@ -2,7 +2,7 @@
 resource "kubernetes_service_account_v1" "spire_server" {
   metadata {
     name      = "spire-server"
-    namespace = kubernetes_namespace.spire.metadata.name
+    namespace = "spire"
   }
 }
 
@@ -10,6 +10,6 @@ resource "kubernetes_service_account_v1" "spire_server" {
 resource "kubernetes_service_account_v1" "spire_agent" {
   metadata {
     name      = "spire-agent"
-    namespace = kubernetes_namespace.spire.metadata.name
+    namespace = "spire"
   }
 }

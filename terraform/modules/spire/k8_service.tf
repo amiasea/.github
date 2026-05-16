@@ -1,7 +1,7 @@
 resource "kubernetes_service_v1" "spire_server" {
   metadata {
     name      = "spire-server"
-    namespace = kubernetes_namespace.spire.metadata.name
+    namespace = "spire"
   }
 
   spec {
