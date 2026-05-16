@@ -1,4 +1,4 @@
-resource "kubernetes_config_map" "spire_bundle" {
+resource "kubernetes_config_map_v1" "spire_bundle" {
   metadata {
     name      = "spire-bundle"
     namespace = kubernetes_namespace.spire.metadata[0].name

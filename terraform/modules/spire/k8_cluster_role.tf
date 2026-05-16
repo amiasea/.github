@@ -1,4 +1,4 @@
-resource "kubernetes_cluster_role" "spire_server_trust" {
+resource "kubernetes_cluster_role_v1" "spire_server_trust" {
   metadata {
     name = "spire-server-trust-role"
   }

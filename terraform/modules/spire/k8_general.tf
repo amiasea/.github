@@ -20,7 +20,7 @@ data "neon_branch_endpoints" "env_endpoints" {
 }
 
 # 2. Extract the connection information from the first returned endpoint object
-resource "kubernetes_secret" "spire_db_config" {
+resource "kubernetes_secret_v1" "spire_db_config" {
   metadata {
     name      = "spire-db-config"
     namespace = "spire"

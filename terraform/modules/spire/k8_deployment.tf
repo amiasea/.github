@@ -1,4 +1,4 @@
-resource "kubernetes_deployment" "spire_server" {
+resource "kubernetes_deployment_v1" "spire_server" {
   metadata {
     name      = "spire-server"
     namespace = "spire"
