@@ -30,7 +30,7 @@ component "aks_cluster" {
 
 component "spire" {
   source  = "app.terraform.io/amiasea/spire/github"
-  version = ">= 39.0.0"
+  version = ">= 38.0.0"
 
   inputs = {
     environment     = var.environment
