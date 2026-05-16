@@ -28,6 +28,6 @@ resource "kubernetes_secret" "spire_db_config" {
 
   data = {
     # Schema format: postgresql://<user>:<password>@<endpoint_host>/<database_name>?sslmode=require
-    connection_string = "postgresql://${neon_role.spire_owner.name}:${neon_role.spire_owner.password}@${neon_endpoint.env_endpoint.host}/${neon_database.spire_db.name}?sslmode=require"
+    connection_string = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
   }
 }

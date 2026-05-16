@@ -33,8 +33,8 @@ resource "kubernetes_deployment" "spire_server" {
           name  = "spire-server"
           image = "ghcr.io/spiffe/spire-server:1.8.0"
 
-          # FIX: Command-line parameter instructing SPIRE where to look for server.conf
-          args  = ["run", "-config", "/run/spire/config/server.conf"]
+          # Command-line parameter instructing SPIRE where to look for server.conf
+          args = ["run", "-config", "/opt/spire/conf/server/server.conf"]
 
           env {
             name = "SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
@@ -52,8 +52,8 @@ resource "kubernetes_deployment" "spire_server" {
 
           volume_mount {
             name       = "server-config"
-            mount_path = "/run/spire/config/server.conf"
-            sub_path   = "server.conf"     
+            mount_path = "/opt/spire/conf/server/server.conf" # Standard path
+            sub_path   = "server.conf"
             read_only  = true
           }
 
