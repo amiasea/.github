@@ -17,7 +17,7 @@ resource "kubernetes_daemon_set_v1" "spire_agent" {
 
         container {
           name  = "spire-agent"
-          image = "ghcr.io/spiffe/spire-agent:1.8.0"
+          image = "ghcr.io/spiffe/spire-agent:1.14.5"
           args  = ["run", "-config", "/opt/spire/conf/agent/agent.conf"]
 
           volume_mount {

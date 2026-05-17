@@ -5,32 +5,20 @@ resource "kubernetes_deployment_v1" "spire_server" {
     labels    = { app = "spire-server" }
   }
 
-  wait_for_rollout = false
-
   spec {
     replicas = 1
     selector { match_labels = { app = "spire-server" } }
+
     template {
       metadata { labels = { app = "spire-server" } }
+
       spec {
         service_account_name = "spire-server"
 
         container {
           name  = "spire-server"
-          image = "ghcr.io/spiffe/spire-server:1.8.0"
+          image = "ghcr.io/spiffe/spire-server:1.14.5"
           args  = ["run", "-config", "/opt/spire/conf/server/server.conf"]
-          
-          env {
-            name = "SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
-            value_from {
-              secret_key_ref {
-                name = "spire-db-config"
-                key  = "connection_string"
-              }
-            }
-          }
-
-          port { container_port = 8081 }
 
           volume_mount {
             name       = "server-config"
@@ -38,26 +26,29 @@ resource "kubernetes_deployment_v1" "spire_server" {
             sub_path   = "server.conf"
             read_only  = true
           }
-
           volume_mount {
             name       = "server-socket"
             mount_path = "/run/spire/sockets"
             read_only  = false
           }
+          volume_mount {
+            name       = "spire-bundle"
+            mount_path = "/run/spire/bundle"
+          }
         }
 
+        # spire-controller-manager sidecar (replaces registrar)
         container {
-          name  = "k8s-workload-registrar"
-          image = "ghcr.io/spiffe/k8s-workload-registrar:1.8.0"
-          args  = ["-config", "/run/spire/config/registrar.conf"]
-          
+          name  = "spire-controller-manager"
+          image = "ghcr.io/spiffe/spire-controller-manager:0.6.4"
+          args  = ["--config", "/etc/spire-controller-manager/config.yaml"]
+
           volume_mount {
-            name       = "registrar-config"
-            mount_path = "/run/spire/config/registrar.conf"
-            sub_path   = "registrar.conf"
+            name       = "controller-config"
+            mount_path = "/etc/spire-controller-manager/config.yaml"
+            sub_path   = "config.yaml"
             read_only  = true
           }
-
           volume_mount {
             name       = "server-socket"
             mount_path = "/run/spire/sockets"
@@ -69,15 +60,17 @@ resource "kubernetes_deployment_v1" "spire_server" {
           name = "server-config"
           config_map { name = "spire-server-config" }
         }
-
         volume {
-          name = "registrar-config"
-          config_map { name = "spire-registrar-config" }
+          name = "controller-config"
+          config_map { name = "spire-controller-manager-config" }
         }
-
         volume {
           name = "server-socket"
           empty_dir {}
+        }
+        volume {
+          name = "spire-bundle"
+          config_map { name = "spire-bundle" }
         }
       }
     }
