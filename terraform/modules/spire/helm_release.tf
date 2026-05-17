@@ -21,18 +21,17 @@ resource "helm_release" "spire" {
       }
       replicaCount = 1
       
-      # The hardened chart uses the 'config' block to build the server.conf
-      config = {
+      # The hardened chart uses the 'serverConfig' block to build the server.conf
+      serverConfig = {
         plugins = {
-          DataStore = [{
+          DataStore = {
             sql = {
               plugin_data = {
-                enabled           = true
                 database_type     = "postgres"
                 connection_string = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
               }
             }
-          }]
+          }
         }
       }
 
