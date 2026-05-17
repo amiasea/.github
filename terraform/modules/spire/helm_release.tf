@@ -48,11 +48,13 @@ resource "helm_release" "spire" {
       }
 
       # Postgres configuration using your Neon DB
-      datastore = {
-        sql = {
-          enabled          = true
-          databaseType     = "postgres"
-          connectionString = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
+      config = {
+        datastore = {
+          sql = {
+            enabled      = true
+            databaseType = "postgres"
+            connectionString = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
+          }
         }
       }
 

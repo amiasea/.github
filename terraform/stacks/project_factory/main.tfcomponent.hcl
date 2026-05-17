@@ -1,6 +1,6 @@
 component "genie" {
   source  = "app.terraform.io/amiasea/whisper_genie/github"
-  version = ">= 77.0.0" 
+  version = ">= 78.0.0" 
 
   inputs = {
     secret_name = "amiasea-github-private-key"
@@ -12,7 +12,7 @@ component "genie" {
 
 component "template" {
   source  = "app.terraform.io/amiasea/project_template_repo/github"
-  version = ">= 86.0.0"
+  version = ">= 87.0.0"
 
   providers = {
     github = provider.github.main
