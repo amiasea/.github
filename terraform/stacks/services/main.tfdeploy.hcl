@@ -17,6 +17,13 @@ deployment "development" {
   }
 }
 
+deployment_auto_approve "no_changes" {
+  check {
+    condition = true
+    reason    = "Always approve."
+  }
+}
+
 store "varset" "azure_ids" {
   name     = "Stack-Specific Credentials"
   category = "env"
