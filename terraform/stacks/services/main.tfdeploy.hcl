@@ -20,7 +20,7 @@ deployment "development" {
 deployment_auto_approve "no_changes" {
   check {
     condition = context.success == true
-    reason    = "Always approve."
+    reason    = "Always approve successful plans."
   }
 }
 
