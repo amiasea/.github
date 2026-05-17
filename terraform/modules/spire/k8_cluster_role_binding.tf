@@ -12,4 +12,9 @@ resource "kubernetes_cluster_role_binding_v1" "spire_server_trust_binding" {
     name      = "spire-server"
     namespace = "spire"
   }
+
+  depends_on = [
+    kubernetes_namespace_v1.spire,
+    kubernetes_cluster_role_v1.spire_server_trust
+  ]
 }

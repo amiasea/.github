@@ -30,4 +30,6 @@ resource "kubernetes_secret_v1" "spire_db_config" {
     # Schema format: postgresql://<user>:<password>@<endpoint_host>/<database_name>?sslmode=require
     connection_string = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
   }
+
+  depends_on = [kubernetes_namespace_v1.spire]
 }

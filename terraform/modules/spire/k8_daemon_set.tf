@@ -60,4 +60,6 @@ resource "kubernetes_daemon_set_v1" "spire_agent" {
       }
     }
   }
+
+  depends_on = [kubernetes_namespace_v1.spire]
 }

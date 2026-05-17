@@ -36,4 +36,6 @@ resource "kubernetes_config_map_v1" "spire_agent_config" {
       }
     EOT
   }
+
+  depends_on = [kubernetes_namespace_v1.spire]
 }

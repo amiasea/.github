@@ -18,4 +18,6 @@ resource "kubernetes_service_v1" "spire_server" {
 
     type = "ClusterIP"
   }
+
+    depends_on = [kubernetes_namespace_v1.spire]
 }

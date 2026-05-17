@@ -13,4 +13,6 @@ resource "kubernetes_config_map_v1" "spire_bundle" {
   lifecycle {
     ignore_changes = [data]
   }
+
+  depends_on = [kubernetes_namespace_v1.spire]
 }

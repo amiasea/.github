@@ -19,4 +19,6 @@ clusterSPIFFEID:
     podSelector: {}
 EOT
   }
+
+  depends_on = [kubernetes_namespace_v1.spire]
 }
