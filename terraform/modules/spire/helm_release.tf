@@ -24,8 +24,14 @@ resource "helm_release" "spire" {
       # The hardened chart uses the 'serverConfig' block to build the server.conf
       dataStore = {
         sql = {
-            databaseType     = "postgres"
-            connectionString = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
+            databaseType = "postgres"
+            secret = {
+              create = false
+              name   = "spire-db-config"
+              key    = "connection_string"
+              secretKeyRef = true
+            }
+            # connectionString = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
         }
       }
 
