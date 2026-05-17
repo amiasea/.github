@@ -13,7 +13,7 @@ required_providers {
   }
   helm = {
       source  = "hashicorp/helm"
-      version = "~> 2.16.0"
+      version = "~> 3.1.1"
     }
 }
 
@@ -23,6 +23,17 @@ provider "kubernetes" "main" {
     cluster_ca_certificate = base64decode(component.aks_cluster.cluster_ca_certificate)
     client_certificate     = base64decode(component.aks_cluster.client_certificate)
     client_key             = base64decode(component.aks_cluster.client_key)
+  }
+}
+
+provider "helm" "main" {
+  config {
+    kubernetes = {
+      host                   = component.aks_cluster.host
+      cluster_ca_certificate = base64decode(component.aks_cluster.cluster_ca_certificate)
+      client_certificate     = base64decode(component.aks_cluster.client_certificate)
+      client_key             = base64decode(component.aks_cluster.client_key)
+    }
   }
 }
 
