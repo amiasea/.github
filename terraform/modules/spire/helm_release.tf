@@ -63,7 +63,7 @@ resource "helm_release" "spire" {
 
 resource "helm_release" "spire_crds" {
   name             = "spire-crds"
-  repository       = "https://github.io"
+  repository       = "https://spiffe.github.io/helm-charts-hardened/"
   chart            = "spire-crds"
   namespace        = "spire"
   create_namespace = true
