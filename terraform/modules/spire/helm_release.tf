@@ -1,6 +1,6 @@
 locals {
   spire_connection_string = base64decode(
-    data.kubernetes_secret.spire_db_config.data["connection_string"]
+    kubernetes_secret_v1.spire_db_config.data["connection_string"]
   )
 }
 
