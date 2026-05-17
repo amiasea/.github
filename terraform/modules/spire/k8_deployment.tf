@@ -48,7 +48,7 @@ resource "kubernetes_deployment_v1" "spire_server" {
 
         container {
           name  = "k8s-workload-registrar"
-          image = "spiffe/k8s-workload-registrar:1.8.0"
+          image = "ghcr.io/spiffe/k8s-workload-registrar:1.8.0"
           args  = ["-config", "/run/spire/config/registrar.conf"]
           
           volume_mount {
