@@ -6,7 +6,7 @@ resource "helm_release" "spire" {
   namespace  = "spire"
 
   # Wait for CRDs to be ready
-  depends_on = [helm_release.spire_crds]
+  depends_on = [helm_release.spire_crds, kubernetes_secret_v1.spire_db_config]
 
   values = [yamlencode({
     global = {
