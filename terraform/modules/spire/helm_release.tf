@@ -60,3 +60,13 @@ resource "helm_release" "spire" {
     }
   })]
 }
+
+resource "helm_release" "spire_crds" {
+  name             = "spire-crds"
+  repository       = "https://github.io"
+  chart            = "spire-crds"
+  namespace        = "spire"
+  create_namespace = true
+  wait             = true
+  depends_on       = [kubernetes_namespace_v1.spire]
+}
