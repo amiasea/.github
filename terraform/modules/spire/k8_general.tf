@@ -33,3 +33,12 @@ resource "kubernetes_secret_v1" "spire_db_config" {
 
   depends_on = [kubernetes_namespace_v1.spire]
 }
+
+resource "kubernetes_namespace_v1" "workload_ns" {
+  metadata {
+    name = "my-app"
+    labels = {
+      "spiffe.io/register" = "true" # The Controller Manager watches for this
+    }
+  }
+}

@@ -5,6 +5,7 @@ resource "helm_release" "spire_crds" {
   chart            = "spire-crds"
   namespace        = "spire"
   create_namespace = true
+  wait             = true
 
   depends_on = [kubernetes_namespace_v1.spire]
 }
@@ -36,10 +37,14 @@ resource "helm_release" "spire" {
 
       controllerManager = {
         enabled = true
-        installCRDs = true
+        installCRDs = false
         image = {
           tag = "0.6.4"
         }
+      }
+
+      identities = {
+        enabled = true
       }
 
       # Postgres configuration using your Neon DB
