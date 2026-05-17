@@ -1,9 +1,3 @@
-locals {
-  spire_connection_string = base64decode(
-    kubernetes_secret_v1.spire_db_config.data["connection_string"]
-  )
-}
-
 # Main SPIRE deployment
 resource "helm_release" "spire" {
   name       = "spire"
@@ -31,8 +25,7 @@ resource "helm_release" "spire" {
       dataStore = {
         sql = {
             databaseType = "postgres"
-            connectionString = local.spire_connection_string
-            # connectionString = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
+            connectionString = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
         }
       }
 
