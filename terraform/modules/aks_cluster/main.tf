@@ -4,6 +4,8 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
   resource_group_name = var.rg_name
   dns_prefix          = "app-${var.environment}"
   sku_tier            = "Free"
+  automatic_upgrade_channel = "none"   # or "patch"
+
 
   default_node_pool {
     name            = "system"
@@ -12,6 +14,10 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
     vnet_subnet_id  = azurerm_subnet.aks_subnet.id
     os_disk_type    = var.os_disk_type
     os_disk_size_gb = var.os_disk_size_gb
+
+    upgrade_settings {
+      max_surge = "10%"
+    }
   }
 
   network_profile {
@@ -30,10 +36,16 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
     identity_ids = [azurerm_user_assigned_identity.uami.id]
   }
 
-  # azure_active_directory_role_based_access_control {
-  #   azure_rbac_enabled     = false
-  #   admin_group_object_ids = [var.k8_admin_group_id]
-  # }
+  lifecycle {
+    ignore_changes = [
+      kube_config,
+      kube_config_raw,
+      kube_admin_config,
+      kube_admin_config_raw,
+      default_node_pool[0].upgrade_settings,
+      windows_profile,
+    ]
+  }
 
   depends_on = [
     azurerm_role_assignment.network_contributor,
