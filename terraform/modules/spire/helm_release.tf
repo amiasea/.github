@@ -25,6 +25,15 @@ resource "helm_release" "spire" {
       dataStore = {
         sql = {
             databaseType = "postgres"
+                # REQUIRED — disables the chart’s built‑in secret logic
+            password         = ""
+
+            # REQUIRED — ensures the chart does NOT try to use external secrets
+            externalSecret = {
+              enabled = false
+            }
+
+            # Your Neon connection string (Terraform interpolated)
             connectionString = "host=${neon_endpoint.env_endpoint.host} port=5432 user=${neon_role.spire_owner.name} password=${neon_role.spire_owner.password} dbname=${neon_database.spire_db.name} sslmode=require"
         }
       }
