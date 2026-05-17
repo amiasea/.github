@@ -25,7 +25,12 @@ plugins {
 
   NodeAttestor "k8s_psat" {
     plugin_data {
-      cluster = "app-${var.environment}-cluster"
+      clusters = {
+        "app-${var.environment}-cluster" = {
+          # This allows the agent's ServiceAccount to authenticate
+          service_account_allow_list = ["spire:spire-agent"]
+        }
+      }
     }
   }
 
