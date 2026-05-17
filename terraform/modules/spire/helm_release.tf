@@ -36,6 +36,7 @@ resource "helm_release" "spire" {
 
       controllerManager = {
         enabled = true
+        installCRDs = true
         image = {
           tag = "0.6.4"
         }
