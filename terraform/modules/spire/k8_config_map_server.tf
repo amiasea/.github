@@ -19,7 +19,7 @@ plugins {
   DataStore "sql" {
     plugin_data {
       database_type = "postgres"
-      connection_string = "$SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING"
+      connection_string = "$${SPIRE_SERVER_DATASTORE_SQL_CONNECTION_STRING}"
     }
   }
 
