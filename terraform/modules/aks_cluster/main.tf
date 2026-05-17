@@ -4,7 +4,6 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
   resource_group_name = var.rg_name
   dns_prefix          = "app-${var.environment}"
   sku_tier            = "Free"
-  automatic_upgrade_channel = "none"   # or "patch"
 
 
   default_node_pool {
@@ -38,7 +37,6 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
 
   lifecycle {
     ignore_changes = [
-      kube_config,
       kube_config_raw,
       kube_admin_config,
       kube_admin_config_raw,
