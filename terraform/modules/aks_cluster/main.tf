@@ -37,11 +37,9 @@ resource "azurerm_kubernetes_cluster" "app_cluster" {
 
   lifecycle {
     ignore_changes = [
-      kube_config_raw,
-      kube_admin_config,
-      kube_admin_config_raw,
       default_node_pool[0].upgrade_settings,
       windows_profile,
+      tags,
     ]
   }
 

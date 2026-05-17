@@ -11,6 +11,10 @@ required_providers {
     source  = "hashicorp/kubernetes"
     version = "~> 3.1.0"
   }
+  helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.16.0"
+    }
 }
 
 provider "kubernetes" "main" {
