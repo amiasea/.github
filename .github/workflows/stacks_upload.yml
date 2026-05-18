@@ -57,17 +57,21 @@ jobs:
 
       - name: Sync All Stacks from Filesystem
         run: |
-          # Enable strict error-checking inside the shell environment
           set -e
-
           for STACK_NAME in $(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;) ; do
+            STACK_DIR="${{ env.STACKS_ROOT }}/$STACK_NAME"
+            
+            # Check for README.md before proceeding
+            if [ ! -f "$STACK_DIR/README.md" ]; then
+              echo "SKIP: $STACK_NAME (No README.md found)"
+              continue
+            fi
+
             echo "################################################################"
             echo " SYNCING STACK: $STACK_NAME"
             echo "################################################################"
             
-            STACK_DIR="${{ env.STACKS_ROOT }}/$STACK_NAME"
             cd "$STACK_DIR"
-
             echo "LOG: [1/3] Initializing & Validating..."
             terraform stacks init
             terraform stacks validate
@@ -79,12 +83,11 @@ jobs:
               -stack-name "$STACK_NAME" || true
 
             echo "LOG: [3/3] Uploading configuration..."
-            # The TF_VAR_gh_app_pem_file is now in the environment for the upload/plan
             terraform stacks configuration upload \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
               -stack-name "$STACK_NAME"
-
+            
             cd - > /dev/null
             echo "SUCCESS: $STACK_NAME processed."
             echo "----------------------------------------------------------------"

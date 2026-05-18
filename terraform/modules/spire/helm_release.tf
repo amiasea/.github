@@ -26,7 +26,7 @@ resource "helm_release" "spire" {
         sql = {
             databaseType = "postgres"
                 # REQUIRED — disables the chart’s built‑in secret logic
-            password         = ""
+            password = ""
 
             # REQUIRED — ensures the chart does NOT try to use external secrets
             externalSecret = {
