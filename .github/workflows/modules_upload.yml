@@ -7,30 +7,48 @@ on:
   workflow_dispatch:
 
 jobs:
-  sweep-and-increment:
+  # Job 1: Find all modules and output them as a JSON list
+  list-modules:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-matrix
+        run: |
+          MODULES=$(find terraform/modules -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix=$MODULES" >> $GITHUB_OUTPUT
+
+  # Job 2: Run the actual sync logic for each module found
+  sync-module:
+    needs: list-modules
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.list-modules.outputs.matrix) }}
     permissions:
       id-token: write
       contents: read
     env:
       TF_ORG: "amiasea"
       TF_PROVIDER: "github"
-      MODULES_ROOT: "terraform/modules"
+      MODULE_DIR: "terraform/modules/${{ matrix.module }}"
       PR_TITLE: ${{ github.event.pull_request.title }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.15.3"
 
-      - name: Install terraform-config-inspect
-        run: |
-          curl -L https://github.com | tar -xz
-          sudo mv terraform-config-inspect /usr/local/bin/
+      - name: Generate Aliases Action
+        uses: bendrucker/terraform-configuration-aliases-action@v1
+        with:
+          path: ${{ env.MODULE_DIR }}
 
       - name: 'Az CLI Login'
         uses: azure/login@v2
@@ -39,115 +57,66 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Fetch TF Token
+      - name: Process Sync and Upload
         run: |
+          # 1. Fetch TF Token
           RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
           echo "::add-mask::$RAW_TOKEN"
-          echo "TF_TOKEN_app_terraform_io=$RAW_TOKEN" >> $GITHUB_ENV
+          TF_TOKEN=$RAW_TOKEN
 
-      - name: Sync All Modules
-        run: |
-          echo "::group::Module Discovery"
-          ALL_MODULES=$(find ${{ env.MODULES_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
-          echo "Modules found: $ALL_MODULES"
-          echo "::endgroup::"
+          # 2. Check for required files
+          if [[ ! -f "$MODULE_DIR/main.tf" || ! -f "$MODULE_DIR/README.md" ]]; then
+            echo "SKIP: ${{ matrix.module }} - Missing main.tf or README.md."
+            exit 0
+          fi
+
+          # 3. Validation (Alias file is now present thanks to the action step)
+          cd "$MODULE_DIR"
+          terraform init -backend=false && terraform validate
+          cd -
+
+          # 4. Registry API Logic
+          BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
+          META_URL="$BASE_URL/private/$TF_ORG/${{ matrix.module }}/$TF_PROVIDER"
+          VER_URL="$META_URL/versions"
+
+          # Ensure Registry Shell exists
+          curl -s -o /dev/null --header "Authorization: Bearer $TF_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            --request POST \
+            --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"${{ matrix.module }}\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\"}}}" \
+            "$BASE_URL"
+
+          # Fetch Version & Increment
+          MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN" "$META_URL")
+          LATEST_VERSION=$(echo "$MODULE_META" | jq -r '.data.attributes."latest-version" // "0.0.0"')
+          [ "$LATEST_VERSION" == "null" ] && LATEST_VERSION="0.0.0"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+          if [[ "$PR_TITLE" == *"feat"* ]]; then
+            NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
+          elif [[ "$PR_TITLE" == *"fix"* ]]; then
+            NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          else
+            NEXT_VERSION="$((MAJOR + 1)).0.0"
+          fi
+
+          # Create Version and Get Upload URL
+          RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            --request POST \
+            --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
+            "$VER_URL")
           
-          ANY_FAILED=0
+          UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // empty')
 
-          for MODULE_NAME in $ALL_MODULES; do
-            echo "################################################################"
-            echo " SYNCING MODULE: $MODULE_NAME"
-            echo "################################################################"
-            
-            DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
-            BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
-            META_URL="$BASE_URL/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
-            VER_URL="$META_URL/versions"
-
-            if [[ ! -f "$DIR/main.tf" || ! -f "$DIR/README.md" ]]; then
-              echo "SKIP: $MODULE_NAME - Missing main.tf or README.md."
-              continue
-            fi
-
-            # Local Validation
-            cd "$DIR"
-
-            # Replicate bendrucker/terraform-configuration-aliases-action logic
-            # This creates a JSON provider config to satisfy configuration_aliases requirements
-            terraform-config-inspect --json . | jq -r '
-              [.required_providers[].aliases] | flatten | del(.[] | select(. == null)) 
-
-              | reduce .[] as $entry ( {}; .provider[$entry.name] //= [] | .provider[$entry.name] += [{"alias": $entry.alias}] )
-            ' > _aliases.tf.json
-
-            if ! (terraform init -backend=false && terraform validate); then
-              echo "❌ ERROR: Terraform validation failed for $MODULE_NAME"
-              ANY_FAILED=1
-              rm -f _aliases.tf.json
-              cd - > /dev/null
-              continue
-            fi
-            
-            # Remove the alias file before hashing/zipping to keep the registry clean
+          if [ -n "$UPLOAD_URL" ]; then
+            cd "$MODULE_DIR"
+            # Remove the temporary alias file so it is NOT uploaded to the registry
             rm -f _aliases.tf.json
-            cd - > /dev/null
-
-            cd "$DIR"
-            LOCAL_HASH=$(find . -type f -not -path '*/.*' -exec md5sum {} + | sort | md5sum | cut -d' ' -f1)
-            cd - > /dev/null
-
-            # Ensure Registry Shell exists
-            curl -s -o /dev/null --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
-              --header "Content-Type: application/vnd.api+json" \
-              --request POST \
-              --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"$MODULE_NAME\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\"}}}" \
-              "$BASE_URL"
-
-            # Fetch Version & Check for drift
-            MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
-            LATEST_VERSION=$(echo "$MODULE_META" | jq -r '
-              if .data.attributes."latest-version" != null and .data.attributes."latest-version" != "" 
-              then .data.attributes."latest-version" 
-              elif (.data.attributes."version-statuses" | length > 0) 
-              then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last 
-              else "0.0.0" end')
-            
-            [ "$LATEST_VERSION" == "null" ] && LATEST_VERSION="0.0.0"
-
-            # Increment Logic
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
-            if [[ "$PR_TITLE" == *"feat"* ]]; then
-              NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
-            elif [[ "$PR_TITLE" == *"fix"* ]]; then
-              NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
-            else
-              NEXT_VERSION="$((MAJOR + 1)).0.0"
-            fi
-
-            echo "LOG: Latest: $LATEST_VERSION | Next: $NEXT_VERSION"
-            
-            RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
-              --header "Content-Type: application/vnd.api+json" \
-              --request POST \
-              --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
-              "$VER_URL")
-            
-            UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // empty')
-
-            if [ -n "$UPLOAD_URL" ]; then
-              cd "$DIR"
-              tar -czf ../../../module_upload.tar.gz .
-              curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
-              rm ../../../module_upload.tar.gz
-              cd - > /dev/null
-              echo "✅ SUCCESS: $MODULE_NAME v$NEXT_VERSION uploaded."
-            else
-              echo "ℹ️ INFO: $MODULE_NAME version $NEXT_VERSION already exists or no change needed."
-            fi
-            echo "----------------------------------------------------------------"
-          done
-
-          if [ $ANY_FAILED -ne 0 ]; then
-            echo "💥 Error: One or more modules failed validation. Failing the job."
-            exit 1
+            tar -czf ../../../module_upload.tar.gz .
+            curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
+            echo "✅ SUCCESS: ${{ matrix.module }} v$NEXT_VERSION uploaded."
+          else
+            echo "ℹ️ INFO: ${{ matrix.module }} version $NEXT_VERSION already exists."
           fi
