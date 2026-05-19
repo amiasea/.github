@@ -64,7 +64,7 @@ jobs:
 
             # Local Validation - Exit check updated to set failure flag
             cd "$DIR"
-            if ! (terraform init -backend=false && terraform validate); then
+            if ! (terraform init -backend=false && terraform validate -backend=false); then
               echo "❌ ERROR: Terraform validation failed for $MODULE_NAME"
               ANY_FAILED=1
               cd - > /dev/null
