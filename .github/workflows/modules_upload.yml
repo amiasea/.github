@@ -62,20 +62,34 @@ jobs:
           echo "::add-mask::$RAW_TOKEN"
           TF_TOKEN=$RAW_TOKEN
 
-          # 2. API Config
+          # 2. Critical File Check
+          if [[ ! -f "$MODULE_DIR/main.tf" || ! -f "$MODULE_DIR/README.md" ]]; then
+            echo "SKIP: ${{ matrix.module }} - Missing main.tf or README.md."
+            exit 0
+          fi
+
+          # 3. Registry API Setup
           BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
           META_URL="$BASE_URL/private/$TF_ORG/${{ matrix.module }}/$TF_PROVIDER"
           VER_URL="$META_URL/versions"
 
-          # 3. Robust Version Retrieval (Single-line JQ to avoid shell errors)
+          # 4. Ensure Registry Shell exists (Corrected POST URL)
+          echo "LOG: Ensuring registry shell exists for ${{ matrix.module }}..."
+          curl -s -o /dev/null --header "Authorization: Bearer $TF_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            --request POST \
+            --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"${{ matrix.module }}\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\"}}}" \
+            "$BASE_URL"
+
+          # 5. Robust Version Retrieval
           MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN" "$META_URL")
           
           LATEST_VERSION=$(echo "$MODULE_META" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end')
+          
+          if [[ "$LATEST_VERSION" == "null" || -z "$LATEST_VERSION" ]]; then LATEST_VERSION="0.0.0"; fi
+          echo "LOG: Detected Latest Version: $LATEST_VERSION"
 
-          if [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ]; then LATEST_VERSION="0.0.0"; fi
-          echo "DETECTED LATEST VERSION: $LATEST_VERSION"
-
-          # 4. Increment Logic
+          # 6. Increment Logic
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
           MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
 
@@ -86,14 +100,14 @@ jobs:
           else
             NEXT_VERSION="$((MAJOR + 1)).0.0"
           fi
-          echo "ATTEMPTING TO CREATE VERSION: $NEXT_VERSION"
+          echo "LOG: Next Target Version: $NEXT_VERSION"
 
-          # 5. Validation
+          # 7. Validation
           cd "$MODULE_DIR"
           terraform init -backend=false && terraform validate
           cd -
 
-          # 6. Create Version & Upload
+          # 8. Create Version & Upload
           RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
             --request POST \
@@ -104,6 +118,7 @@ jobs:
 
           if [ -n "$UPLOAD_URL" ]; then
             cd "$MODULE_DIR"
+            # Cleanup alias file exactly as named by the action
             rm -f aliased-providers.tf.json
             tar -czf ../../../module_upload.tar.gz .
             curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
