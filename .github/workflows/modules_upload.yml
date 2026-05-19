@@ -24,6 +24,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.3"
 
       - name: 'Az CLI Login'
         uses: azure/login@v2
@@ -64,7 +66,7 @@ jobs:
 
             # Local Validation - Exit check updated to set failure flag
             cd "$DIR"
-            if ! (terraform init -backend=false && terraform validate -backend=false); then
+            if ! (terraform init -backend=false && terraform validate); then
               echo "❌ ERROR: Terraform validation failed for $MODULE_NAME"
               ANY_FAILED=1
               cd - > /dev/null
