@@ -44,6 +44,8 @@ provider "azurerm" "scoped_sub" {
 provider "azuread" "main"{
   config {
     use_oidc  = true
+    client_id       = "e5979a4b-0875-4f8c-9688-f9e10a6c7aaf"
+    tenant_id       = "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
     oidc_token      = var.azure_oidc_token
   }
 }
