@@ -81,6 +81,8 @@ resource "azurerm_container_app" "aviator_api" {
         "https://www.${local.subdomain}.${var.domain}"
       ]
       allowed_methods = ["GET", "POST", "OPTIONS"]
+      allowed_headers = ["*"] 
+      exposed_headers = ["*"]
     }
     
     traffic_weight {
@@ -91,7 +93,7 @@ resource "azurerm_container_app" "aviator_api" {
 
   lifecycle {
     ignore_changes = [
-      secret,
+      secrets,
       # template[0].container[0].image,
     ]
   }
