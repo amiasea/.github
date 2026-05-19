@@ -23,9 +23,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.15.3"
+
+      - name: Install terraform-config-inspect
+        run: |
+          curl -L https://github.com | tar -xz
+          sudo mv terraform-config-inspect /usr/local/bin/
 
       - name: 'Az CLI Login'
         uses: azure/login@v2
@@ -64,14 +69,27 @@ jobs:
               continue
             fi
 
-            # Local Validation - Exit check updated to set failure flag
+            # Local Validation
             cd "$DIR"
+
+            # Replicate bendrucker/terraform-configuration-aliases-action logic
+            # This creates a JSON provider config to satisfy configuration_aliases requirements
+            terraform-config-inspect --json . | jq -r '
+              [.required_providers[].aliases] | flatten | del(.[] | select(. == null)) 
+
+              | reduce .[] as $entry ( {}; .provider[$entry.name] //= [] | .provider[$entry.name] += [{"alias": $entry.alias}] )
+            ' > _aliases.tf.json
+
             if ! (terraform init -backend=false && terraform validate); then
               echo "❌ ERROR: Terraform validation failed for $MODULE_NAME"
               ANY_FAILED=1
+              rm -f _aliases.tf.json
               cd - > /dev/null
               continue
             fi
+            
+            # Remove the alias file before hashing/zipping to keep the registry clean
+            rm -f _aliases.tf.json
             cd - > /dev/null
 
             cd "$DIR"
