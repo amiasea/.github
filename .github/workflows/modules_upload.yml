@@ -67,19 +67,12 @@ jobs:
           META_URL="$BASE_URL/private/$TF_ORG/${{ matrix.module }}/$TF_PROVIDER"
           VER_URL="$META_URL/versions"
 
-          # 3. Robust Version Retrieval
-          # We fetch ALL versions and sort them to find the true highest version
+          # 3. Robust Version Retrieval (Single-line JQ to avoid shell errors)
           MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN" "$META_URL")
           
-          LATEST_VERSION=$(echo "$MODULE_META" | jq -r '
-            if .data.attributes."version-statuses" | length > 0 then
-              .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last
-            else
-              "0.0.0"
-            fi')
+          LATEST_VERSION=$(echo "$MODULE_META" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end')
 
-          [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
-          
+          if [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ]; then LATEST_VERSION="0.0.0"; fi
           echo "DETECTED LATEST VERSION: $LATEST_VERSION"
 
           # 4. Increment Logic
@@ -93,7 +86,6 @@ jobs:
           else
             NEXT_VERSION="$((MAJOR + 1)).0.0"
           fi
-
           echo "ATTEMPTING TO CREATE VERSION: $NEXT_VERSION"
 
           # 5. Validation
