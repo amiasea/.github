@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.15.3"
 
@@ -57,38 +57,34 @@ jobs:
 
       - name: Process Sync and Upload
         run: |
-          # 1. Fetch TF Token
+          # 1. Auth Setup
           RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
           echo "::add-mask::$RAW_TOKEN"
           TF_TOKEN=$RAW_TOKEN
 
-          if [[ ! -f "$MODULE_DIR/main.tf" || ! -f "$MODULE_DIR/README.md" ]]; then
-            echo "SKIP: ${{ matrix.module }} - Missing main.tf or README.md."
-            exit 0
-          fi
-
-          # 2. Registry API Setup
+          # 2. API Config
           BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
           META_URL="$BASE_URL/private/$TF_ORG/${{ matrix.module }}/$TF_PROVIDER"
           VER_URL="$META_URL/versions"
 
-          # 3. DEBUG: Check current registry state
-          echo "--- DEBUG INFO ---"
+          # 3. Robust Version Retrieval
+          # We fetch ALL versions and sort them to find the true highest version
           MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN" "$META_URL")
-          echo "RAW API ATTRIBUTES: $(echo "$MODULE_META" | jq -c '.data.attributes')"
           
-          LATEST_VERSION=$(echo "$MODULE_META" | jq -r '.data.attributes."latest-version" // "0.0.0"')
-          [ "$LATEST_VERSION" == "null" ] && LATEST_VERSION="0.0.0"
-          echo "PARSED LATEST VERSION: $LATEST_VERSION"
-          echo "------------------"
+          LATEST_VERSION=$(echo "$MODULE_META" | jq -r '
+            if .data.attributes."version-statuses" | length > 0 then
+              .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last
+            else
+              "0.0.0"
+            fi')
+
+          [ "$LATEST_VERSION" == "null" ] || [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
+          
+          echo "DETECTED LATEST VERSION: $LATEST_VERSION"
 
           # 4. Increment Logic
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
-          
-          # Ensure variables are numbers even if parsing failed
-          MAJOR=${MAJOR:-0}
-          MINOR=${MINOR:-0}
-          PATCH=${PATCH:-0}
+          MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
 
           if [[ "$PR_TITLE" == *"feat"* ]]; then
             NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
@@ -97,14 +93,15 @@ jobs:
           else
             NEXT_VERSION="$((MAJOR + 1)).0.0"
           fi
-          echo "CALCULATED NEXT VERSION: $NEXT_VERSION"
+
+          echo "ATTEMPTING TO CREATE VERSION: $NEXT_VERSION"
 
           # 5. Validation
           cd "$MODULE_DIR"
           terraform init -backend=false && terraform validate
           cd -
 
-          # 6. Create Version and Get Upload URL
+          # 6. Create Version & Upload
           RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
             --request POST \
@@ -115,12 +112,12 @@ jobs:
 
           if [ -n "$UPLOAD_URL" ]; then
             cd "$MODULE_DIR"
-            # Cleanup alias file before archiving
             rm -f aliased-providers.tf.json
             tar -czf ../../../module_upload.tar.gz .
             curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
             echo "✅ SUCCESS: ${{ matrix.module }} v$NEXT_VERSION uploaded."
           else
-            echo "ℹ️ INFO: Version $NEXT_VERSION creation refused by API. Check if it already exists as a draft."
+            echo "❌ ERROR: Version $NEXT_VERSION creation failed."
             echo "API RESPONSE: $RESPONSE"
+            exit 1
           fi
