@@ -93,7 +93,7 @@ resource "azurerm_container_app" "aviator_api" {
 
   lifecycle {
     ignore_changes = [
-      secrets,
+      secret,
       # template[0].container[0].image,
     ]
   }
