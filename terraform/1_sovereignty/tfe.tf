@@ -40,20 +40,6 @@ resource "tfe_variable" "sql_admins_group_id" {
   variable_set_id = tfe_variable_set.stack_variable_set.id
 }
 
-resource "tfe_variable" "tenant_id" {
-  key             = "ARM_TENANT_ID"
-  value           = data.azurerm_client_config.current.tenant_id
-  category        = "env" # Environment variable for Azure Provider
-  variable_set_id = tfe_variable_set.stack_variable_set.id
-}
-
-resource "tfe_variable" "subscription_id" {
-  key             = "ARM_SUBSCRIPTION_ID"
-  value           = data.azurerm_client_config.current.subscription_id
-  category        = "env" # Environment variable for Azure Provider
-  variable_set_id = tfe_variable_set.stack_variable_set.id
-}
-
 resource "tfe_variable" "resource_group_name" {
   key             = "resource_group_name"
   value           = var.resource_group_name
@@ -68,13 +54,6 @@ resource "tfe_variable" "location" {
   variable_set_id = tfe_variable_set.stack_variable_set.id
 }
 
-resource "tfe_variable" "client_id" {
-  key             = "ARM_CLIENT_ID"
-  value           = azuread_service_principal.delegated_permissions_sp.client_id
-  category        = "env" # Environment variable for Azure Provider
-  variable_set_id = tfe_variable_set.stack_variable_set.id
-}
-
 resource "tfe_variable" "aviator_gh_app_id" {
   key             = "amiasea_gh_app_id"
   value           = "2670685"
@@ -86,14 +65,6 @@ resource "tfe_variable" "amiasea_private_key_id" {
   key             = "amiasea_private_key_versionless_id"
   value           = azurerm_key_vault_secret.amiasea_github_private_key.versionless_id
   category        = "terraform"
-  variable_set_id = tfe_variable_set.stack_variable_set.id
-}
-
-resource "tfe_variable" "tf_token_id" {
-  key             = "tf_token_versionless_id"
-  value           = azurerm_key_vault_secret.tf_token.versionless_id
-  category        = "terraform"
-  sensitive       = true
   variable_set_id = tfe_variable_set.stack_variable_set.id
 }
 

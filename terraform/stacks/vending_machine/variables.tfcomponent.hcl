@@ -22,6 +22,7 @@ variable "sql_admins_group_id" {
 variable "ghcr_pat_versionless_id" {
   type = string
   description = "GHCR PAT Key Vault Secret Versionless ID"
+  sensitive = true
 }
 
 variable "sovereign_key_vault_id" {
