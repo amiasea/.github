@@ -24,5 +24,5 @@ deployment_auto_approve "no_changes" {
 
 store "varset" "azure_ids" {
   name     = "Stack-Specific Credentials"
-  category = "env"
+  category = "terraform"
 }
