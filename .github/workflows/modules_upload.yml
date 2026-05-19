@@ -18,7 +18,6 @@ jobs:
       TF_PROVIDER: "github"
       MODULES_ROOT: "terraform/modules"
       PR_TITLE: ${{ github.event.pull_request.title }}
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -45,6 +44,8 @@ jobs:
           ALL_MODULES=$(find ${{ env.MODULES_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
           echo "Modules found: $ALL_MODULES"
           echo "::endgroup::"
+          
+          ANY_FAILED=0
 
           for MODULE_NAME in $ALL_MODULES; do
             echo "################################################################"
@@ -52,44 +53,48 @@ jobs:
             echo "################################################################"
             
             DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
-            BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
+            BASE_URL="https://terraform.io"
             META_URL="$BASE_URL/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
             VER_URL="$META_URL/versions"
 
-            # 1. Validate mandatory files
             if [[ ! -f "$DIR/main.tf" || ! -f "$DIR/README.md" ]]; then
               echo "SKIP: $MODULE_NAME - Missing main.tf or README.md."
               continue
             fi
 
-            # 2. Local Validation
+            # Local Validation - Exit check updated to set failure flag
             cd "$DIR"
-            terraform init -backend=false && terraform validate || { echo "ERROR: Validation failed"; cd -; continue; }
-            
-            # 3. Calculate local hash (Detects real changes)
+            if ! (terraform init -backend=false && terraform validate); then
+              echo "❌ ERROR: Terraform validation failed for $MODULE_NAME"
+              ANY_FAILED=1
+              cd - > /dev/null
+              continue
+            fi
+            cd - > /dev/null
+
+            cd "$DIR"
             LOCAL_HASH=$(find . -type f -not -path '*/.*' -exec md5sum {} + | sort | md5sum | cut -d' ' -f1)
             cd - > /dev/null
 
-            # 4. Ensure Registry Shell exists
+            # Ensure Registry Shell exists
             curl -s -o /dev/null --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
-                 --header "Content-Type: application/vnd.api+json" \
-                 --request POST \
-                 --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"$MODULE_NAME\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\"}}}" \
-                 "$BASE_URL"
+              --header "Content-Type: application/vnd.api+json" \
+              --request POST \
+              --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"$MODULE_NAME\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\"}}}" \
+              "$BASE_URL"
 
-            # 5. Fetch Version & Check for drift
+            # Fetch Version & Check for drift
             MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" "$META_URL")
-            
             LATEST_VERSION=$(echo "$MODULE_META" | jq -r '
-              if .data.attributes."latest-version" != null and .data.attributes."latest-version" != "" then 
-                .data.attributes."latest-version" 
-              elif (.data.attributes."version-statuses" | length > 0) then 
-                .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last 
+              if .data.attributes."latest-version" != null and .data.attributes."latest-version" != "" 
+              then .data.attributes."latest-version" 
+              elif (.data.attributes."version-statuses" | length > 0) 
+              then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last 
               else "0.0.0" end')
             
             [ "$LATEST_VERSION" == "null" ] && LATEST_VERSION="0.0.0"
-            
-            # 6. Increment Logic
+
+            # Increment Logic
             IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
             if [[ "$PR_TITLE" == *"feat"* ]]; then
               NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
@@ -99,15 +104,14 @@ jobs:
               NEXT_VERSION="$((MAJOR + 1)).0.0"
             fi
 
-            # 7. Upload only if new or forced
             echo "LOG: Latest: $LATEST_VERSION | Next: $NEXT_VERSION"
             
             RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
-                 --header "Content-Type: application/vnd.api+json" \
-                 --request POST \
-                 --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
-                 "$VER_URL")
-
+              --header "Content-Type: application/vnd.api+json" \
+              --request POST \
+              --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
+              "$VER_URL")
+            
             UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // empty')
 
             if [ -n "$UPLOAD_URL" ]; then
@@ -116,9 +120,14 @@ jobs:
               curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
               rm ../../../module_upload.tar.gz
               cd - > /dev/null
-              echo "SUCCESS: $MODULE_NAME v$NEXT_VERSION uploaded."
+              echo "✅ SUCCESS: $MODULE_NAME v$NEXT_VERSION uploaded."
             else
-              echo "INFO: $MODULE_NAME version $NEXT_VERSION already exists or no change needed."
+              echo "ℹ️ INFO: $MODULE_NAME version $NEXT_VERSION already exists or no change needed."
             fi
             echo "----------------------------------------------------------------"
           done
+
+          if [ $ANY_FAILED -ne 0 ]; then
+            echo "💥 Error: One or more modules failed validation. Failing the job."
+            exit 1
+          fi
