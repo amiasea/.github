@@ -18,8 +18,11 @@ resource "azuread_application" "aviator_api" {
       type                       = "User"
     }
   }
+  
+  lifecycle {
+    ignore_changes = [identifier_uris]
+  }
 
-  # Add this block for Verifiable Credentials permissions
   required_resource_access {
     # Target the VC Request Service
     resource_app_id = azuread_service_principal.vc_service.client_id
