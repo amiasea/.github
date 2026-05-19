@@ -53,7 +53,7 @@ jobs:
             echo "################################################################"
             
             DIR="${{ env.MODULES_ROOT }}/$MODULE_NAME"
-            BASE_URL="https://terraform.io"
+            BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
             META_URL="$BASE_URL/private/$TF_ORG/$MODULE_NAME/$TF_PROVIDER"
             VER_URL="$META_URL/versions"
 

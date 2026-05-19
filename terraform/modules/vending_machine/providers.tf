@@ -9,7 +9,7 @@ terraform {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.63.0"
-      configuration_aliases = [ azurerm.sub ]
+      configuration_aliases = [azurerm.sub]
     }
     random = {
       source  = "hashicorp/random"
