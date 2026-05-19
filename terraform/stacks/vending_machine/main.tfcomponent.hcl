@@ -1,6 +1,6 @@
 component "vending_machine" {
   source  = "app.terraform.io/amiasea/vending_machine/github"
-  version = ">= 1.0.0" 
+  version = ">= 2.0.0" 
 
   inputs = {
     env = var.env

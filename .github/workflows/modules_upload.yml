@@ -113,7 +113,7 @@ jobs:
           if [ -n "$UPLOAD_URL" ]; then
             cd "$MODULE_DIR"
             # Remove the temporary alias file so it is NOT uploaded to the registry
-            rm -f _aliases.tf.json
+            rm -f aliased-providers.tf.json
             tar -czf ../../../module_upload.tar.gz .
             curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
             echo "✅ SUCCESS: ${{ matrix.module }} v$NEXT_VERSION uploaded."
