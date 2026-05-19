@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Job 1: Find all modules and output them as a JSON list
   list-modules:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
@@ -20,7 +19,6 @@ jobs:
           MODULES=$(find terraform/modules -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | jq -R -s -c 'split("\n")[:-1]')
           echo "matrix=$MODULES" >> $GITHUB_OUTPUT
 
-  # Job 2: Run the actual sync logic for each module found
   sync-module:
     needs: list-modules
     runs-on: ubuntu-latest
@@ -64,35 +62,34 @@ jobs:
           echo "::add-mask::$RAW_TOKEN"
           TF_TOKEN=$RAW_TOKEN
 
-          # 2. Check for required files
           if [[ ! -f "$MODULE_DIR/main.tf" || ! -f "$MODULE_DIR/README.md" ]]; then
             echo "SKIP: ${{ matrix.module }} - Missing main.tf or README.md."
             exit 0
           fi
 
-          # 3. Validation (Alias file is now present thanks to the action step)
-          cd "$MODULE_DIR"
-          terraform init -backend=false && terraform validate
-          cd -
-
-          # 4. Registry API Logic
+          # 2. Registry API Setup
           BASE_URL="https://app.terraform.io/api/v2/organizations/$TF_ORG/registry-modules"
           META_URL="$BASE_URL/private/$TF_ORG/${{ matrix.module }}/$TF_PROVIDER"
           VER_URL="$META_URL/versions"
 
-          # Ensure Registry Shell exists
-          curl -s -o /dev/null --header "Authorization: Bearer $TF_TOKEN" \
-            --header "Content-Type: application/vnd.api+json" \
-            --request POST \
-            --data "{\"data\":{\"type\":\"registry-modules\",\"attributes\":{\"name\":\"${{ matrix.module }}\",\"provider\":\"$TF_PROVIDER\",\"registry-name\":\"private\"}}}" \
-            "$BASE_URL"
-
-          # Fetch Version & Increment
+          # 3. DEBUG: Check current registry state
+          echo "--- DEBUG INFO ---"
           MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN" "$META_URL")
+          echo "RAW API ATTRIBUTES: $(echo "$MODULE_META" | jq -c '.data.attributes')"
+          
           LATEST_VERSION=$(echo "$MODULE_META" | jq -r '.data.attributes."latest-version" // "0.0.0"')
           [ "$LATEST_VERSION" == "null" ] && LATEST_VERSION="0.0.0"
+          echo "PARSED LATEST VERSION: $LATEST_VERSION"
+          echo "------------------"
 
+          # 4. Increment Logic
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+          
+          # Ensure variables are numbers even if parsing failed
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+
           if [[ "$PR_TITLE" == *"feat"* ]]; then
             NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
           elif [[ "$PR_TITLE" == *"fix"* ]]; then
@@ -100,8 +97,14 @@ jobs:
           else
             NEXT_VERSION="$((MAJOR + 1)).0.0"
           fi
+          echo "CALCULATED NEXT VERSION: $NEXT_VERSION"
 
-          # Create Version and Get Upload URL
+          # 5. Validation
+          cd "$MODULE_DIR"
+          terraform init -backend=false && terraform validate
+          cd -
+
+          # 6. Create Version and Get Upload URL
           RESPONSE=$(curl -s --header "Authorization: Bearer $TF_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
             --request POST \
@@ -112,11 +115,12 @@ jobs:
 
           if [ -n "$UPLOAD_URL" ]; then
             cd "$MODULE_DIR"
-            # Remove the temporary alias file so it is NOT uploaded to the registry
+            # Cleanup alias file before archiving
             rm -f aliased-providers.tf.json
             tar -czf ../../../module_upload.tar.gz .
             curl -s --request PUT --header "Content-Type: application/octet-stream" --data-binary @../../../module_upload.tar.gz "$UPLOAD_URL"
             echo "✅ SUCCESS: ${{ matrix.module }} v$NEXT_VERSION uploaded."
           else
-            echo "ℹ️ INFO: ${{ matrix.module }} version $NEXT_VERSION already exists."
+            echo "ℹ️ INFO: Version $NEXT_VERSION creation refused by API. Check if it already exists as a draft."
+            echo "API RESPONSE: $RESPONSE"
           fi
