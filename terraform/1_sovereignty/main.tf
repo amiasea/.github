@@ -51,7 +51,7 @@ resource "azuread_application_flexible_federated_identity_credential" "hcp_stack
   display_name   = "hcp-stacks"
   description    = "Flexible OIDC for HCP Terraform Stacks"
 
-  issuer   = "https://token.actions.githubusercontent.com"
+  issuer   = "https://app.terraform.io"
   audience = "api://AzureADTokenExchange"
 
   claims_matching_expression = "claims['sub'] matches '^organization:amiasea:project:amiasea:stack:.*:operation:(plan|apply)$'"
