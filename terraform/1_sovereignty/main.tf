@@ -54,7 +54,7 @@ resource "azuread_application_flexible_federated_identity_credential" "hcp_stack
   issuer   = "https://app.terraform.io"
   audience = "api://AzureADTokenExchange"
 
-  claims_matching_expression = "claims['sub'] matches '^organization:amiasea:project:amiasea:stack:.*:operation:(plan|apply)$'"
+  claims_matching_expression = "claims['sub'] match '^organization:amiasea:project:amiasea:stack:.*:operation:(plan|apply)$'"
 }
 
 
