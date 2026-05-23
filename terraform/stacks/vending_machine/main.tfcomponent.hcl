@@ -1,6 +1,6 @@
 component "vending_machine" {
   source  = "app.terraform.io/amiasea/vending_machine/github"
-  version = ">= 8.0.0" 
+  version = ">= 8.0.0"
 
   inputs = {
     env = var.env
@@ -9,6 +9,7 @@ component "vending_machine" {
     sql_admins_group_id = var.sql_admins_group_id
     ghcr_pat_versionless_id = var.ghcr_pat_versionless_id
     sovereign_key_vault_id = var.sovereign_key_vault_id
+    api_image_tag = var.api_image_tag
   }
 
   providers = {

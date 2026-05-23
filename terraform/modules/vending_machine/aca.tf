@@ -31,7 +31,7 @@ resource "azurerm_container_app" "aviator_api" {
 
     container {
       name   = "amiasea-api"
-      image  = "ghcr.io/amiasea/amiasea-api:latest"
+      image  = "ghcr.io/amiasea/amiasea-api:${var.api_image_tag}"
       cpu    = 0.25
       memory = "0.5Gi"
 

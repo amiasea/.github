@@ -29,3 +29,8 @@ variable "sovereign_key_vault_id" {
   type = string
   description = "Sovereign Key Vault ID"
 }
+
+variable "api_image_tag" {
+  type    = string
+  default = "latest" # Or a "stable" tag like "v1"
+}
