@@ -44,10 +44,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push API image
-        working-directory: ./Services/API/Amiasea.API
         run: |
           IMAGE="${{ inputs.registry }}/${{ inputs.image_namespace }}/amiasea-api:latest"
-          docker build -f Dockerfile -t "$IMAGE" .
+          
+          # Run build from root (.) 
+          # Point to the Dockerfile path (-f)
+          docker build -f Services/API/Amiasea.API/Dockerfile -t "$IMAGE" .
+          
           docker push "$IMAGE"
 
       - name: Build and push UI image (placeholder)
