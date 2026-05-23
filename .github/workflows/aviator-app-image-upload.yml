@@ -2,6 +2,15 @@ name: Amiasea App Image Build (API + UI)
 
 on:
   workflow_dispatch:
+    inputs:
+      registry:
+        description: 'Container registry to push images to (e.g., ghcr.io)'
+        required: false
+        default: 'ghcr.io'
+      image_namespace:
+        description: 'Namespace/organization in the container registry (e.g., amiasea)'
+        required: false
+        default: 'amiasea'
   workflow_call:
     inputs:
       registry:
