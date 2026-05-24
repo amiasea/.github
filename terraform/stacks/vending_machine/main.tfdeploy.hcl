@@ -12,6 +12,7 @@ deployment "development" {
     ghcr_pat_versionless_id = store.varset.azure_ids.stable.ghcr_pat_versionless_id
     sovereign_key_vault_id = store.varset.azure_ids.stable.sovereign_key_vault_id
     env_subscription_id = "bd0f2cca-0676-49e6-a8c2-cae21ea7216b"
+    neon_project_id = store.varset.azure_ids.stable.neon_project_id
     api_image_tag = "latest"
   }
 }

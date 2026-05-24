@@ -100,3 +100,9 @@ resource "azurerm_container_app" "aviator_api" {
 
   depends_on = [ azurerm_role_assignment.sovereign_kv_secrets_user ]
 }
+
+resource "azurerm_role_assignment" "api_queue_sender" {
+  scope                = azurerm_storage_account.st.id
+  role_definition_name = "Storage Queue Data Message Sender"
+  principal_id         = azurerm_user_assigned_identity.uami.principal_id
+}

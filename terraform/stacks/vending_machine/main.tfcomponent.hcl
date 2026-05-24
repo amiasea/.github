@@ -9,6 +9,7 @@ component "vending_machine" {
     sql_admins_group_id = var.sql_admins_group_id
     ghcr_pat_versionless_id = var.ghcr_pat_versionless_id
     sovereign_key_vault_id = var.sovereign_key_vault_id
+    neon_project_id = var.neon_project_id
     api_image_tag = var.api_image_tag
   }
 

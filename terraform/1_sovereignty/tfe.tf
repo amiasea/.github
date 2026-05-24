@@ -82,3 +82,10 @@ resource "tfe_variable" "sovereign_key_vault_id" {
   category        = "terraform"
   variable_set_id = tfe_variable_set.stack_variable_set.id
 }
+
+resource "tfe_variable" "neon_project_id" {
+  key             = "neon_project_id"
+  value           = var.neon_project_id
+  category        = "terraform"
+  variable_set_id = tfe_variable_set.stack_variable_set.id
+}

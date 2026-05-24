@@ -11,19 +11,6 @@ on:
         description: 'Namespace/organization in the container registry (e.g., amiasea)'
         required: false
         default: 'amiasea'
-  workflow_call:
-    inputs:
-      registry:
-        required: false
-        type: string
-        default: "ghcr.io"
-      image_namespace:
-        required: false
-        type: string
-        default: "amiasea"
-    secrets:
-      GHCR_PAT:
-        required: true
 
 jobs:
   build:

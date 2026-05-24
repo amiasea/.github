@@ -82,6 +82,10 @@ variable "neon_org_api_key" {
   ephemeral = true
 }
 
+variable "neon_project_id" {
+    type = string
+}
+
 variable "prefix" {
   type        = string
   description = "Prefix"

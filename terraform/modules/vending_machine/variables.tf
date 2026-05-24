@@ -52,3 +52,7 @@ variable "api_image_tag" {
   type    = string
   default = "latest" # Or a "stable" tag like "v1"
 }
+
+variable "neon_project_id" {
+    type = string
+}
