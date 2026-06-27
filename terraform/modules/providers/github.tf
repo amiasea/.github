@@ -16,12 +16,38 @@ resource "github_repository_file" "workflow_call" {
   branch              = "main"
   file                = ".github/workflows/call_providers_upload.yml"
   overwrite_on_create = true
-  content             = file("${path.module}/files/call_providers_upload.yml")
+  content             = file("${path.module}/repo_files/call_providers_upload.yml")
 
   depends_on = [github_repository.provider_template]
 }
 
-# Step B: Generate child repositories. This runs ONLY after the template workflow exists.
+# Step C: Inject custom asset files directly into child repositories sequentially
+resource "github_repository_file" "goreleaser_config" {
+  for_each            = toset(var.provider_names)
+  repository          = github_repository.provider_repos[each.key].name
+  branch              = "main"
+  file                = ".goreleaser.yaml"
+  overwrite_on_create = true
+  content = templatefile("${path.module}/repo_files/.goreleaser.yaml.tmpl", {
+    provider_name = each.key
+  })
+
+  depends_on = [github_repository.provider_repos]
+}
+
+resource "github_repository_file" "go_mod" {
+  for_each            = toset(var.provider_names)
+  repository          = github_repository.provider_repos[each.key].name
+  branch              = "main"
+  file                = "go.mod"
+  overwrite_on_create = true
+  content = templatefile("${path.module}/repo_files/go.mod.tmpl", {
+    organization  = var.tfe_org_name
+    provider_name = each.key
+  })
+
+  depends_on = [github_repository.provider_repos]
+}
 resource "github_repository" "provider_repos" {
   for_each        = toset(var.provider_names)
   name            = "terraform-provider-${each.key}"
@@ -38,36 +64,7 @@ resource "github_repository" "provider_repos" {
     include_all_branches = false
   }
 
-  # FIX 6: Prevents cloning race condition errors by waiting for the template workflow file
   depends_on = [github_repository_file.workflow_call]
-}
-
-# Step C: Inject custom asset files directly into child repositories sequentially
-resource "github_repository_file" "goreleaser_config" {
-  for_each            = toset(var.provider_names)
-  repository          = github_repository.provider_repos[each.key].name
-  branch              = "main"
-  file                = ".goreleaser.yaml"
-  overwrite_on_create = true
-  content = templatefile("${path.module}/files/.goreleaser.yaml.tmpl", {
-    provider_name = each.key
-  })
-
-  depends_on = [github_repository.provider_repos]
-}
-
-resource "github_repository_file" "go_mod" {
-  for_each            = toset(var.provider_names)
-  repository          = github_repository.provider_repos[each.key].name
-  branch              = "main"
-  file                = "go.mod"
-  overwrite_on_create = true
-  content = templatefile("${path.module}/files/go.mod.tmpl", {
-    organization  = var.tfe_org_name
-    provider_name = each.key
-  })
-
-  depends_on = [github_repository.provider_repos]
 }
 
 resource "github_actions_variable" "azure_key_name" {
