@@ -29,7 +29,7 @@ provider "github" "main" {
     owner = var.tfe_org_name
     app_auth {
       id              = var.amiasea_gh_app_id
-      installation_id = "2670685"
+      installation_id = "105130264"
       # CROSS-COMPONENT OUTPUT LINK: Pulls the true raw .pem text content from Component A
       pem_file        = component.whisper_genie_gh_private_key.secret_value
     }
