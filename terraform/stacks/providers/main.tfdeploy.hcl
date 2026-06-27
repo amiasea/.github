@@ -17,12 +17,6 @@ deployment "global_scaffolding" {
     sovereign_azure_subscription_id = store.varset.shared_bootstrap_set.stable.sovereign_azure_subscription_id
     sovereign_azure_client_id       = store.varset.shared_bootstrap_set.stable.sovereign_azure_client_id
     amiasea_gh_app_id               = store.varset.shared_bootstrap_set.stable.amiasea_gh_app_id
-    
-    # FIX 1: Removed the un-mapped "_github" substring to form an exact variable set match
-    amiasea_github_private_key      = store.varset.shared_bootstrap_set.stable.amiasea_private_key_versionless_id
-    
-    # FIX 2: Aligned property reference name (Assumes Step 1 was added to the UI varset)
-    tf_token                        = store.varset.shared_bootstrap_set.stable.tf_token_versionless_id
   }
 }
 

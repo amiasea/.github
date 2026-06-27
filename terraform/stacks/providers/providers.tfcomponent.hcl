@@ -27,11 +27,11 @@ provider "azurerm" "main" {
 provider "github" "main" {
   config {
     owner = var.tfe_org_name
-    # Uses your bootstrapped App identity properties for zero-PAT maintenance loops
     app_auth {
       id              = var.amiasea_gh_app_id
-      installation_id = "2670685" # Sourced straight from your organizational profile
-      pem_file        = var.amiasea_github_private_key
+      installation_id = "2670685"
+      # CROSS-COMPONENT OUTPUT LINK: Pulls the true raw .pem text content from Component A
+      pem_file        = component.whisper_github_key.secret_value
     }
   }
 }
@@ -39,6 +39,7 @@ provider "github" "main" {
 provider "tfe" "main" {
   config {
     hostname = "app.terraform.io"
-    token    = var.tf_token
+    # CROSS-COMPONENT OUTPUT LINK: Pulls the true raw token value from Component B
+    token    = component.whisper_tf_token.secret_value
   }
 }

@@ -36,15 +36,3 @@ variable "amiasea_gh_app_id" {
   type        = string
   description = "The Master Organization GitHub Application Client Identifier configuration parameter."
 }
-
-variable "amiasea_github_private_key" {
-  type        = string
-  sensitive   = true
-  description = "Armored private key string extracted straight out of the HSM cluster boundary."
-}
-
-variable "tf_token" {
-  type        = string
-  sensitive   = true
-  description = "System deployment token extracted securely via versionless API key vault paths."
-}
