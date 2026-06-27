@@ -39,3 +39,59 @@ resource "github_actions_organization_variable" "tf_provider_stack_id" {
   variable_name = "TF_PROVIDER_STACK_ID"
   value         = tfe_stack.provider_stack.id
 }
+
+
+
+
+# --- Inside your Core Bootstrap HCL Stage ---
+
+resource "github_repository" "provider_template" {
+  name             = "terraform-provider-template"
+  description      = "Central blueprint template containing centralized upload_providers workflows, workflows, and signing configurations."
+  visibility       = "private"
+  is_template      = true
+  auto_init        = true
+  has_issues       = false
+  has_discussions  = false
+  has_projects     = false
+  has_wiki         = false
+}
+
+# Step A: Push the central caller pipeline straight into the blueprint template once
+resource "github_repository_file" "workflow_call" {
+  repository          = github_repository.provider_template.name
+  branch              = "main"
+  file                = ".github/workflows/call_providers_upload.yml"
+  overwrite_on_create = true
+  
+  # 🛠️ FIXED: Swapped path to target your bootstrap HCL directory folder structure
+  content             = file("${path.module}/terraform_profile_template_files/call_providers_upload.yml")
+
+  depends_on = [github_repository.provider_template]
+}
+
+# Step B: Inject baseline GoReleaser config file straight into the template repository
+resource "github_repository_file" "goreleaser_config" {
+  repository          = github_repository.provider_template.name
+  branch              = "main"
+  file                = ".goreleaser.yaml"
+  overwrite_on_create = true
+  
+  # 🛠️ FIXED: Extracted from local bootstrap path (Passed with placeholder template keys if needed)
+  content             = file("${path.module}/terraform_profile_template_files/.goreleaser.yaml.tmpl")
+
+  depends_on = [github_repository.provider_template]
+}
+
+# Step C: Inject baseline go.mod config file straight into the template repository
+resource "github_repository_file" "go_mod" {
+  repository          = github_repository.provider_template.name
+  branch              = "main"
+  file                = "go.mod"
+  overwrite_on_create = true
+  
+  # 🛠️ FIXED: Extracted from local bootstrap path
+  content             = file("${path.module}/terraform_profile_template_files/go.mod.tmpl")
+
+  depends_on = [github_repository.provider_template]
+}
