@@ -1,4 +1,3 @@
-variable "provider_name" { type = string }     # e.g., "mycloud"
 variable "github_repo_name" { type = string }
 
 variable "tfe_org_name" {
