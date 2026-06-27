@@ -15,8 +15,6 @@ resource "github_repository" "provider_repos" {
     repository           = "terraform-provider-template"
     include_all_branches = false
   }
-
-  depends_on = [github_repository_file.workflow_call]
 }
 
 resource "github_actions_variable" "azure_key_name" {
