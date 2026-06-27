@@ -12,13 +12,20 @@ resource "github_repository" "provider_template" {
 
 # Step A: Push the central caller pipeline straight into the blueprint template
 resource "github_repository_file" "workflow_call" {
-  repository          = github_repository.provider_template.name
+  for_each            = toset(var.provider_names)
+  
+  # DESTINATION REPOSITORY: e.g., terraform-provider-aviator
+  repository          = github_repository.provider_repos[each.key].name 
   branch              = "main"
-  file                = ".github/workflows/call_providers_upload.yml"
+  
+  # DESTINATION PATH: This is just a folder path string inside the targeted repo
+  file                = ".github/workflows/call_providers_upload.yml"  
   overwrite_on_create = true
-  content             = file("${path.module}/repo_files/call_providers_upload.yml")
+  
+  # CONTENT SOURCE: Grabs the plaintext from your local computer module files
+  content             = file("${path.module}/repo_files/call_providers_upload.yml") 
 
-  depends_on = [github_repository.provider_template]
+  depends_on = [github_repository.provider_repos]
 }
 
 # Step C: Inject custom asset files directly into child repositories sequentially
