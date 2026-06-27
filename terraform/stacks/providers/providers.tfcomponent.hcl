@@ -31,7 +31,7 @@ provider "github" "main" {
       id              = var.amiasea_gh_app_id
       installation_id = "2670685"
       # CROSS-COMPONENT OUTPUT LINK: Pulls the true raw .pem text content from Component A
-      pem_file        = component.whisper_github_key.secret_value
+      pem_file        = component.whisper_genie_gh_private_key.secret_value
     }
   }
 }
@@ -40,6 +40,6 @@ provider "tfe" "main" {
   config {
     hostname = "app.terraform.io"
     # CROSS-COMPONENT OUTPUT LINK: Pulls the true raw token value from Component B
-    token    = component.whisper_tf_token.secret_value
+    token    = component.whisper_genie_tf_token.secret_value
   }
 }
