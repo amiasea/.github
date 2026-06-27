@@ -169,3 +169,12 @@ resource "tfe_stack" "provider_stack" {
   project_id   = tfe_project.providers_project.id
   description  = "Continuous Delivery Stack for custom terraform providers"
 }
+
+resource "tfe_variable" "tf_token_versionless_id" {
+  key             = "tf_token_versionless_id"
+  value           = azurerm_key_vault_secret.tf_token.versionless_id
+  category        = "terraform"
+  description     = "The versionless Key Vault API URI pointer reference for the core HCP Terraform authentication token."
+  sensitive       = true
+  variable_set_id = tfe_variable_set.shared_bootstrap_set.id
+}
