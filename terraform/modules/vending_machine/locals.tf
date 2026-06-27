@@ -1,3 +1,3 @@
 locals {
-  subdomain = var.env == "prod" ? "aviator" : "aviator-${var.env}"
+  subdomain = var.env == "prod" ? "" : "${var.env}"
 }

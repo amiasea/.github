@@ -1,6 +1,5 @@
 using Amiasea.API;
 using Amiasea.API.Infrastructure; // The Sovereign Theater Engine
-using Amiasea.Aviator.Data.Service;
 using Amiasea.Data.Service;
 using Azure.Identity;
 using Azure.Security.KeyVault.Keys.Cryptography;
@@ -10,14 +9,12 @@ using Path = System.IO.Path;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. THE GENESIS ACT: Initialize the Sovereign Kernel
-// Weave the Registry of Truth into the Substrate.
 builder.AddAmiaseaTheater();
 
-builder.Services.AddScoped<IGitHubTokenProvider, GitHubTokenProvider>();
+//builder.Services.AddScoped<IGitHubTokenProvider, GitHubTokenProvider>();
 
-builder.Services.AddScoped<IGitHubClient>(sp => 
-    new GitHubClient(new ProductHeaderValue("amiasea-api")));
+//builder.Services.AddScoped<IGitHubClient>(sp => 
+//    new GitHubClient(new ProductHeaderValue("amiasea-api")));
 
 if (builder.Environment.IsDevelopment())
 {
@@ -48,16 +45,28 @@ else
     builder.Services.AddSingleton<ISovereignSigner, KeyVaultSigner>();
 }
 
-// 3. THE ARCHITECTURAL SERVICES
-// No DB here. We are using the 'Sovereign Ledger' of the State & Git.
-builder.Services.AddScoped<AirportService>(); 
+// builder.Services.AddHttpClient<AirportService>(client =>
+// {
+//    var tfeBaseUrl = builder.Configuration["TerraformEnterprise:BaseUrl"] ?? "https://terraform.io";
+//    client.BaseAddress = new Uri(tfeBaseUrl);
+
+//    // Set up your standard enterprise communication headers here
+//    client.DefaultRequestHeaders.Add("Accept", "application/vnd.api+json");
+
+//    // You can pull your TFE token here if needed, or pass it dynamically in the service!
+//    var tfeToken = builder.Configuration["TerraformEnterprise:Token"];
+//    if (!string.IsNullOrEmpty(tfeToken))
+//    {
+//        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tfeToken);
+//    }
+// });
+
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-var app = builder.Build();
+builder.Services.AddHttpContextAccessor();
 
-// 4. THE LAUNCH: Trigger the Wolverine Loom
-// Weave the Circuit Breaker and Signal Evaluators into the Woven Pipeline.
-app.UseAmiaseaTheater();
+var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
@@ -65,6 +74,11 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+app.MapGet("/test-route", () => "Hello World").WithName("TestRoute");
+
 app.MapEndpoints();
+
+// Weave the Circuit Breaker and Signal Evaluators into the Woven Pipeline.
+app.UseAmiaseaTheater();
 
 app.Run();

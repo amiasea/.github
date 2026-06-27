@@ -1,0 +1,41 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: terraform-provider-${provider_name}
+    main: ./cmd/${provider_name}
+    binary: terraform-provider-${provider_name}
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - format: zip
+    name_template: "terraform-provider-${provider_name}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "terraform-provider-${provider_name}_{{ .Version }}_SHA256SUMS"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incminor .Version }}-next"
+
+# Optional but recommended
+release:
+  disable: true   # We publish manually via the workflow

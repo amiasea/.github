@@ -34,7 +34,7 @@ resource "azuread_directory_role_assignment" "external_id_user_flow_attr_admin" 
 }
 
 resource "azurerm_role_assignment" "delegated_permissions_app_kv_secrets_user" {
-  scope                = azurerm_key_vault.vault.id
+  scope                = azurerm_key_vault.sovereign_vault.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
 }
@@ -44,12 +44,6 @@ resource "azurerm_role_assignment" "delegated_permissions_app_creator" {
   role_definition_name = "Managed Identity Contributor"
   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
 }
-
-# resource "azurerm_role_assignment" "delegated_permissions_app_contributor" {
-#   scope                = data.azurerm_subscription.amiasea.id
-#   role_definition_name = "Contributor"
-#   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
-# }
 
 resource "azurerm_role_assignment" "delegated_permissions_app_contributor" {
   for_each = { for sub in data.azurerm_subscriptions.search.subscriptions : sub.subscription_id => sub }
@@ -61,6 +55,13 @@ resource "azurerm_role_assignment" "delegated_permissions_app_contributor" {
 
 resource "azurerm_role_assignment" "delegated_permissions_app_kv_admin" {
   scope                = data.azurerm_subscription.amiasea.id
+  role_definition_name = "Key Vault Administrator"
+  principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
+}
+
+# Give this global App Registration full admin rights over just this specific vault
+resource "azurerm_role_assignment" "global_app_kv_admin" {
+  scope                = azurerm_key_vault.sovereign_vault.id
   role_definition_name = "Key Vault Administrator"
   principal_id         = azuread_service_principal.delegated_permissions_sp.object_id
 }

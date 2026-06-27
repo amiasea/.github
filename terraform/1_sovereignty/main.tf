@@ -57,64 +57,14 @@ resource "azuread_application_flexible_federated_identity_credential" "hcp_stack
   claims_matching_expression = "claims['sub'] matches 'organization:amiasea:project:amiasea:stack:*:operation:*'"
 }
 
-
-# --- KEY VAULT ---
-resource "azurerm_key_vault" "vault" {
-  name                       = var.key_vault_name
-  location                   = var.location
-  resource_group_name        = azurerm_resource_group.rg.name
-  tenant_id                  = data.azurerm_client_config.current.tenant_id
-  soft_delete_retention_days = 7
-  purge_protection_enabled   = false
-  sku_name                   = "standard"
-  rbac_authorization_enabled = true
-
-  network_acls {
-    # Poor Option
-    default_action = "Allow"
-    bypass         = "AzureServices"
+  resource "azurerm_role_assignment" "terraform_kv_admin" {
+    scope                = azurerm_key_vault.sovereign_vault.id
+    role_definition_name = "Key Vault Administrator"
+    principal_id         = data.azurerm_client_config.current.object_id
   }
-}
-resource "azurerm_role_assignment" "terraform_kv_admin" {
-  scope                = azurerm_key_vault.vault.id
-  role_definition_name = "Key Vault Administrator"
-  principal_id         = data.azurerm_client_config.current.object_id
-}
 
 resource "azurerm_role_assignment" "vending_secrets_power" {
   scope                = data.azurerm_subscription.amiasea.id
   role_definition_name = "Key Vault Secrets Officer"
   principal_id         = data.azurerm_client_config.current.object_id
-}
-
-resource "azurerm_key_vault_secret" "ghcr_pat" {
-  depends_on       = [azurerm_role_assignment.terraform_kv_admin]
-  name             = "ghcr-pat"
-  value_wo         = var.ghcr_pat
-  value_wo_version = 1
-  key_vault_id     = azurerm_key_vault.vault.id
-}
-
-resource "azurerm_key_vault_secret" "tf_token" {
-  depends_on       = [azurerm_role_assignment.terraform_kv_admin]
-  name             = "tf-token"
-  value_wo         = var.tf_token
-  value_wo_version = 1
-  key_vault_id     = azurerm_key_vault.vault.id
-}
-
-resource "azurerm_key_vault_secret" "amiasea_github_private_key" {
-  depends_on       = [azurerm_role_assignment.terraform_kv_admin]
-  name             = "amiasea-github-private-key"
-  value_wo         = var.amiasea_github_private_key
-  value_wo_version = 1
-  key_vault_id     = azurerm_key_vault.vault.id
-}
-
-resource "azurerm_key_vault_secret" "neon_org_api_key" {
-  depends_on       = [azurerm_role_assignment.terraform_kv_admin]
-  name             = "neon-org-api-key"
-  value_wo         = var.neon_org_api_key
-  value_wo_version = 1
-  key_vault_id     = azurerm_key_vault.vault.id
 }

@@ -1,8 +1,8 @@
 resource "random_uuid" "api_scope_id" {}
 
 # --- APP REGISTRATION ---
-resource "azuread_application" "aviator_api" {
-  display_name     = "Amiasea Aviator Service - ${title(var.env)}"
+resource "azuread_application" "amiasea_api" {
+  display_name     = "Amiasea Service - ${title(var.env)}"
   sign_in_audience = "AzureADMyOrg"
   prevent_duplicate_names = true
 
@@ -35,23 +35,23 @@ resource "azuread_application" "aviator_api" {
   }
 }
 
-resource "azuread_application_identifier_uri" "aviator_api_uri" {
-  application_id = azuread_application.aviator_api.id
-  identifier_uri = "api://${azuread_application.aviator_api.client_id}"
+resource "azuread_application_identifier_uri" "amiasea_api_uri" {
+  application_id = azuread_application.amiasea_api.id
+  identifier_uri = "api://${azuread_application.amiasea_api.client_id}"
 }
 
-resource "azuread_service_principal" "aviator_api_sp" {
-  client_id = azuread_application.aviator_api.client_id
+resource "azuread_service_principal" "amiasea_api_sp" {
+  client_id = azuread_application.amiasea_api.client_id
   # Ensures the URI is registered before the SP is finalized
-  depends_on = [azuread_application_identifier_uri.aviator_api_uri]
+  depends_on = [azuread_application_identifier_uri.amiasea_api_uri]
 }
 
 ###############################################################
 
 # --- Frontend SPA Registration ---
 
-resource "azuread_application" "aviator_frontend" {
-  display_name     = "Amiasea Aviator Frontend - ${title(var.env)}"
+resource "azuread_application" "amiasea_frontend" {
+  display_name     = "Amiasea Frontend - ${title(var.env)}"
   sign_in_audience = "AzureADMyOrg"
   prevent_duplicate_names = true
 
@@ -65,37 +65,37 @@ resource "azuread_application" "aviator_frontend" {
 
   # This links the Frontend to the API
   required_resource_access {
-    resource_app_id = azuread_application.aviator_api.client_id
+    resource_app_id = azuread_application.amiasea_api.client_id
 
     resource_access {
       # This MUST match the ID of the oauth2_permission_scope in the API
-      id   = tolist(azuread_application.aviator_api.api[0].oauth2_permission_scope)[0].id
+      id   = tolist(azuread_application.amiasea_api.api[0].oauth2_permission_scope)[0].id
       type = "Scope"
     }
   }
 }
 
-resource "azuread_service_principal" "aviator_frontend_sp" {
-  client_id = azuread_application.aviator_frontend.client_id
+resource "azuread_service_principal" "amiasea_frontend_sp" {
+  client_id = azuread_application.amiasea_frontend.client_id
 }
 
 # --- THE "TRUST" LINK ---
 resource "azuread_application_pre_authorized" "frontend_trust" {
   # This must be the OBJECT ID of the API application
-  application_id = azuread_application.aviator_api.id
+  application_id = azuread_application.amiasea_api.id
   
   # The Client ID of the frontend app is correct here
-  authorized_client_id  = azuread_application.aviator_frontend.client_id
+  authorized_client_id  = azuread_application.amiasea_frontend.client_id
   
-  permission_ids        = [tolist(azuread_application.aviator_api.api[0].oauth2_permission_scope)[0].id]
+  permission_ids        = [tolist(azuread_application.amiasea_api.api[0].oauth2_permission_scope)[0].id]
 }
 
 resource "azuread_service_principal_delegated_permission_grant" "frontend_to_api_consent" {
   # WHO is asking? (The Frontend)
-  service_principal_object_id = azuread_service_principal.aviator_frontend_sp.object_id
+  service_principal_object_id = azuread_service_principal.amiasea_frontend_sp.object_id
 
   # WHAT are they asking to access? (The API)
-  resource_service_principal_object_id = azuread_service_principal.aviator_api_sp.object_id
+  resource_service_principal_object_id = azuread_service_principal.amiasea_api_sp.object_id
 
   # WHICH specific permissions?
   claim_values = [

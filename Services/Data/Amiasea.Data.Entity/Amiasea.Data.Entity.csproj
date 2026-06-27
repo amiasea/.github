@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Using Include="Amiasea.Aviator.Data.Entity" />
+	<Using Include="Amiasea.Data.Entity" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,22 @@
+name: Release and Upload Provider
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  call-central-upload:
+    uses: amiasea/.github/.github/workflows/providers_upload.yml@main
+    with:
+      azure_key_name: ${{ vars.AZURE_KEY_NAME }}
+      hcp_provider_name: ${{ vars.HCP_PROVIDER_NAME }}
+      # Add these if you want to override with manual values:
+      # azure_client_id: "manual-value"
+      # azure_tenant_id: "manual-value"
+      # azure_subscription_id: "manual-value"
+    secrets: inherit

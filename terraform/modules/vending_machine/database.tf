@@ -40,7 +40,7 @@ locals {
 
 resource "neon_branch" "env_branch" {
   project_id = var.neon_project_id
-  name       = var.environment # "prod", "dev", etc.
+  name       = var.env # "prod", "dev", etc.
   parent_id  = local.root_branch.id
 }
 

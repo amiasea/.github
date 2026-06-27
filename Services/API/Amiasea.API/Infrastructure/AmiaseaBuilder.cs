@@ -1,8 +1,10 @@
 ﻿using Amiasea.API.Evaluators;
 using Amiasea.API.Intent;
 using Amiasea.Intent;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Identity.Web;
 using Wolverine;
@@ -18,23 +20,27 @@ public static class AmiaseaBuilder
 
         builder.Services.AddHttpContextAccessor();
 
+        //builder.Services.AddHostedService<StartupAttestations>();
+
         // 1. Setup the Signal Surface (Entra ID)
-        builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-            .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+        // builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        //     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
-        builder.Services.AddAuthorization();
+        builder.Services.AddAuthorization(options =>
+        {
+            // Policy for humans using your regular UI endpoints
+            options.AddPolicy("UserInterfaceAccess", policy =>
+                policy.RequireAuthenticatedUser()
+                    .RequireClaim("scp", "access_as_user")); // Expects user scope
 
-        // 2. Register the Sovereign Registry of Truth
-        builder.Services.AddScoped<IAttestmentContext, AttestmentContext>();
-        builder.Services.AddScoped<SovereignContext>();
+            // Policy for your custom Go Terraform provider endpoints
+            options.AddPolicy("TerraformPipelineAccess", policy =>
+                policy.RequireAuthenticatedUser()
+                    .RequireClaim("azp", "e5979a4b-0875-4f8c-9688-f9e10a6c7aaf")); // TODO: Expects your App Registration ID
+        });
 
-        // 2. Register the Broadcaster as a Health Check
-        builder.Services.AddHealthChecks()
-            .AddCheck<HealthzBroadcaster>(
-                "Sovereign_Coherence_Pulse",
-                failureStatus: HealthStatus.Unhealthy, // Triggers 503 on failure
-                tags: new[] { "kernel", "attestation" }
-            );
+        // This could be used to provide a Singleton service that stores or caches continually updated contextual information about the attestation state of various capabilities. For example, it could be used to track which capabilities have been attested and their current status.
+        //builder.Services.AddScoped<IAttestmentContext, AttestmentContext>();
 
         // 3. Setup Wolverine (The Engine)
         builder.Host.UseWolverine(opts =>
@@ -48,39 +54,24 @@ public static class AmiaseaBuilder
 
     public static WebApplication UseAmiaseaTheater(this WebApplication app)
     {
-        app.UseAuthentication();
-        app.UseAuthorization();
+        //app.UseAuthentication();
+        //app.UseAuthorization();
 
-        app.MapHealthChecks("/healthz/attest", new HealthCheckOptions
+        app.Map("/healthz/attest/{*capabilityName}", async (
+            string capabilityName,
+            [FromQuery(Name = "signalSurfaces")] string[] signalSurfaces,
+            CancellationToken cancellationToken) =>
         {
-            // This allows the HCL Read method to see the "VerifiedSignals" and "Pulse" data
-            ResponseWriter = async (context, report) =>
-            {
-                context.Response.ContentType = "application/json";
-                var json = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    status = report.Status.ToString(),
-                    results = report.Entries.Select(e => new {
-                        key = e.Key,
-                        pulse = e.Value.Data.GetValueOrDefault("Pulse"),
-                        data = e.Value.Data
-                    })
-                });
-                await context.Response.WriteAsync(json);
-            }
-        });
+            string statusResult = await CapabilityAttestationService.AttestAsync(capabilityName, signalSurfaces, cancellationToken);
 
+            // Wrap the string inside an object with a "status" property
+            return Results.Ok(new { status = statusResult });
+        });
+        // .RequireAuthorization("TerraformPipelineAccess");
 
         // Map Wolverine Endpoints (The Stage)
-        app.MapWolverineEndpoints(opts =>
-        {
-            // THE FIX (CS0411): We weave the HTTP Policy HERE, where the 'Loom' is active.
-            opts.AddPolicy<SovereignCircuitBreaker>();
-
-            // THE FIX (CS1061): Wolverine doesn't use 'AddRoleRequirement' on the options.
-            // It uses the standard ASP.NET Core Authorization under the hood 
-            // once you call .RequireAuthorizeOnAll()
-            opts.RequireAuthorizeOnAll();
+        app.MapWolverineEndpoints(opts => {
+            // Wolverine configuration rules continue below...
         });
 
         return app;

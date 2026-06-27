@@ -57,9 +57,16 @@ variable "location" {
   default     = "centralus"
 }
 
+variable "tenant_id" {
+  type        = string
+  description = "Tenant ID for the Azure subscription."
+  sensitive   = true
+}
+
 variable "subscription_id" {
   type        = string
   description = "Subscription ID."
+  sensitive   = true
 }
 
 variable "ghcr_pat" {

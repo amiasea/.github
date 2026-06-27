@@ -88,7 +88,7 @@
             }
           }
         },
-        "aviator_domain_authorization": {
+        "aviator_capability_binding": {
           "type": "object",
           "description": "Maps a Sovereign Plane to a Signal Surface via a mandatory Rationale.",
           "required": [

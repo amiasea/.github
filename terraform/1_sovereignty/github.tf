@@ -33,3 +33,9 @@ resource "github_actions_variable" "tf_token_versionless_id" {
   variable_name = "TF_TOKEN_VERSIONLESS_ID"
   value         = azurerm_key_vault_secret.tf_token.versionless_id
 }
+
+resource "github_actions_organization_variable" "tf_provider_stack_id" {
+  visibility    = "all"
+  variable_name = "TF_PROVIDER_STACK_ID"
+  value         = tfe_stack.provider_stack.id
+}

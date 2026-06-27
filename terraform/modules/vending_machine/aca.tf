@@ -7,7 +7,7 @@ resource "azurerm_container_app_environment" "main" {
   depends_on = [ data.azurerm_resource_group.rg ]
 }
 
-resource "azurerm_container_app" "aviator_api" {
+resource "azurerm_container_app" "amiasea_api" {
   provider = azurerm.sub
   name                         = "ca-${var.prefix}-api-${var.env}"
   container_app_environment_id = azurerm_container_app_environment.main.id

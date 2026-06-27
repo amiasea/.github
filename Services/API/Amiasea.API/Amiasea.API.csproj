@@ -8,9 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.0.0" />
-    <PackageReference Include="GreenDonut" Version="15.1.12" />
-    <PackageReference Include="HotChocolate.AspNetCore" Version="15.1.12" />
-    <PackageReference Include="HotChocolate.Data.EntityFramework" Version="15.1.12" />
     <PackageReference Include="Humanizer" Version="3.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
@@ -22,10 +19,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.1" />
     <PackageReference Include="WolverineFx" Version="5.16.2" />
     <PackageReference Include="WolverineFx.Http" Version="5.16.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Types\Input\" />
   </ItemGroup>
 
   <ItemGroup>
