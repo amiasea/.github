@@ -1,6 +1,6 @@
 component "providers_orchestrator" {
   source  = "app.terraform.io/amiasea/providers/github"
-  version = ">= 2.0.0"
+  version = ">= 3.0.0"
 
   inputs = {
     tfe_org_name   = var.tfe_org_name

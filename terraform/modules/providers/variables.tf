@@ -1,5 +1,3 @@
-variable "github_repo_name" { type = string }
-
 variable "tfe_org_name" {
   type        = string
   default     = "amiasea"
