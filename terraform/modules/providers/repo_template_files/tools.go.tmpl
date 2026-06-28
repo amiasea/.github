@@ -1,8 +1,11 @@
 //go:build tools
 // +build tools
 
+// Package tools manages development tools for this provider.
 package tools
 
 import (
+	// tfplugindocs is used via go:generate, not directly imported.
+	// This blank import pins the version in go.mod.
 	_ "github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs"
 )
