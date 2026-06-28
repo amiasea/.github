@@ -23,7 +23,7 @@ builds:
       - arm64
 
 archives:
-  - formats: ["zip"] # Upgraded from 'format: zip' to fix v2 deprecation warnings
+  - formats: ["zip"]
     name_template: "terraform-provider-${provider_name}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
@@ -34,8 +34,25 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  # Intercepts your workflow calculated version tag dynamically during snapshot compilation
   version_template: "{{ .Env.NEXT_VERSION_TAG }}"
 
+# NEW: Native signing engine block that eliminates custom bash steps
+signs:
+  - id: terraform-provider-signing
+    cmd: gpg
+    args:
+      - "--batch"
+      - "--no-tty"
+      - "--pinentry-mode"
+      - "loopback"
+      - "--local-user"
+      - "{{ .Env.GPG_KEY_ID }}"
+      - "--detach-sign"
+      - "--armor"
+      - "--output"
+      - "${signature}"
+      - "${artifact}"
+    artifacts: checksum
+
 release:
-  disable: true # We publish manually via the workflow
+  disable: true
