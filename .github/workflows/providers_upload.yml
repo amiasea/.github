@@ -88,8 +88,7 @@ jobs:
           echo "::group::🔢 Calculate Version"
           PROVIDER_NAME="${{ inputs.hcp_provider_name }}"
           
-          # FIXED: Restructured URL path format to target the official v2 organizations endpoint
-          API_URL="https://app.terraform.io/{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          API_URL="https://app.terraform.io/organizations/${TF_ORG}/registry-providers/${PROVIDER_NAME}"
           echo "INFO: Fetching versions from -> $API_URL"
           
           RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$API_URL")
@@ -233,8 +232,7 @@ jobs:
         run: |
           echo "::group::🚀 PMR Asset Publication"
           
-          # FIXED: Swapped out old path format for official /api/v2 nested organization registry endpoint structure
-          BASE_URL="https://app.terraform.io/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          BASE_URL="https://app.terraform.io/organizations/${TF_ORG}/registry-providers/${PROVIDER_NAME}"
           echo "INFO: Reserving version block at: $BASE_URL/versions"
           
           VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
