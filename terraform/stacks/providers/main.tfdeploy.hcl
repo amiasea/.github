@@ -10,7 +10,7 @@ deployment "global_scaffolding" {
     tfe_org_name                    = "amiasea"
     
     # Custom provider orchestration list matrix array
-    provider_names                  = ["monkey"]
+    provider_names                  = []
 
     # Pulls corporate values programmatically out of your shared bootstrap varset bucket
     sovereign_azure_tenant_id       = store.varset.shared_bootstrap_set.stable.sovereign_azure_tenant_id
