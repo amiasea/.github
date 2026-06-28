@@ -78,6 +78,15 @@ jobs:
           echo "✅ HCP Token successfully retrieved."
           echo "::endgroup::"
 
+      - name: Debug GPG Keys in HCP
+        env:
+          TF_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          echo "::group::🔍 Debug HCP GPG Keys"
+          curl -s -H "Authorization: Bearer $TF_TOKEN" \
+            "https://app.terraform.io/api/registry/private/v2/gpg-keys?filter%5Bnamespace%5D=amiasea" | jq .
+          echo "::endgroup::"
+
       - name: Calculate Next Version
         id: versioning
         env:
