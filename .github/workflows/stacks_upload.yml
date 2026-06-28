@@ -7,17 +7,56 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-stacks:
+  list-stacks:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    env:
+      STACKS_ROOT: "terraform/stacks"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - id: set-matrix
+        run: |
+          # 1. Gather all subdirectories inside STACKS_ROOT
+          # 2. Check each directory for a README.md file
+          # 3. Stream verified stack names into a temporary file
+          touch validated_stacks.txt
+          for STACK_NAME in $(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;) ; do
+            if [ -f "${{ env.STACKS_ROOT }}/$STACK_NAME/README.md" ]; then
+              echo "$STACK_NAME" >> validated_stacks.txt
+            fi
+          done
+
+          # 4. Use jq to parse the lines cleanly into a minified JSON array format: ["vending_machine","providers"]
+          if [ -s validated_stacks.txt ]; then
+            STACKS_JSON=$(jq -R -s -c 'split("\n")[:-1]' validated_stacks.txt)
+          else
+            STACKS_JSON="[]"
+          fi
+
+          echo "matrix=$STACKS_JSON" >> $GITHUB_OUTPUT
+          echo "LOG: Discovered valid matrix: $STACKS_JSON"
+
+  sync-stack:
+    needs: list-stacks
+    # Stop execution immediately if no valid stacks were discovered
+    if: ${{ needs.list-stacks.outputs.matrix != '[]' && needs.list-stacks.outputs.matrix != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: ${{ fromJson(needs.list-stacks.outputs.matrix) }}
     permissions:
       id-token: write
       contents: read
     env:
       TF_ORG: "amiasea"
       TF_PROJECT: "amiasea"
-      STACKS_ROOT: "terraform/stacks"
-      TF_LOG: "ERROR" 
+      STACK_DIR: "terraform/stacks/${{ matrix.stack }}"
+      TF_LOG: "ERROR"
 
     steps:
       - name: Checkout Code
@@ -44,7 +83,6 @@ jobs:
           echo "::add-mask::$PEM_KEY"
           
           # Export as TF_VAR so the Stack Component picks it up automatically via environment injection
-          # Heredoc ensures the multi-line RSA PEM structure is preserved
           echo "TF_VAR_gh_app_pem_file<<EOF" >> $GITHUB_ENV
           echo "$PEM_KEY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -55,39 +93,22 @@ jobs:
           terraform_version: "1.15.3"
           cli_config_credentials_token: ${{ env.TF_TOKEN_app_terraform_io }}
 
-      - name: Sync All Stacks from Filesystem
+      - name: Process Sync and Upload
         run: |
-          set -e
-          for STACK_NAME in $(find ${{ env.STACKS_ROOT }} -maxdepth 1 -mindepth 1 -type d -exec basename {} \;) ; do
-            STACK_DIR="${{ env.STACKS_ROOT }}/$STACK_NAME"
-            
-            # Check for README.md before proceeding
-            if [ ! -f "$STACK_DIR/README.md" ]; then
-              echo "SKIP: $STACK_NAME (No README.md found)"
-              continue
-            fi
-            
-            echo "################################################################"
-            echo "  SYNCING STACK: $STACK_NAME"
-            echo "################################################################"
-            
-            cd "$STACK_DIR"
-            
-            echo "LOG: [1/2] Initializing & Validating..."
-            terraform stacks init
-            terraform stacks validate
-            
-            echo "LOG: [2/2] Uploading configuration..."
-            terraform stacks configuration upload \
-              -organization-name ${{ env.TF_ORG }} \
-              -project-name "${{ env.TF_PROJECT }}" \
-              -stack-name "$STACK_NAME"
-            
-            cd - > /dev/null
-            echo "SUCCESS: $STACK_NAME processed."
-            echo "----------------------------------------------------------------"
-          done
-
-      - name: Success Summary
-        run: |
-          echo "SUCCESS: All stacks processed with ephemeral credentials."
+          echo "################################################################"
+          echo "  SYNCING STACK CONCURRENTLY: ${{ matrix.stack }}"
+          echo "################################################################"
+          
+          cd "${{ env.STACK_DIR }}"
+          
+          echo "LOG: [1/2] Initializing & Validating..."
+          terraform stacks init
+          terraform stacks validate
+          
+          echo "LOG: [2/2] Uploading configuration..."
+          terraform stacks configuration upload \
+            -organization-name ${{ env.TF_ORG }} \
+            -project-name "${{ env.TF_PROJECT }}" \
+            -stack-name "${{ matrix.stack }}"
+          
+          echo "✅ SUCCESS: Stack '${{ matrix.stack }}' successfully updated."
