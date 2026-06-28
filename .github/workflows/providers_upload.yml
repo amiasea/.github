@@ -86,12 +86,16 @@ jobs:
           echo "::group::🔢 Calculate Version"
           PROVIDER_NAME="${{ inputs.hcp_provider_name }}"
           API_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}/versions"
+          echo "INFO: Fetching versions from -> $API_URL"
           
           RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$API_URL")
           CLEAN_JSON=$(echo "$RESPONSE" | sed '/\[HTTP STATUS\]/d')
-          LATEST=$(echo "$CLEAN_JSON" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end' 2>/dev/null || echo "0.0.0")
+          
+          # FIXED: Swapped 'version-statuses' loop with a clean parser that extracts the real .data[].attributes.version string list
+          LATEST=$(echo "$CLEAN_JSON" | jq -r 'if .data != null and (.data | length > 0) then [.data[].attributes.version] | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end' 2>/dev/null || echo "0.0.0")
           
           if [[ "$LATEST" == "null" || -z "$LATEST" ]]; then LATEST="0.0.0"; fi
+          echo "INFO: Latest PMR Version discovered -> $LATEST"
           
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
           MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
@@ -108,6 +112,7 @@ jobs:
           echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
           echo "✅ Target Release Version calculated -> $NEXT_VERSION"
           echo "::endgroup::"
+
 
       - name: Resolve and Sync Permanent GPG Key Identity
         id: gpg_lifecycle
