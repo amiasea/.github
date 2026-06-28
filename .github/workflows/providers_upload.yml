@@ -220,7 +220,11 @@ jobs:
             exit 1
           fi
           
-          # 1. Resolve Vault Name and Download the Backup Secret from Azure
+          # 1. Clear out any pre-existing placeholder signature to prevent 'File exists' crashes
+          echo "Cleaning up any lingering signature artifacts..."
+          rm -f "${SUMS_FILE}.sig"
+          
+          # 2. Resolve Vault Name and Download the Backup Secret from Azure
           VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
           echo "INFO: Fetching private key from Key Vault: $SECRET_NAME..."
           AZ_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --query "value" -o tsv 2>/dev/null || true)
@@ -230,10 +234,10 @@ jobs:
             exit 1
           fi
           
-          # 2. Import the key into the current step's GPG keyring environment
+          # 3. Import the key into the current step's GPG keyring environment
           echo "$AZ_SECRET" | gpg --batch --import
           
-          # 3. Securely read the imported key ID using our foolproof colon parser
+          # 4. Securely read the imported key ID using our foolproof colon parser
           LOCAL_SIGN_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n 1)
           
           if [[ -z "$LOCAL_SIGN_ID" ]]; then
@@ -243,7 +247,7 @@ jobs:
           
           echo "INFO: Signing checksum manifest using key identity -> $LOCAL_SIGN_ID"
           
-          # 4. Generate the standard ASCII detached signature bundle (.sig)
+          # 5. Generate the standard ASCII detached signature bundle (.sig)
           gpg --batch --no-tty --pinentry-mode loopback \
             --local-user "$LOCAL_SIGN_ID" \
             --detach-sign \
@@ -253,6 +257,7 @@ jobs:
             
           echo "✅ Signature successfully created -> ${SUMS_FILE}.sig"
           echo "::endgroup::"
+
 
       - name: Sign Checksums with Isolated Private GPG Key
         env:
