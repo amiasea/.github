@@ -57,7 +57,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Az CLI Login
-        uses: azure/login@v3 # Upgraded to v3 to natively support modern runner hosts
+        uses: azure/login@v3
         with:
           client-id: ${{ inputs.azure_client_id || vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ inputs.azure_tenant_id || vars.AZURE_TENANT_ID }}
@@ -187,7 +187,6 @@ jobs:
           fi
           echo "::endgroup::"
 
-      # STEP 1 OF PART 2: Hydrate keyring with your key ID before running compilation
       - name: 🔐 Prepare Local GPG Keyring for GoReleaser
         id: gpg_prep
         run: |
@@ -221,21 +220,28 @@ jobs:
           HCP_PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
           NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
           GPG_KEY_ID: ${{ steps.gpg_prep.outputs.gpg_key_id }}
-          
+
       - name: Publish to HCP Terraform Private Registry
         env:
           TF_TOKEN: ${{ steps.auth.outputs.token }}
           NEXT_VER: ${{ steps.versioning.outputs.next_version }}
           PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
-          # FIXED: Pass the true local GPG fingerprint hex string, NOT the database serial ID row index
           TARGET_GPG_HEX: ${{ steps.gpg_prep.outputs.gpg_key_id }}
         run: |
           echo "::group::🚀 PMR Asset Publication"
           
           BASE_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
           echo "INFO: Reserving version block at: ${BASE_URL}/versions"
+          echo "DEBUG: Using GPG key-id: $TARGET_GPG_HEX"
           
-          # Bulletproof jq builder payload model to keep datatypes compliant
+          # Check if version already exists
+          EXISTING=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "${BASE_URL}/versions/${NEXT_VER}")
+          if echo "$EXISTING" | jq -e '.data.id' > /dev/null; then
+            echo "⚠️ Version $NEXT_VER already exists. Deleting before retry..."
+            curl -s -X DELETE -H "Authorization: Bearer $TF_TOKEN" "${BASE_URL}/versions/${NEXT_VER}"
+          fi
+          
+          # Create version
           HCP_VERSION_PAYLOAD=$(jq -n \
             --arg version "$NEXT_VER" \
             --arg key_id "$TARGET_GPG_HEX" \
@@ -248,8 +254,16 @@ jobs:
             "${BASE_URL}/versions")
             
           CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d')
+          VER_HTTP_STATUS=$(echo "$VERSION_RESPONSE" | grep "\[HTTP STATUS\]" | awk '{print $3}')
           
-          # Safely pull the dynamic storage cloud bucket upload coordinates returned by the API
+          echo "DEBUG: Version creation HTTP status: $VER_HTTP_STATUS"
+          
+          if [[ "$VER_HTTP_STATUS" -ne 201 ]]; then
+            echo "❌ ERROR: Failed to create version. Full response:"
+            echo "$CLEAN_VER_JSON"
+            exit 1
+          fi
+          
           SHASUMS_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-upload"] // empty')
           SHASUMS_SIG_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-sig-upload"] // empty')
           
@@ -263,7 +277,7 @@ jobs:
           curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS "$SHASUMS_URL"
           curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS.sig "$SHASUMS_SIG_URL"
           
-          # Iterate over target architectures, resolve binary structures, and upload zip formats
+          # Upload platforms
           for platform in linux_amd64 darwin_arm64 windows_amd64; do
             OS=${platform%%_*}
             ARCH=${platform#*_}
@@ -282,13 +296,21 @@ jobs:
                 --arg filename "$BINARY_FILENAME" \
                 '{data: {type: "registry-provider-version-platforms", attributes: {os: $os, arch: $arch, shasum: $shasum, filename: $filename}}}')
               
-              PLATFORM_RESPONSE=$(curl -s -X POST \
+              PLATFORM_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
                 -H "Authorization: Bearer $TF_TOKEN" \
                 -H "Content-Type: application/vnd.api+json" \
                 -d "$HCP_PLATFORM_PAYLOAD" \
                 "${BASE_URL}/versions/${NEXT_VER}/platforms")
                 
-              CLEAN_PLAT_JSON=$(echo "$PLATFORM_RESPONSE" | sed '/\[PLATFORM REG STATUS\]/d')
+              CLEAN_PLAT_JSON=$(echo "$PLATFORM_RESPONSE" | sed '/\[HTTP STATUS\]/d')
+              PLAT_HTTP_STATUS=$(echo "$PLATFORM_RESPONSE" | grep "\[HTTP STATUS\]" | awk '{print $3}')
+              
+              if [[ "$PLAT_HTTP_STATUS" -ne 201 ]]; then
+                echo "⚠️ WARNING: Platform creation failed for ${OS}/${ARCH}. Response:"
+                echo "$CLEAN_PLAT_JSON"
+                continue
+              fi
+              
               UPLOAD_URL=$(echo "$CLEAN_PLAT_JSON" | jq -r '.data.links["provider-binary-upload"] // empty')
               
               if [[ -n "$UPLOAD_URL" && "$UPLOAD_URL" != "null" ]]; then
@@ -296,8 +318,8 @@ jobs:
                 curl -s -X PUT --data-binary @"$BINARY" "$UPLOAD_URL"
                 echo "✅ Upload completed for platform: ${OS}/${ARCH}"
               else
-                echo "⚠️ WARNING: Failed to acquire upload coordinate link for platform variant: ${OS}/${ARCH}"
-                echo "DEBUG: API Platform Output: $CLEAN_PLAT_JSON"
+                echo "⚠️ WARNING: No upload URL for platform ${OS}/${ARCH}"
+                echo "DEBUG: $CLEAN_PLAT_JSON"
               fi
             fi
           done
