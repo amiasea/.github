@@ -118,7 +118,7 @@ jobs:
           echo "✅ Target Release Version calculated -> $NEXT_VERSION"
           echo "::endgroup::"
 
-      - name: Resolve and Sync Permanent GPG Key Identity
+            - name: Resolve and Sync Permanent GPG Key Identity
         id: gpg_lifecycle
         env:
           TF_TOKEN: ${{ steps.auth.outputs.token }}
@@ -140,30 +140,29 @@ jobs:
             echo "✅ MATCH FOUND: Re-using existing HCP GPG Key ID -> $EXISTING_KEY_ID"
             echo "gpg_key_id=$EXISTING_KEY_ID" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ KEY NOT FOUND IN HCP: Querying Azure Key Vault..."
+            echo "⚠️ KEY NOT FOUND IN HCP: Querying Azure Key Vault for backup secret: $SECRET_NAME"
             AZ_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --query "value" -o tsv 2>/dev/null || true)
             
             if [[ -n "$AZ_SECRET" ]]; then
-              echo "✅ BACKUP FOUND: Restoring private key..."
+              echo "✅ BACKUP FOUND: Restoring private key from Azure Secret Store..."
               echo "$AZ_SECRET" | gpg --batch --import
               
               LOCAL_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
               PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
             else
-              echo "⚡ Generating new keypair..."
+              echo "⚡ TOTAL NEW PROVIDER: Key completely missing everywhere. Generating isolated keypair..."
               
-              # === FIXED HEREDOC ===
+              # === FIXED HEREDOC - using quoted delimiter to avoid expansion issues ===
               cat > gpg-batch.conf << 'GPG_EOF'
-              Key-Type: RSA
-              Key-Length: 4096
-              Key-Usage: sign
-              Name-Real: Automated Provider Signing
-              Name-Email: devops+aviator@${TF_ORG}.com
-              Expire-Date: 0
-              %no-protection
-              %commit
-              GPG_EOF
-              # ====================
+Key-Type: RSA
+Key-Length: 4096
+Key-Usage: sign
+Name-Real: Automated Provider Signing
+Name-Email: devops+aviator@amiasea.com
+Expire-Date: 0
+%no-protection
+%commit
+GPG_EOF
 
               gpg --batch --generate-key gpg-batch.conf
               LOCAL_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
@@ -171,31 +170,32 @@ jobs:
               PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
               PRIVATE_KEY_ARMOR=$(gpg --armor --export-secret-keys "$LOCAL_KEY_ID")
               
-              echo "Securing private key backup..."
+              echo "Securing private key backup to Azure Key Vault..."
               az keyvault secret set --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --value "$PRIVATE_KEY_ARMOR" > /dev/null
+              echo "✅ Backup finalized in Key Vault."
             fi
             
-            echo "Registering public key with HCP..."
+            echo "Registering armor public block inside HCP Private Registry..."
             HCP_PAYLOAD=$(jq -n \
               --arg name "$KEY_NAME" \
               --arg armor "$PUBLIC_KEY_ARMOR" \
               '{data: {type: "gpg-keys", attributes: {name: $name, "ascii-armor": $armor}}}')
-            
+              
             REG_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
               -H "Authorization: Bearer $TF_TOKEN" \
               -H "Content-Type: application/vnd.api+json" \
               -d "$HCP_PAYLOAD" "$GPG_URL")
-            
+              
             CLEAN_REG_JSON=$(echo "$REG_RESPONSE" | sed '/\[HTTP STATUS\]/d')
             NEW_GPG_ID=$(echo "$CLEAN_REG_JSON" | jq -r '.data.id // empty')
             
             if [[ -z "$NEW_GPG_ID" || "$NEW_GPG_ID" == "null" ]]; then
-              echo "❌ ERROR: GPG registration failed."
+              echo "❌ ERROR: GPG registration failed on HCP API. Response details below:"
               echo "$CLEAN_REG_JSON"
               exit 1
             fi
             
-            echo "✅ Keypair synced. HCP GPG Key ID -> $NEW_GPG_ID"
+            echo "✅ Keypair generated and synced. HCP GPG Key ID -> $NEW_GPG_ID"
             echo "gpg_key_id=$NEW_GPG_ID" >> $GITHUB_OUTPUT
           fi
           echo "::endgroup::"
