@@ -23,6 +23,7 @@ resource "github_repository_file" "workflow_call" {
 
 resource "github_repository" "provider_repos" {
   for_each        = toset(var.provider_names)
+
   name            = "terraform-provider-${each.key}"
   description     = "Managed codebase for custom terraform provider ${each.key}"
   visibility      = "private"
@@ -42,6 +43,7 @@ resource "github_repository" "provider_repos" {
 
 resource "github_repository_file" "goreleaser_config" {
   for_each            = toset(var.provider_names)
+
   commit_message      = "Managed by Terraform"
   repository          = github_repository.provider_repos[each.key].name
   branch              = "main"
@@ -52,12 +54,11 @@ resource "github_repository_file" "goreleaser_config" {
   content = templatefile("${path.module}/repo_template_files/.goreleaser.yaml.tmpl", {
     provider_name = each.key
   })
-
-  depends_on = [github_repository.provider_repos]
 }
 
 resource "github_repository_file" "go_mod" {
   for_each            = toset(var.provider_names)
+
   commit_message      = "Managed by Terraform"
   repository          = github_repository.provider_repos[each.key].name
   branch              = "main"
@@ -67,20 +68,56 @@ resource "github_repository_file" "go_mod" {
     organization = var.tfe_org_name
     provider_name = each.key
   })
-
-  depends_on = [github_repository.provider_repos]
 }
 
 resource "github_repository_file" "license" {
   for_each            = toset(var.provider_names)
+
   commit_message      = "Managed by Terraform"
   repository          = github_repository.provider_repos[each.key].name
   branch              = "main"
   file                = "LICENSE"
   
   content = file("${path.module}/repo_template_files/LICENSE")
+}
 
-  depends_on = [github_repository.provider_repos]
+resource "github_repository_file" "tools" {
+  for_each            = toset(var.provider_names)
+
+  commit_message      = "Managed by Terraform"
+  repository          = github_repository.provider_repos[each.key].name
+  branch              = "main"
+  file                = "tools/tools.go"
+  
+  content = templatefile("${path.module}/repo_template_files/tools.go.tmpl", {})
+}
+
+resource "github_repository_file" "main_go" {
+  for_each   = toset(var.provider_names)
+  
+  commit_message = "Managed by Terraform: Seeded main provider execution block with automated tfplugindocs compiler hook (Terraform)"
+  repository = github_repository.provider_repos[each.key].name
+  branch     = "main"
+  file       = "main.go"
+  
+  content = templatefile("${path.module}/repo_template_files/main.go.tmpl", {
+    provider_name     = each.key
+    namespace         = "amiasea"
+    registry_hostname = "app.terraform.io"
+  })
+}
+
+resource "github_repository_file" "magefile" {
+  for_each = toset(var.provider_names)
+
+  commit_message = "Managed by Terraform: Seed templated Mage build file"
+  repository     = github_repository.provider_repos[each.key].name
+  branch         = "main"
+  file           = "magefile.go"
+
+  content = templatefile("${path.module}/repo_template_files/magefile.go.tmpl", {
+    provider_name = each.key
+  })
 }
 
 resource "github_actions_variable" "azure_key_name" {

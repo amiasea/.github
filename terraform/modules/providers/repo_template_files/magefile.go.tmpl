@@ -1,0 +1,119 @@
+//go:build mage
+
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
+	"github.com/magefile/mage/mg"
+)
+
+// Default binary output path
+var (
+	binaryName = "terraform-provider-{{ .provider_name }}"
+	binaryPath = filepath.Join("dist", binaryName+".exe") // Windows-friendly default
+)
+
+// -----------------------------
+// Helpers
+// -----------------------------
+
+func getArg(name string) string {
+	prefix := name + "="
+	for _, a := range os.Args[1:] {
+		if strings.HasPrefix(a, prefix) {
+			return strings.TrimPrefix(a, prefix)
+		}
+	}
+	return ""
+}
+
+// -----------------------------
+// Test namespace
+// -----------------------------
+
+type Test mg.Namespace
+
+// mage test:go
+func (Test) Go() error {
+	fmt.Println("Running Go tests...")
+	cmd := exec.Command("go", "test", "./...")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// mage test:terraform
+func (Test) Terraform() error {
+	mg.Deps(Build)
+
+	fmt.Println("Running Terraform acceptance tests...")
+
+	cmd := exec.Command("terraform", "test")
+	cmd.Dir = "terraform-tests"
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	cmd.Env = os.Environ()
+
+	return cmd.Run()
+}
+
+// -----------------------------
+// Build target
+// -----------------------------
+
+// mage build
+// mage build version=1.2.3
+// mage build output=./dist/terraform-provider-xxx
+func Build() error {
+	version := getArg("version")
+	output := getArg("output")
+
+	finalPath := binaryPath
+
+	if version != "" {
+		ext := filepath.Ext(binaryPath)
+		base := strings.TrimSuffix(binaryPath, ext)
+		finalPath = fmt.Sprintf("%s_v%s%s", base, version, ext)
+	}
+
+	if output != "" {
+		finalPath = output
+	}
+
+	fmt.Printf("Building provider %s → %s\n", "{{ .provider_name }}", finalPath)
+
+	cmd := exec.Command("go", "build", "-o", finalPath, "./cmd/{{ .provider_name }}")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// -----------------------------
+// Generate target (Docs + other generated files)
+// -----------------------------
+
+// mage generate
+func Generate() error {
+	fmt.Println("Running code generation (docs, etc.)...")
+	cmd := exec.Command("go", "generate", "./...")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// -----------------------------
+// Clean target
+// -----------------------------
+
+// mage clean
+func Clean() error {
+	fmt.Println("Cleaning build artifacts...")
+	return os.RemoveAll("dist")
+}

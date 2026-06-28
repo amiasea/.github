@@ -56,6 +56,16 @@ jobs:
           go mod tidy
           echo "::endgroup::"
 
+      - name: 📖 Generate Provider Documentation on the Fly
+        run: |
+          echo "::group::📖 Hydrating Documentation Suite"
+          
+          # Natively invokes the tfplugindocs compiler pinned inside your tools.go and go.mod configuration
+          go generate ./...
+          
+          echo "✅ docs/ directory successfully generated in runner workspace memory."
+          echo "::endgroup::"
+
       - name: Az CLI Login
         uses: azure/login@v3
         with:

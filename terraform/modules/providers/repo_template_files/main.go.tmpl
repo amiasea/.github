@@ -1,0 +1,67 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"log"
+
+	"github.com/amiasea/terraform-provider-{{ .provider_name }}/internal/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+)
+
+func main() {
+	var debug bool
+
+	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers")
+	flag.Parse()
+
+	opts := providerserver.ServeOpts{
+		Address: "{{ .registry_hostname }}/{{ .namespace }}/{{ .provider_name }}",
+		Debug:   debug,
+	}
+
+	err := providerserver.Serve(
+		context.Background(),
+		provider.New,
+		opts,
+	)
+	if err != nil {
+		log.Fatal("failed to serve provider: ", err.Error())
+	}
+}
+
+package main
+
+import (
+	"context"
+	"flag"
+	"log"
+
+	"github.com/amiasea/terraform-provider-aviator/internal/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+)
+
+func main() {
+	var debug bool
+
+	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers")
+	flag.Parse()
+
+	opts := providerserver.ServeOpts{
+		Address: "app.terraform.io/amiasea/aviator",
+		Debug:   debug, // This is the key
+	}
+
+	err := providerserver.Serve(
+		context.Background(),
+		provider.New,
+		opts,
+	)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
+// Generate provider documentation
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name {{ .provider_name }} --provider-dir .
