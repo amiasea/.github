@@ -150,20 +150,11 @@ jobs:
               LOCAL_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
               PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
             else
-              echo "⚡ TOTAL NEW PROVIDER: Key completely missing everywhere. Generating isolated keypair..."
+              echo "⚡ TOTAL NEW PROVIDER: Generating isolated keypair..."
               
-              # === FIXED HEREDOC - using quoted delimiter to avoid expansion issues ===
-              cat > gpg-batch.conf << 'GPG_EOF'
-              Key-Type: RSA
-              Key-Length: 4096
-              Key-Usage: sign
-              Name-Real: Automated Provider Signing
-              Name-Email: devops+aviator@amiasea.com
-              Expire-Date: 0
-              %no-protection
-              %commit
-              GPG_EOF
-
+              # === NO HEREDOC - Using printf (YAML safe) ===
+              printf 'Key-Type: RSA\nKey-Length: 4096\nKey-Usage: sign\nName-Real: Automated Provider Signing\nName-Email: devops+aviator@amiasea.com\nExpire-Date: 0\n%%no-protection\n%%commit\n' > gpg-batch.conf
+              
               gpg --batch --generate-key gpg-batch.conf
               LOCAL_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
               
