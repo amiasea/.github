@@ -11,12 +11,6 @@ data "tfe_project" "amiasea_project" {
   organization = "amiasea"
 }
 
-resource "tfe_project" "providers_project" {
-  name         = "providers"
-  organization = "amiasea"
-  description  = "Global isolated home for custom provider scaffolding stacks"
-}
-
 resource "tfe_workspace" "workspace_dev" {
   name         = "amiasea-dev"
   organization = "amiasea"
@@ -41,16 +35,9 @@ resource "tfe_variable_set" "shared_bootstrap_set" {
   global       = false
 }
 
-# Link 1: Exposes the bucket to traditional Workspaces in the core project
 resource "tfe_project_variable_set" "amiasea_to_shared_bootstrap_project_link" {
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
   project_id      = data.tfe_project.amiasea_project.id
-}
-
-# Link 2: Exposes the exact same bucket to HCP Stacks in the new providers project
-resource "tfe_project_variable_set" "providers_to_shared_bootstrap_project_link" {
-  variable_set_id = tfe_variable_set.shared_bootstrap_set.id
-  project_id      = tfe_project.providers_project.id
 }
 
 # --- Cross-Project Global Variables Allocation ---
@@ -151,25 +138,6 @@ resource "tfe_project_variable_set" "amiasea_project_link" {
   project_id      = data.tfe_project.amiasea_project.id
 }
 
-resource "tfe_variable_set" "providers_variable_set" {
-  name              = "Providers Varset"
-  organization      = "amiasea"
-  description       = "Houses the global Key Vault and OIDC properties for provider pipelines"
-  parent_project_id = tfe_project.providers_project.id
-  global            = false
-}
-
-resource "tfe_project_variable_set" "providers_project_link" {
-  variable_set_id = tfe_variable_set.providers_variable_set.id
-  project_id      = tfe_project.providers_project.id
-}
-
-resource "tfe_stack" "provider_stack" {
-  name         = "providers"
-  project_id   = tfe_project.providers_project.id
-  description  = "Continuous Delivery Stack for custom terraform providers"
-}
-
 resource "tfe_variable" "tf_token_versionless_id" {
   key             = "tf_token_versionless_id"
   value           = azurerm_key_vault_secret.tf_token.versionless_id
@@ -177,4 +145,28 @@ resource "tfe_variable" "tf_token_versionless_id" {
   description     = "The versionless Key Vault API URI pointer reference for the core HCP Terraform authentication token."
   sensitive       = true
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
+}
+
+locals {
+  discovered_stacks = toset([
+    for path in fileset("${path.module}/../stacks", "**/README.md") : basename(dirname(path))
+  ])
+}
+
+import {
+  to = tfe_stack.stacks["vending_machine"]
+  id = "st-o53cTwA1Z8QsKF2c" 
+}
+
+import {
+  to = tfe_stack.stacks["providers"]
+  id = "st-Jsar3E2fmKbqWcKm" 
+}
+
+resource "tfe_stack" "stacks" {
+  for_each    = local.discovered_stacks
+  
+  name        = each.value
+  project_id  = data.tfe_project.amiasea_project.id
+  description = "Continuous Delivery Stack for custom module: ${each.value}"
 }

@@ -33,33 +33,3 @@ resource "github_actions_variable" "tf_token_versionless_id" {
   variable_name = "TF_TOKEN_VERSIONLESS_ID"
   value         = azurerm_key_vault_secret.tf_token.versionless_id
 }
-
-resource "github_actions_organization_variable" "tf_provider_stack_id" {
-  visibility    = "all"
-  variable_name = "TF_PROVIDER_STACK_ID"
-  value         = tfe_stack.provider_stack.id
-}
-
-resource "github_repository" "provider_template" {
-  name             = "terraform-provider-template"
-  description      = "Central blueprint template containing centralized upload_providers workflows, workflows, and signing configurations."
-  visibility       = "private"
-  is_template      = true
-  auto_init        = true
-  has_issues       = false
-  has_discussions  = false
-  has_projects     = false
-  has_wiki         = false
-}
-
-resource "github_repository_file" "workflow_call" {
-  repository          = github_repository.provider_template.name
-  branch              = "main"
-  file                = ".github/workflows/call_providers_upload.yml"
-  overwrite_on_create = true
-  
-  # 🛠️ FIXED: Swapped path to target your bootstrap HCL directory folder structure
-  content             = file("${path.module}/terraform_provider_template_files/call_providers_upload.yml")
-
-  depends_on = [github_repository.provider_template]
-}

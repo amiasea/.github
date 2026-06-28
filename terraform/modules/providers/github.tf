@@ -1,3 +1,26 @@
+resource "github_repository" "provider_template" {
+  name             = "terraform-provider-template"
+  description      = "Central blueprint template containing centralized upload_providers workflows, workflows, and signing configurations."
+  visibility       = "private"
+  is_template      = true
+  auto_init        = true
+  has_issues       = false
+  has_discussions  = false
+  has_projects     = false
+  has_wiki         = false
+}
+
+resource "github_repository_file" "workflow_call" {
+  repository          = github_repository.provider_template.name
+  branch              = "main"
+  file                = ".github/workflows/call_providers_upload.yml"
+  overwrite_on_create = true
+  
+  content             = file("${path.module}/terraform_provider_template_files/call_providers_upload.yml")
+
+  depends_on = [github_repository.provider_template]
+}
+
 resource "github_repository" "provider_repos" {
   for_each        = toset(var.provider_names)
   name            = "terraform-provider-${each.key}"
@@ -10,7 +33,7 @@ resource "github_repository" "provider_repos" {
 
   template {
     owner                = var.tfe_org_name
-    repository           = "terraform-provider-template"
+    repository           = github_repository.provider_template.name
     include_all_branches = false
   }
 }
