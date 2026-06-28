@@ -156,16 +156,17 @@ jobs:
             else
               echo "⚡ TOTAL NEW PROVIDER: Key completely missing everywhere. Generating isolated keypair..."
               
-              cat <<EOF > gpg-batch.conf
-                Key-Type: RSA
-                Key-Length: 4096
-                Key-Usage: sign
-                Name-Real: Automated Provider Signing
-                Name-Email: devops+${{ inputs.hcp_provider_name }}@${TF_ORG}.com
-                Expire-Date: 0
-                %no-protection
-                %commit
-              EOF
+cat <<EOF > gpg-batch.conf
+Key-Type: RSA
+Key-Length: 4096
+Key-Usage: sign
+Name-Real: Automated Provider Signing
+Name-Email: devops+${{ inputs.hcp_provider_name }}@${TF_ORG}.com
+Expire-Date: 0
+%no-protection
+%commit
+EOF
+
               gpg --batch --generate-key gpg-batch.conf
               LOCAL_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep 'sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
               
