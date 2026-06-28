@@ -36,6 +36,8 @@ resource "github_repository" "provider_repos" {
     repository           = github_repository.provider_template.name
     include_all_branches = false
   }
+
+  depends_on = [github_repository.provider_template]
 }
 
 resource "github_repository_file" "goreleaser_config" {
