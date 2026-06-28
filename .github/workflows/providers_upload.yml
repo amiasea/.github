@@ -220,90 +220,72 @@ jobs:
           TARGET_GPG_HEX: ${{ steps.gpg_prep.outputs.gpg_key_id }}
         run: |
           echo "::group::🚀 PMR Asset Publication"
-          
           BASE_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
           
           echo "DEBUG: Provider = ${TF_ORG}/${PROVIDER_NAME}"
-          echo "DEBUG: Version  = $NEXT_VER"
-          echo "DEBUG: GPG ID   = $TARGET_GPG_HEX"
-
-          # Ensure provider exists
+          echo "DEBUG: Version = $NEXT_VER"
+          echo "DEBUG: GPG ID = $TARGET_GPG_HEX"
+          
+          # 1. Ensure provider container shell exists in account registry
           echo "Ensuring provider exists..."
           PROVIDER_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $TF_TOKEN" \
             "${BASE_URL}")
-
+            
           if [[ "$PROVIDER_CHECK" == "404" ]]; then
             echo "Provider not found → Creating it..."
-            
+            # FIXED: Added the mandatory namespace tracking variable attribute to prevent the 422 error
             CREATE_PAYLOAD=$(jq -n \
               --arg name "$PROVIDER_NAME" \
-              '{
-                data: {
-                  type: "registry-providers",
-                  attributes: {
-                    name: $name,
-                    "registry-name": "private"
-                  }
-                }
-              }')
-            
+              --arg ns "$TF_ORG" \
+              '{ data: { type: "registry-providers", attributes: { name: $name, namespace: $ns, "registry-name": "private" } } }')
+              
             CREATE_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
               -H "Authorization: Bearer $TF_TOKEN" \
               -H "Content-Type: application/vnd.api+json" \
               -d "$CREATE_PAYLOAD" \
               "https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers")
-            
-            echo "$CREATE_RESPONSE"
+            echo "DEBUG: Create Shell Output -> $CREATE_RESPONSE"
           fi
-
-          # Delete any existing version
+          
+          # 2. Clear out any duplicate test tags to prevent naming slot collisions
           curl -s -X DELETE -H "Authorization: Bearer $TF_TOKEN" "${BASE_URL}/versions/${NEXT_VER}" || true
-
-          # Create version
+          
+          # 3. Create version entry to get binary upload slots
           echo "Creating version $NEXT_VER..."
           HCP_VERSION_PAYLOAD=$(jq -n \
             --arg version "$NEXT_VER" \
             --arg key_id "$TARGET_GPG_HEX" \
-            '{
-              data: {
-                type: "registry-provider-versions",
-                attributes: {
-                  version: $version,
-                  "key-id": $key_id,
-                  protocols: ["5.0", "6.0"]
-                }
-              }
-            }')
-
+            '{ data: { type: "registry-provider-versions", attributes: { version: $version, "key-id": $key_id, protocols: ["5.0", "6.0"] } } }')
+            
           VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
             -H "Authorization: Bearer $TF_TOKEN" \
             -H "Content-Type: application/vnd.api+json" \
             -d "$HCP_VERSION_PAYLOAD" \
             "${BASE_URL}/versions")
-
-          CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d' | tr -d '\n')
+            
+          CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d')
           HTTP_STATUS=$(echo "$VERSION_RESPONSE" | grep "\[HTTP STATUS\]" | awk '{print $3}')
-
+          
           if [[ "$HTTP_STATUS" -ne 201 ]]; then
             echo "❌ Failed to create version. Status: $HTTP_STATUS"
             echo "Response: $CLEAN_VER_JSON"
             exit 1
           fi
-
           echo "✅ Version $NEXT_VER created successfully."
-
-          # Upload SHASUMS
+          
+          # 4. Extract secure cloud file upload coordinates from links data object
           SHASUMS_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-upload"] // empty')
           SHASUMS_SIG_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-sig-upload"] // empty')
-
+          
           if [[ -n "$SHASUMS_URL" && -n "$SHASUMS_SIG_URL" ]]; then
+            echo "Uploading core hash manifest validation files..."
             curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS "$SHASUMS_URL"
             curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS.sig "$SHASUMS_SIG_URL"
-            echo "✅ SHA256SUMS uploaded."
+            echo "✅ SHA256SUMS uploaded successfully."
           fi
-
-          # Upload platforms
+          
+          # 5. Iterate through target build variants and upload package zip files
           for platform in linux_amd64 darwin_arm64 windows_amd64; do
             OS=${platform%%_*}
             ARCH=${platform#*_}
@@ -312,8 +294,7 @@ jobs:
             if [[ -f "$BINARY" ]]; then
               LOCAL_SHASUM=$(sha256sum "$BINARY" | awk '{print $1}')
               BINARY_FILENAME="terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_${OS}_${ARCH}.zip"
-              
-              echo "Uploading platform ${OS}/${ARCH}..."
+              echo "Uploading platform structural variant: ${OS}/${ARCH}..."
               
               HCP_PLATFORM_PAYLOAD=$(jq -n \
                 --arg os "$OS" \
@@ -321,24 +302,27 @@ jobs:
                 --arg shasum "$LOCAL_SHASUM" \
                 --arg filename "$BINARY_FILENAME" \
                 '{data: {type: "registry-provider-version-platforms", attributes: {os: $os, arch: $arch, shasum: $shasum, filename: $filename}}}')
-              
+                
               PLATFORM_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
                 -H "Authorization: Bearer $TF_TOKEN" \
                 -H "Content-Type: application/vnd.api+json" \
                 -d "$HCP_PLATFORM_PAYLOAD" \
                 "${BASE_URL}/versions/${NEXT_VER}/platforms")
-              
+                
               if echo "$PLATFORM_RESPONSE" | grep -q "201"; then
-                UPLOAD_URL=$(echo "$PLATFORM_RESPONSE" | jq -r '.data.links["provider-binary-upload"] // empty')
+                CLEAN_PLAT_JSON=$(echo "$PLATFORM_RESPONSE" | sed '/\[HTTP STATUS\]/d')
+                UPLOAD_URL=$(echo "$CLEAN_PLAT_JSON" | jq -r '.data.links["provider-binary-upload"] // empty')
+                
                 if [[ -n "$UPLOAD_URL" ]]; then
                   curl -s -X PUT --data-binary @"$BINARY" "$UPLOAD_URL"
-                  echo "✅ Uploaded ${OS}/${ARCH}"
+                  echo "✅ Upload completed for platform: ${OS}/${ARCH}"
                 fi
               else
-                echo "⚠️ Platform upload failed for ${OS}/${ARCH}"
+                echo "⚠️ Platform registration failed for variant: ${OS}/${ARCH}"
+                echo "DEBUG: Platform Response payload -> $PLATFORM_RESPONSE"
               fi
             fi
           done
-
-          echo "🎉 Publication completed successfully!"
+          
+          echo "🎉 Publication cycle completed successfully!"
           echo "::endgroup::"
