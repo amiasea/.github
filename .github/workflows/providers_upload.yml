@@ -83,7 +83,7 @@ jobs:
         run: |
           echo "::group::🔢 Calculate Version"
           PROVIDER_NAME="${{ inputs.hcp_provider_name }}"
-          API_URL="https://terraform.io{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          API_URL="https://app.terraform.io{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
           
           RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$API_URL")
           echo "DEBUG: Raw Response:"
@@ -117,7 +117,7 @@ jobs:
           KEY_NAME: "amiasea-${{ inputs.hcp_provider_name }}"
         run: |
           echo "::group::🔏 Sync GPG Key"
-          GPG_URL="https://terraform.io{TF_ORG}/gpg-keys"
+          GPG_URL="https://app.terraform.io{TF_ORG}/gpg-keys"
           GPG_LIST_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$GPG_URL")
           
           echo "DEBUG: Raw GPG Response:"
@@ -198,7 +198,7 @@ jobs:
           TARGET_GPG_ID: ${{ steps.gpg_lifecycle.outputs.gpg_key_id }}
         run: |
           echo "::group::🚀 PMR Asset Publication"
-          BASE_URL="https://terraform.io{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          BASE_URL="https://app.terraform.io{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
           
           VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
             -H "Authorization: Bearer $TF_TOKEN" \
