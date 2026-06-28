@@ -128,13 +128,18 @@ jobs:
           echo "::group::🔐 Sync GPG Key"
           VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
           
+          # Official Private Registry API Base Path
           GPG_URL="https://app.terraform.io/api/registry/private/v2/gpg-keys"
-          echo "INFO: Scanning HCP Registry via -> $GPG_URL"
           
-          GPG_LIST_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$GPG_URL")
+          # 1. To list keys, we MUST append the percent-encoded filter parameter required by HCP
+          FETCH_URL="${GPG_URL}?filter%5Bnamespace%5D=${TF_ORG}"
+          echo "INFO: Scanning HCP Registry via -> $FETCH_URL"
+          
+          GPG_LIST_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$FETCH_URL")
           CLEAN_GPG_JSON=$(echo "$GPG_LIST_RESPONSE" | sed '/\[HTTP STATUS\]/d')
           
-          EXISTING_KEY_ID=$(echo "$CLEAN_GPG_JSON" | jq -r --arg name "$KEY_NAME" 'if .data != null then .data[] | select(.attributes.name == $name) | .id else empty end' | head -n 1)
+          # 2. Match based on 'namespace' matching our organization name (keys do not have custom 'name' attributes)
+          EXISTING_KEY_ID=$(echo "$CLEAN_GPG_JSON" | jq -r --arg org "$TF_ORG" 'if .data != null then .data[] | select(.attributes.namespace == $org) | .id else empty end' | head -n 1)
           
           if [[ -n "$EXISTING_KEY_ID" && "$EXISTING_KEY_ID" != "null" ]]; then
             echo "✅ MATCH FOUND: Re-using existing HCP GPG Key ID -> $EXISTING_KEY_ID"
@@ -146,7 +151,6 @@ jobs:
             if [[ -n "$AZ_SECRET" ]]; then
               echo "✅ BACKUP FOUND: Restoring private key from Azure Secret Store..."
               echo "$AZ_SECRET" | gpg --batch --import
-              
               LOCAL_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n1)
               PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
             else
@@ -154,10 +158,9 @@ jobs:
               
               # === NO HEREDOC - Using printf (YAML safe) ===
               printf 'Key-Type: RSA\nKey-Length: 4096\nKey-Usage: sign\nName-Real: Automated Provider Signing\nName-Email: devops+aviator@amiasea.com\nExpire-Date: 0\n%%no-protection\n%%commit\n' > gpg-batch.conf
-              
               gpg --batch --generate-key gpg-batch.conf
-              LOCAL_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n1)
               
+              LOCAL_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n1)
               PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
               PRIVATE_KEY_ARMOR=$(gpg --armor --export-secret-keys "$LOCAL_KEY_ID")
               
@@ -166,11 +169,12 @@ jobs:
               echo "✅ Backup finalized in Key Vault."
             fi
             
-            echo "Registering armor public block inside HCP Private Registry..."
+            echo "Registering armor public block inside HCP Private Registry via -> $GPG_URL"
+            # 3. Payload updated to match official documentation payload rules (using 'namespace' instead of 'name')
             HCP_PAYLOAD=$(jq -n \
-              --arg name "$KEY_NAME" \
+              --arg org "$TF_ORG" \
               --arg armor "$PUBLIC_KEY_ARMOR" \
-              '{data: {type: "gpg-keys", attributes: {name: $name, "ascii-armor": $armor}}}')
+              '{data: {type: "gpg-keys", attributes: {namespace: $org, "ascii-armor": $armor}}}')
               
             REG_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
               -H "Authorization: Bearer $TF_TOKEN" \
