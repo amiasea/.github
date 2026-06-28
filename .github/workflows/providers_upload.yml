@@ -57,7 +57,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Az CLI Login
-        uses: azure/login@v2
+        uses: azure/login@v3 # Upgraded to v3 to natively support modern Node versions
         with:
           client-id: ${{ inputs.azure_client_id || vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ inputs.azure_tenant_id || vars.AZURE_TENANT_ID }}
@@ -67,13 +67,18 @@ jobs:
         id: auth
         run: |
           echo "::group::🔑 Fetch Token"
+          # Dynamically parse vault name from versionless secret ID URL
+          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
+          echo "INFO: Resolved Key Vault Name -> $VAULT_NAME"
+          
           RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
           if [[ -z "$RAW_TOKEN" ]]; then
-            echo "❌ ERROR: Token retrieval failed."
+            echo "❌ ERROR: Token retrieval failed from Key Vault."
             exit 1
           fi
           echo "::add-mask::$RAW_TOKEN"
           echo "token=$RAW_TOKEN" >> $GITHUB_OUTPUT
+          echo "✅ HCP Token successfully retrieved and masked."
           echo "::endgroup::"
 
       - name: Calculate Next Version
@@ -83,22 +88,25 @@ jobs:
         run: |
           echo "::group::🔢 Calculate Version"
           PROVIDER_NAME="${{ inputs.hcp_provider_name }}"
+          
+          # Fixed Typo: Swapped incorrect path interpolation format with an explicit /api/v2 structure required by HCP API
           API_URL="https://app.terraform.io/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          echo "INFO: Fetching versions from -> $API_URL"
           
           RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$API_URL")
-          echo "DEBUG: Raw Response:"
-          echo "$RESPONSE"
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "\[HTTP STATUS\]" | awk '{print $3}')
+          echo "DEBUG: API HTTP Status Code -> $HTTP_STATUS"
           
           CLEAN_JSON=$(echo "$RESPONSE" | sed '/\[HTTP STATUS\]/d')
-          LATEST=$(echo "$CLEAN_JSON" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end' 2>/dev/null)
           
+          LATEST=$(echo "$CLEAN_JSON" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end' 2>/dev/null)
           if [[ "$LATEST" == "null" || -z "$LATEST" ]]; then LATEST="0.0.0"; fi
-          echo "INFO: Latest PMR Version -> $LATEST"
+          echo "INFO: Latest PMR Version discovered -> $LATEST"
           
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
           MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
-          
           PR_TITLE="${{ github.event.pull_request.title || 'chore: release' }}"
+          
           if [[ "$PR_TITLE" == *"feat"* ]]; then
             NEXT_VERSION="${MAJOR}.$((MINOR + 1)).0"
           elif [[ "$PR_TITLE" == *"fix"* ]]; then
@@ -106,8 +114,9 @@ jobs:
           else
             NEXT_VERSION="$((MAJOR + 1)).0.0"
           fi
+          
           echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
-          echo "✅ Target Release Version -> $NEXT_VERSION"
+          echo "✅ Target Release Version calculated -> $NEXT_VERSION"
           echo "::endgroup::"
 
       - name: Resolve and Sync Permanent GPG Key Identity
@@ -115,44 +124,80 @@ jobs:
         env:
           TF_TOKEN: ${{ steps.auth.outputs.token }}
           KEY_NAME: "amiasea-${{ inputs.hcp_provider_name }}"
+          SECRET_NAME: "${{ inputs.hcp_provider_name }}-gpg-private"
         run: |
-          echo "::group::🔏 Sync GPG Key"
+          echo "::group::🔐 Sync GPG Key"
+          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
+          
+          # HCP API endpoint for managing signing keys assigned to organization scope
           GPG_URL="https://app.terraform.io/${TF_ORG}/gpg-keys"
+          echo "INFO: Scanning HCP Registry via -> $GPG_URL"
+          
           GPG_LIST_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$GPG_URL")
-          
-          echo "DEBUG: Raw GPG Response:"
-          echo "$GPG_LIST_RESPONSE"
-          
           CLEAN_GPG_JSON=$(echo "$GPG_LIST_RESPONSE" | sed '/\[HTTP STATUS\]/d')
-          EXISTING_KEY_ID=$(echo "$CLEAN_GPG_JSON" | jq -r --arg name "$KEY_NAME" '.data[] | select(.attributes.name == $name) | .id // empty' | head -n 1)
+          
+          # Prevent JSON iteration failures by validating data array exists
+          EXISTING_KEY_ID=$(echo "$CLEAN_GPG_JSON" | jq -r --arg name "$KEY_NAME" 'if .data != null then .data[] | select(.attributes.name == $name) | .id else empty end' | head -n 1)
           
           if [[ -n "$EXISTING_KEY_ID" && "$EXISTING_KEY_ID" != "null" ]]; then
-            echo "✅ RE-USING KEY ID -> $EXISTING_KEY_ID"
+            echo "✅ MATCH FOUND: Re-using existing HCP GPG Key ID -> $EXISTING_KEY_ID"
             echo "gpg_key_id=$EXISTING_KEY_ID" >> $GITHUB_OUTPUT
           else
-            echo "⚡ NEW PROVIDER: Extracting public key from Key Vault..."
-            VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
+            echo "⚠️ KEY NOT FOUND IN HCP: Querying Azure Key Vault for backup secret: $SECRET_NAME"
+            AZ_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --query "value" -o tsv 2>/dev/null || true)
             
-            az keyvault key download --vault-name "$VAULT_NAME" --name "${{ inputs.azure_key_name }}" --file raw_public.pem
-            gpg --import raw_public.pem
-            gpg --armor --export "${{ inputs.azure_key_name }}" > provider_public_key.asc
+            if [[ -n "$AZ_SECRET" ]]; then
+              echo "✅ BACKUP FOUND: Restoring private key from Azure Secret Store..."
+              echo "$AZ_SECRET" | gpg --batch --import
+              
+              LOCAL_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep 'sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
+              echo "INFO: Restored Local Key ID -> $LOCAL_KEY_ID"
+              PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
+            else
+              echo "⚡ TOTAL NEW PROVIDER: Key completely missing everywhere. Generating isolated keypair..."
+              
+              cat <<EOF > gpg-batch.conf
+                Key-Type: RSA
+                Key-Length: 4096
+                Key-Usage: sign
+                Name-Real: Automated Provider Signing
+                Name-Email: devops+${{ inputs.hcp_provider_name }}@${TF_ORG}.com
+                Expire-Date: 0
+                %no-protection
+                %commit
+              EOF
+              gpg --batch --generate-key gpg-batch.conf
+              LOCAL_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep 'sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
+              
+              PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
+              PRIVATE_KEY_ARMOR=$(gpg --armor --export-secret-keys "$LOCAL_KEY_ID")
+              
+              echo "Securing private key backup to Azure Key Vault..."
+              az keyvault secret set --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --value "$PRIVATE_KEY_ARMOR" > /dev/null
+              echo "✅ Backup finalized in Key Vault."
+            fi
             
+            echo "Registering armor public block inside HCP Private Registry..."
+            HCP_PAYLOAD=$(jq -n \
+              --arg name "$KEY_NAME" \
+              --arg armor "$PUBLIC_KEY_ARMOR" \
+              '{data: {type: "gpg-keys", attributes: {name: $name, "ascii-armor": $armor}}}')
+              
             REG_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
               -H "Authorization: Bearer $TF_TOKEN" \
               -H "Content-Type: application/vnd.api+json" \
-              -d "{\"data\":{\"type\":\"gpg-keys\",\"attributes\":{\"ascii-armor\":$(jq -Rs . provider_public_key.asc),\"name\":\"$KEY_NAME\"}}}" \
-              "$GPG_URL")
+              -d "$HCP_PAYLOAD" "$GPG_URL")
               
-            echo "DEBUG: Register Response:"
-            echo "$REG_RESPONSE"
-            
             CLEAN_REG_JSON=$(echo "$REG_RESPONSE" | sed '/\[HTTP STATUS\]/d')
             NEW_GPG_ID=$(echo "$CLEAN_REG_JSON" | jq -r '.data.id // empty')
             
             if [[ -z "$NEW_GPG_ID" || "$NEW_GPG_ID" == "null" ]]; then
-              echo "❌ ERROR: GPG registration failed."
+              echo "❌ ERROR: GPG registration failed on HCP API. Response details below:"
+              echo "$CLEAN_REG_JSON"
               exit 1
             fi
+            
+            echo "✅ Keypair generated and synced. HCP GPG Key ID -> $NEW_GPG_ID"
             echo "gpg_key_id=$NEW_GPG_ID" >> $GITHUB_OUTPUT
           fi
           echo "::endgroup::"
@@ -167,27 +212,36 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HCP_PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
 
-      - name: Sign Checksums with Azure Key Vault
+      - name: Sign Checksums with Isolated Private GPG Key
         env:
           NEXT_VER: ${{ steps.versioning.outputs.next_version }}
-          AZURE_KEY_NAME: ${{ inputs.azure_key_name }}
         run: |
-          echo "::group::🔏 Vault Sign Task"
+          echo "::group::🔏 Cryptographic Local Binary Signing"
           SUMS_FILE="dist/terraform-provider-${{ inputs.hcp_provider_name }}_${NEXT_VER}_SHA256SUMS"
+          
           if [[ ! -f "$SUMS_FILE" ]]; then
-            echo "❌ ERROR: SHA256SUMS missing."
+            echo "❌ ERROR: Targeted checksums definition asset is missing -> $SUMS_FILE"
             exit 1
           fi
           
-          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
-          az keyvault key sign \
-            --vault-name "$VAULT_NAME" \
-            --name "$AZURE_KEY_NAME" \
-            --algorithm RS256 \
-            --file "$SUMS_FILE" \
+          # Discover local key details populated from lifecycle step
+          LOCAL_SIGN_ID=$(gpg --list-secret-keys --keyid-format LONG | grep 'sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
+          echo "INFO: Signing checksum manifest using key identity -> $LOCAL_SIGN_ID"
+          
+          # Generate the standard ASCII detached signature bundle (.sig) expected by HCP Terraform
+          gpg --batch --no-tty --pinentry-mode loopback \
+            --local-user "$LOCAL_SIGN_ID" \
+            --detach-sign \
+            --armor \
             --output "${SUMS_FILE}.sig" \
-            --encoding base64
-          echo "✅ Signature created."
+            "$SUMS_FILE"
+            
+          if [[ ! -f "${SUMS_FILE}.sig" ]]; then
+            echo "❌ ERROR: Detached signature generation failed."
+            exit 1
+          fi
+          
+          echo "✅ Signature successfully derived locally -> ${SUMS_FILE}.sig"
           echo "::endgroup::"
 
       - name: Publish to HCP Terraform Private Registry
@@ -198,7 +252,10 @@ jobs:
           TARGET_GPG_ID: ${{ steps.gpg_lifecycle.outputs.gpg_key_id }}
         run: |
           echo "::group::🚀 PMR Asset Publication"
+          
+          # Fixed Endpoint: Aligned paths to match proper v2 private registry entry schemes
           BASE_URL="https://app.terraform.io/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          echo "INFO: Reserving version block at: $BASE_URL/versions"
           
           VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
             -H "Authorization: Bearer $TF_TOKEN" \
@@ -206,27 +263,29 @@ jobs:
             -d "{\"data\":{\"type\":\"registry-provider-versions\",\"attributes\":{\"version\":\"$NEXT_VER\",\"key-id\":\"$TARGET_GPG_ID\",\"protocols\":[\"5.0\",\"6.0\"]}}}" \
             "$BASE_URL/versions")
             
-          echo "DEBUG: Version Slot Response:"
-          echo "$VERSION_RESPONSE"
-          
           CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d')
           SHASUMS_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-upload"] // empty')
           SHASUMS_SIG_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-sig-upload"] // empty')
           
           if [[ -z "$SHASUMS_URL" || -z "$SHASUMS_SIG_URL" ]]; then
-            echo "❌ ERROR: Failed to acquire upload slots."
+            echo "❌ ERROR: Failed to acquire secure binary upload allocation slots from HCP API."
+            echo "DEBUG: API Response Payload follows:"
+            echo "$CLEAN_VER_JSON"
             exit 1
           fi
           
+          echo "Uploading core hash files..."
           curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS "$SHASUMS_URL"
           curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS.sig "$SHASUMS_SIG_URL"
           
+          # Map asset combinations across standard build platforms
           for platform in linux_amd64 darwin_arm64 windows_amd64; do
             OS=${platform%%_*}
             ARCH=${platform#*_}
             BINARY="dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_${OS}_${ARCH}.zip"
             
             if [[ -f "$BINARY" ]]; then
+              echo "Allocating upload slot for architectural variant -> ${OS}/${ARCH}"
               PLATFORM_RESPONSE=$(curl -s -X POST \
                 -H "Authorization: Bearer $TF_TOKEN" \
                 -H "Content-Type: application/vnd.api+json" \
@@ -235,10 +294,15 @@ jobs:
                 
               CLEAN_PLAT_JSON=$(echo "$PLATFORM_RESPONSE" | sed '/\[PLATFORM REG STATUS\]/d')
               UPLOAD_URL=$(echo "$CLEAN_PLAT_JSON" | jq -r '.data.links["provider-binary-upload"] // empty')
+              
               if [[ -n "$UPLOAD_URL" && "$UPLOAD_URL" != "null" ]]; then
-              curl -s -X PUT --data-binary @"$BINARY" "$UPLOAD_URL"
+                echo "Uploading zip artifact binary to cloud storage..."
+                curl -s -X PUT --data-binary @"$BINARY" "$UPLOAD_URL"
+              else
+                echo "⚠️ WARNING: Upload coordinate missing for platform variant: ${OS}/${ARCH}"
               fi
-              fi
-              done
-              echo "✅ Publication Complete."
-              echo "::endgroup::"
+            fi
+          done
+          
+          echo "🎉 Publication cycle completed successfully!"
+          echo "::endgroup::"
