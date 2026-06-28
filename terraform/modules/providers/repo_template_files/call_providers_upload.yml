@@ -1,9 +1,10 @@
 name: Release and Upload Provider
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # push:
+  #   branches:
+  #     - main  # Runs automatically when a PR is merged into main
+  workflow_dispatch:
 
 permissions:
   contents: write
