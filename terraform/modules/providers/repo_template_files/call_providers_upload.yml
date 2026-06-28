@@ -17,7 +17,7 @@ jobs:
       azure_key_name: ${{ vars.AZURE_KEY_NAME }}
       hcp_provider_name: ${{ vars.HCP_PROVIDER_NAME }}
       # Add these if you want to override with manual values:
-      # azure_client_id: "manual-value"
-      # azure_tenant_id: "manual-value"
-      # azure_subscription_id: "manual-value"
+      azure_client_id: "manual-value"
+      azure_tenant_id: "manual-value"
+      azure_subscription_id: "manual-value"
     secrets: inherit
