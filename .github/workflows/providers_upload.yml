@@ -239,7 +239,7 @@ jobs:
             -H "Authorization: Bearer $TF_TOKEN" \
             -H "Content-Type: application/vnd.api+json" \
             -d "{\"data\":{\"type\":\"registry-provider-versions\",\"attributes\":{\"version\":\"$NEXT_VER\",\"key-id\":\"$TARGET_GPG_ID\",\"protocols\":[\"5.0\",\"6.0\"]}}}" \
-            "$BASE_URL/versions")
+            "$BASE_URL")
             
           CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d')
           SHASUMS_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-upload"] // empty')
