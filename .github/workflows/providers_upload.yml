@@ -213,16 +213,37 @@ jobs:
         run: |
           echo "::group::🔏 Cryptographic Local Binary Signing"
           SUMS_FILE="dist/terraform-provider-${{ inputs.hcp_provider_name }}_${NEXT_VER}_SHA256SUMS"
+          SECRET_NAME="${{ inputs.hcp_provider_name }}-gpg-private"
           
           if [[ ! -f "$SUMS_FILE" ]]; then
             echo "❌ ERROR: Checksums file missing -> $SUMS_FILE"
             exit 1
           fi
           
-          # Upgraded to our robust colon parser to guarantee signature tracking success
-          LOCAL_SIGN_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n 1)
-          echo "INFO: Signing with key identity -> $LOCAL_SIGN_ID"
+          # 1. Resolve Vault Name and Download the Backup Secret from Azure
+          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
+          echo "INFO: Fetching private key from Key Vault: $SECRET_NAME..."
+          AZ_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --query "value" -o tsv 2>/dev/null || true)
           
+          if [[ -z "$AZ_SECRET" ]]; then
+            echo "❌ CRITICAL ERROR: Could not retrieve private key from Azure Key Vault."
+            exit 1
+          fi
+          
+          # 2. Import the key into the current step's GPG keyring environment
+          echo "$AZ_SECRET" | gpg --batch --import
+          
+          # 3. Securely read the imported key ID using our foolproof colon parser
+          LOCAL_SIGN_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n 1)
+          
+          if [[ -z "$LOCAL_SIGN_ID" ]]; then
+            echo "❌ ERROR: Failed to extract Key ID from local keyring."
+            exit 1
+          fi
+          
+          echo "INFO: Signing checksum manifest using key identity -> $LOCAL_SIGN_ID"
+          
+          # 4. Generate the standard ASCII detached signature bundle (.sig)
           gpg --batch --no-tty --pinentry-mode loopback \
             --local-user "$LOCAL_SIGN_ID" \
             --detach-sign \
