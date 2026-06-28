@@ -25,7 +25,7 @@ component "whisper_genie_tf_token" {
 
 component "providers_orchestrator" {
   source  = "app.terraform.io/amiasea/providers/github"
-  version = ">= 5.0.0"
+  version = ">= 6.0.0"
 
   inputs = {
     tfe_org_name   = var.tfe_org_name
