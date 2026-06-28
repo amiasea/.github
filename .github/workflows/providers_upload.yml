@@ -128,7 +128,7 @@ jobs:
           echo "::group::🔐 Sync GPG Key"
           VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
           
-          GPG_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/gpg-keys"
+          GPG_URL="https://app.terraform.io/api/registry/private/v2/gpg-keys"
           echo "INFO: Scanning HCP Registry via -> $GPG_URL"
           
           GPG_LIST_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$GPG_URL")
