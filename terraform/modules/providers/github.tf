@@ -16,7 +16,7 @@ resource "github_repository_file" "workflow_call" {
   file                = ".github/workflows/call_providers_upload.yml"
   overwrite_on_create = true
   
-  content             = file("${path.module}/terraform_provider_template_files/call_providers_upload.yml")
+  content             = file("${path.module}/repo_template_files/call_providers_upload.yml")
 
   depends_on = [github_repository.provider_template]
 }
