@@ -88,7 +88,7 @@ jobs:
           echo "::group::🔢 Calculate Version"
           PROVIDER_NAME="${{ inputs.hcp_provider_name }}"
           
-          API_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          API_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}/versions"
           echo "INFO: Fetching versions from -> $API_URL"
           
           RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$API_URL")
@@ -222,7 +222,6 @@ jobs:
           NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
           GPG_KEY_ID: ${{ steps.gpg_prep.outputs.gpg_key_id }}
 
-      # STEP 3 OF PART 2: Publish to HCP Private Registry
       - name: Publish to HCP Terraform Private Registry
         env:
           TF_TOKEN: ${{ steps.auth.outputs.token }}
@@ -232,14 +231,16 @@ jobs:
         run: |
           echo "::group::🚀 PMR Asset Publication"
           
+          # Exact base URL mirroring HashiCorp's version and platform documentation specifications
           BASE_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
-          echo "INFO: Reserving version block at: $BASE_URL/versions"
+          echo "INFO: Reserving version block at: ${BASE_URL}/versions"
           
+          # 1. Create a Provider Version entry to secure shasum reservation slots
           VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
             -H "Authorization: Bearer $TF_TOKEN" \
             -H "Content-Type: application/vnd.api+json" \
             -d "{\"data\":{\"type\":\"registry-provider-versions\",\"attributes\":{\"version\":\"$NEXT_VER\",\"key-id\":\"$TARGET_GPG_ID\",\"protocols\":[\"5.0\",\"6.0\"]}}}" \
-            "$BASE_URL")
+            "${BASE_URL}/versions")
             
           CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d')
           SHASUMS_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-upload"] // empty')
@@ -251,22 +252,26 @@ jobs:
             exit 1
           fi
           
-          echo "Uploading core hash files..."
+          echo "Uploading core hash manifest files..."
           curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS "$SHASUMS_URL"
           curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS.sig "$SHASUMS_SIG_URL"
           
+          # 2. Iterate through each platform variant, extract the storage link, and upload the zip binary
           for platform in linux_amd64 darwin_arm64 windows_amd64; do
             OS=${platform%%_*}
             ARCH=${platform#*_}
             BINARY="dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_${OS}_${ARCH}.zip"
             
             if [[ -f "$BINARY" ]]; then
+              LOCAL_SHASUM=$(sha256sum "$BINARY" | awk '{print $1}')
+              BINARY_FILENAME="terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_${OS}_${ARCH}.zip"
+              
               echo "Allocating upload slot for architectural variant -> ${OS}/${ARCH}"
               PLATFORM_RESPONSE=$(curl -s -X POST \
                 -H "Authorization: Bearer $TF_TOKEN" \
                 -H "Content-Type: application/vnd.api+json" \
-                -d "{\"data\":{\"type\":\"registry-provider-version-platforms\",\"attributes\":{\"os\":\"$OS\",\"arch\":\"$ARCH\"}}}" \
-                "$BASE_URL/versions/$NEXT_VER/platforms")
+                -d "{\"data\":{\"type\":\"registry-provider-version-platforms\",\"attributes\":{\"os\":\"$OS\",\"arch\":\"$ARCH\",\"shasum\":\"$LOCAL_SHASUM\",\"filename\":\"$BINARY_FILENAME\"}}}" \
+                "${BASE_URL}/versions/${NEXT_VER}/platforms")
                 
               CLEAN_PLAT_JSON=$(echo "$PLATFORM_RESPONSE" | sed '/\[PLATFORM REG STATUS\]/d')
               UPLOAD_URL=$(echo "$CLEAN_PLAT_JSON" | jq -r '.data.links["provider-binary-upload"] // empty')
@@ -274,6 +279,10 @@ jobs:
               if [[ -n "$UPLOAD_URL" && "$UPLOAD_URL" != "null" ]]; then
                 echo "Uploading zip artifact binary to cloud storage..."
                 curl -s -X PUT --data-binary @"$BINARY" "$UPLOAD_URL"
+                echo "✅ Upload completed for: ${OS}/${ARCH}"
+              else
+                echo "⚠️ WARNING: Failed to acquire upload coordinate link for platform variant: ${OS}/${ARCH}"
+                echo "DEBUG: API Platform Output: $CLEAN_PLAT_JSON"
               fi
             fi
           done
