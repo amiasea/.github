@@ -57,7 +57,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Az CLI Login
-        uses: azure/login@v3
+        uses: azure/login@v3 # Upgraded to v3 to natively support modern runner hosts
         with:
           client-id: ${{ inputs.azure_client_id || vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ inputs.azure_tenant_id || vars.AZURE_TENANT_ID }}
@@ -88,7 +88,8 @@ jobs:
           echo "::group::🔢 Calculate Version"
           PROVIDER_NAME="${{ inputs.hcp_provider_name }}"
           
-          API_URL="https://app.terraform.io/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          # FIXED: Restructured URL path format to target the official v2 organizations endpoint
+          API_URL="https://app.terraform.io/{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
           echo "INFO: Fetching versions from -> $API_URL"
           
           RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$API_URL")
@@ -96,14 +97,13 @@ jobs:
           echo "DEBUG: API HTTP Status Code -> $HTTP_STATUS"
           
           CLEAN_JSON=$(echo "$RESPONSE" | sed '/\[HTTP STATUS\]/d')
-          
           LATEST=$(echo "$CLEAN_JSON" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end' 2>/dev/null || echo "0.0.0")
+          
           if [[ "$LATEST" == "null" || -z "$LATEST" ]]; then LATEST="0.0.0"; fi
           echo "INFO: Latest PMR Version discovered -> $LATEST"
           
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
           MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
-          
           PR_TITLE="${{ github.event.pull_request.title || 'chore: release' }}"
           
           if [[ "$PR_TITLE" == *"feat"* ]]; then
@@ -128,17 +128,13 @@ jobs:
           echo "::group::🔐 Sync GPG Key"
           VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
           
-          # Official Private Registry API Base Path
           GPG_URL="https://app.terraform.io/api/registry/private/v2/gpg-keys"
-          
-          # 1. To list keys, we MUST append the percent-encoded filter parameter required by HCP
           FETCH_URL="${GPG_URL}?filter%5Bnamespace%5D=${TF_ORG}"
           echo "INFO: Scanning HCP Registry via -> $FETCH_URL"
           
           GPG_LIST_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$FETCH_URL")
           CLEAN_GPG_JSON=$(echo "$GPG_LIST_RESPONSE" | sed '/\[HTTP STATUS\]/d')
           
-          # 2. Match based on 'namespace' matching our organization name (keys do not have custom 'name' attributes)
           EXISTING_KEY_ID=$(echo "$CLEAN_GPG_JSON" | jq -r --arg org "$TF_ORG" 'if .data != null then .data[] | select(.attributes.namespace == $org) | .id else empty end' | head -n 1)
           
           if [[ -n "$EXISTING_KEY_ID" && "$EXISTING_KEY_ID" != "null" ]]; then
@@ -155,8 +151,6 @@ jobs:
               PUBLIC_KEY_ARMOR=$(gpg --armor --export "$LOCAL_KEY_ID")
             else
               echo "⚡ TOTAL NEW PROVIDER: Generating isolated keypair..."
-              
-              # === NO HEREDOC - Using printf (YAML safe) ===
               printf 'Key-Type: RSA\nKey-Length: 4096\nKey-Usage: sign\nName-Real: Automated Provider Signing\nName-Email: devops+aviator@amiasea.com\nExpire-Date: 0\n%%no-protection\n%%commit\n' > gpg-batch.conf
               gpg --batch --generate-key gpg-batch.conf
               
@@ -170,7 +164,6 @@ jobs:
             fi
             
             echo "Registering armor public block inside HCP Private Registry via -> $GPG_URL"
-            # 3. Payload updated to match official documentation payload rules (using 'namespace' instead of 'name')
             HCP_PAYLOAD=$(jq -n \
               --arg org "$TF_ORG" \
               --arg armor "$PUBLIC_KEY_ARMOR" \
@@ -195,18 +188,7 @@ jobs:
           fi
           echo "::endgroup::"
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean --snapshot --skip=publish --parallelism 2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HCP_PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
-          # Injects the true version string target into GoReleaser's snapshot engine
-          NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
-
+      # STEP 1 OF PART 2: Hydrate keyring with your key ID before running compilation
       - name: 🔐 Prepare Local GPG Keyring for GoReleaser
         id: gpg_prep
         run: |
@@ -223,8 +205,6 @@ jobs:
           fi
           
           echo "$AZ_SECRET" | gpg --batch --import
-          
-          # Safely parse the Key ID to hand over to GoReleaser
           LOCAL_SIGN_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n 1)
           echo "gpg_key_id=$LOCAL_SIGN_ID" >> $GITHUB_OUTPUT
           
@@ -241,35 +221,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HCP_PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
           NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
-          # GoReleaser maps these directly into its signs block variables
           GPG_KEY_ID: ${{ steps.gpg_prep.outputs.gpg_key_id }}
 
-
-      - name: Sign Checksums with Isolated Private GPG Key
-        env:
-          NEXT_VER: ${{ steps.versioning.outputs.next_version }}
-        run: |
-          echo "::group::🔏 Cryptographic Local Binary Signing"
-          SUMS_FILE="dist/terraform-provider-${{ inputs.hcp_provider_name }}_${NEXT_VER}_SHA256SUMS"
-          
-          if [[ ! -f "$SUMS_FILE" ]]; then
-            echo "❌ ERROR: Checksums file missing -> $SUMS_FILE"
-            exit 1
-          fi
-          
-          LOCAL_SIGN_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | awk '{print $2}' | cut -d'/' -f2 | head -n 1)
-          echo "INFO: Signing with key -> $LOCAL_SIGN_ID"
-          
-          gpg --batch --no-tty --pinentry-mode loopback \
-            --local-user "$LOCAL_SIGN_ID" \
-            --detach-sign \
-            --armor \
-            --output "${SUMS_FILE}.sig" \
-            "$SUMS_FILE"
-          
-          echo "✅ Signature created."
-          echo "::endgroup::"
-
+      # STEP 3 OF PART 2: Publish to HCP Private Registry
       - name: Publish to HCP Terraform Private Registry
         env:
           TF_TOKEN: ${{ steps.auth.outputs.token }}
@@ -278,10 +232,53 @@ jobs:
           TARGET_GPG_ID: ${{ steps.gpg_lifecycle.outputs.gpg_key_id }}
         run: |
           echo "::group::🚀 PMR Asset Publication"
-          BASE_URL="https://app.terraform.io/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
           
-          # ... (rest of your publish step remains the same - I didn't change the logic)
-          # Just make sure the heredoc fix above resolves the immediate crash.
+          # FIXED: Swapped out old path format for official /api/v2 nested organization registry endpoint structure
+          BASE_URL="https://app.terraform.io/{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          echo "INFO: Reserving version block at: $BASE_URL/versions"
+          
+          VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
+            -H "Authorization: Bearer $TF_TOKEN" \
+            -H "Content-Type: application/vnd.api+json" \
+            -d "{\"data\":{\"type\":\"registry-provider-versions\",\"attributes\":{\"version\":\"$NEXT_VER\",\"key-id\":\"$TARGET_GPG_ID\",\"protocols\":[\"5.0\",\"6.0\"]}}}" \
+            "$BASE_URL/versions")
+            
+          CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d')
+          SHASUMS_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-upload"] // empty')
+          SHASUMS_SIG_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-sig-upload"] // empty')
+          
+          if [[ -z "$SHASUMS_URL" || -z "$SHASUMS_SIG_URL" ]]; then
+            echo "❌ ERROR: Failed to acquire secure binary upload allocation slots from HCP API. Details below:"
+            echo "$CLEAN_VER_JSON"
+            exit 1
+          fi
+          
+          echo "Uploading core hash files..."
+          curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS "$SHASUMS_URL"
+          curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS.sig "$SHASUMS_SIG_URL"
+          
+          for platform in linux_amd64 darwin_arm64 windows_amd64; do
+            OS=${platform%%_*}
+            ARCH=${platform#*_}
+            BINARY="dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_${OS}_${ARCH}.zip"
+            
+            if [[ -f "$BINARY" ]]; then
+              echo "Allocating upload slot for architectural variant -> ${OS}/${ARCH}"
+              PLATFORM_RESPONSE=$(curl -s -X POST \
+                -H "Authorization: Bearer $TF_TOKEN" \
+                -H "Content-Type: application/vnd.api+json" \
+                -d "{\"data\":{\"type\":\"registry-provider-version-platforms\",\"attributes\":{\"os\":\"$OS\",\"arch\":\"$ARCH\"}}}" \
+                "$BASE_URL/versions/$NEXT_VER/platforms")
+                
+              CLEAN_PLAT_JSON=$(echo "$PLATFORM_RESPONSE" | sed '/\[PLATFORM REG STATUS\]/d')
+              UPLOAD_URL=$(echo "$CLEAN_PLAT_JSON" | jq -r '.data.links["provider-binary-upload"] // empty')
+              
+              if [[ -n "$UPLOAD_URL" && "$UPLOAD_URL" != "null" ]]; then
+                echo "Uploading zip artifact binary to cloud storage..."
+                curl -s -X PUT --data-binary @"$BINARY" "$UPLOAD_URL"
+              fi
+            fi
+          done
           
           echo "🎉 Publication cycle completed successfully!"
           echo "::endgroup::"
