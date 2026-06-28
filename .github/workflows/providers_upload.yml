@@ -118,7 +118,7 @@ jobs:
           echo "✅ Target Release Version calculated -> $NEXT_VERSION"
           echo "::endgroup::"
 
-            - name: Resolve and Sync Permanent GPG Key Identity
+      - name: Resolve and Sync Permanent GPG Key Identity
         id: gpg_lifecycle
         env:
           TF_TOKEN: ${{ steps.auth.outputs.token }}
