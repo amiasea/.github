@@ -17,7 +17,7 @@ jobs:
       TF_ORG: "amiasea"
       TF_PROJECT: "amiasea"
       STACKS_ROOT: "terraform/stacks"
-      TF_LOG: "DEBUG" 
+      TF_LOG: "ERROR" 
 
     steps:
       - name: Checkout Code
@@ -66,23 +66,18 @@ jobs:
               echo "SKIP: $STACK_NAME (No README.md found)"
               continue
             fi
-
+            
             echo "################################################################"
-            echo " SYNCING STACK: $STACK_NAME"
+            echo "  SYNCING STACK: $STACK_NAME"
             echo "################################################################"
             
             cd "$STACK_DIR"
-            echo "LOG: [1/3] Initializing & Validating..."
+            
+            echo "LOG: [1/2] Initializing & Validating..."
             terraform stacks init
             terraform stacks validate
-
-            echo "LOG: [2/3] Ensuring Stack Shell exists..."
-            terraform stacks create \
-              -organization-name ${{ env.TF_ORG }} \
-              -project-name "${{ env.TF_PROJECT }}" \
-              -stack-name "$STACK_NAME" || true
-
-            echo "LOG: [3/3] Uploading configuration..."
+            
+            echo "LOG: [2/2] Uploading configuration..."
             terraform stacks configuration upload \
               -organization-name ${{ env.TF_ORG }} \
               -project-name "${{ env.TF_PROJECT }}" \
