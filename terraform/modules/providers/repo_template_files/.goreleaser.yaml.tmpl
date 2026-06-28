@@ -23,7 +23,7 @@ builds:
       - arm64
 
 archives:
-  - format: zip
+  - formats: ["zip"] # Upgraded from 'format: zip' to fix v2 deprecation warnings
     name_template: "terraform-provider-${provider_name}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
@@ -34,8 +34,8 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  version_template: "{{ incminor .Version }}-next"
+  # Intercepts your workflow calculated version tag dynamically during snapshot compilation
+  version_template: "{{ .Env.NEXT_VERSION_TAG }}"
 
-# Optional but recommended
 release:
-  disable: true   # We publish manually via the workflow
+  disable: true # We publish manually via the workflow

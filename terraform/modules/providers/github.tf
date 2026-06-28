@@ -71,6 +71,18 @@ resource "github_repository_file" "go_mod" {
   depends_on = [github_repository.provider_repos]
 }
 
+resource "github_repository_file" "license" {
+  for_each            = toset(var.provider_names)
+  commit_message      = "Managed by Terraform"
+  repository          = github_repository.provider_repos[each.key].name
+  branch              = "main"
+  file                = "LICENSE"
+  
+  content = file("${path.module}/repo_template_files/LICENSE")
+
+  depends_on = [github_repository.provider_repos]
+}
+
 resource "github_actions_variable" "azure_key_name" {
   for_each      = toset(var.provider_names)
   repository    = github_repository.provider_repos[each.key].name

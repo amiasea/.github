@@ -200,12 +200,38 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean --snapshot --skip=publish
+          args: release --clean --snapshot --skip=publish --parallelism 2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HCP_PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
-          # Forces GoReleaser's {{ .Version }} variables to evaluate exactly to your API calculated target version
-          GORELEASER_CURRENT_TAG: v${{ steps.versioning.outputs.next_version }}
+          # Injects the true version string target into GoReleaser's snapshot engine
+          NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
+
+      - name: Sign Checksums with Isolated Private GPG Key
+        env:
+          NEXT_VER: ${{ steps.versioning.outputs.next_version }}
+        run: |
+          echo "::group::🔏 Cryptographic Local Binary Signing"
+          SUMS_FILE="dist/terraform-provider-${{ inputs.hcp_provider_name }}_${NEXT_VER}_SHA256SUMS"
+          
+          if [[ ! -f "$SUMS_FILE" ]]; then
+            echo "❌ ERROR: Checksums file missing -> $SUMS_FILE"
+            exit 1
+          fi
+          
+          # Upgraded to our robust colon parser to guarantee signature tracking success
+          LOCAL_SIGN_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n 1)
+          echo "INFO: Signing with key identity -> $LOCAL_SIGN_ID"
+          
+          gpg --batch --no-tty --pinentry-mode loopback \
+            --local-user "$LOCAL_SIGN_ID" \
+            --detach-sign \
+            --armor \
+            --output "${SUMS_FILE}.sig" \
+            "$SUMS_FILE"
+            
+          echo "✅ Signature successfully created -> ${SUMS_FILE}.sig"
+          echo "::endgroup::"
 
       - name: Sign Checksums with Isolated Private GPG Key
         env:
