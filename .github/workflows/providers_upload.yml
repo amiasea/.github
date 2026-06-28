@@ -200,10 +200,12 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean --skip=publish
+          args: release --clean --snapshot --skip=publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HCP_PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
+          # Forces GoReleaser's {{ .Version }} variables to evaluate exactly to your API calculated target version
+          GORELEASER_CURRENT_TAG: v${{ steps.versioning.outputs.next_version }}
 
       - name: Sign Checksums with Isolated Private GPG Key
         env:
