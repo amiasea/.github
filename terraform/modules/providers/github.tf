@@ -38,7 +38,6 @@ resource "github_repository" "provider_repos" {
   }
 }
 
-# Step B: Inject baseline GoReleaser config file straight into the template repository
 resource "github_repository_file" "goreleaser_config" {
   for_each            = toset(var.provider_names)
   commit_message      = "Managed by Terraform"
