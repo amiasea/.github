@@ -234,7 +234,7 @@ jobs:
           echo "::group::🚀 PMR Asset Publication"
           
           # FIXED: Swapped out old path format for official /api/v2 nested organization registry endpoint structure
-          BASE_URL="https://app.terraform.io/{TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          BASE_URL="https://app.terraform.io/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
           echo "INFO: Reserving version block at: $BASE_URL/versions"
           
           VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
