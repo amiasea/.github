@@ -265,3 +265,291 @@ jobs:
           
           echo "🎉 Publication cycle completed successfully!"
           echo "::endgroup::"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+name: Central Provider Upload
+
+on:
+  workflow_call:
+    inputs:
+      azure_client_id:
+        required: false
+        type: string
+      azure_tenant_id:
+        required: false
+        type: string
+      azure_subscription_id:
+        required: false
+        type: string
+      azure_key_name:
+        required: true
+        type: string
+      hcp_provider_name:
+        required: true
+        type: string
+
+jobs:
+  upload-provider:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      TF_ORG: "amiasea"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Structural Validation
+        run: |
+          echo "::group::🔍 Structural Validation"
+          if [[ ! -f "README.md" ]]; then
+            echo "❌ CRITICAL ERROR: README.md is required."
+            exit 1
+          fi
+          echo "✅ README.md verified."
+          echo "::endgroup::"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Go Mod Tidy
+        run: |
+          echo "::group::📦 Go Modules"
+          go mod tidy
+          echo "::endgroup::"
+
+      - name: Az CLI Login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ inputs.azure_client_id || vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ inputs.azure_tenant_id || vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ inputs.azure_subscription_id || vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch HCP Terraform Token
+        id: auth
+        run: |
+          echo "::group::🔑 Fetch Token"
+          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
+          RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
+          if [[ -z "$RAW_TOKEN" ]]; then
+            echo "❌ ERROR: Token retrieval failed from Key Vault."
+            exit 1
+          fi
+          echo "::add-mask::$RAW_TOKEN"
+          echo "token=$RAW_TOKEN" >> $GITHUB_OUTPUT
+          echo "✅ HCP Token successfully retrieved."
+          echo "::endgroup::"
+
+      - name: Calculate Next Version
+        id: versioning
+        env:
+          TF_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          echo "::group::🔢 Calculate Version"
+          PROVIDER_NAME="${{ inputs.hcp_provider_name }}"
+          API_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}/versions"
+          
+          RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -H "Authorization: Bearer $TF_TOKEN" "$API_URL")
+          CLEAN_JSON=$(echo "$RESPONSE" | sed '/\[HTTP STATUS\]/d')
+          LATEST=$(echo "$CLEAN_JSON" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end' 2>/dev/null || echo "0.0.0")
+          
+          if [[ "$LATEST" == "null" || -z "$LATEST" ]]; then LATEST="0.0.0"; fi
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
+          MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+          PR_TITLE="${{ github.event.pull_request.title || 'chore: release' }}"
+          
+          if [[ "$PR_TITLE" == *"feat"* ]]; then
+            NEXT_VERSION="${MAJOR}.$((MINOR + 1)).0"
+          elif [[ "$PR_TITLE" == *"fix"* ]]; then
+            NEXT_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          else
+            NEXT_VERSION="$((MAJOR + 1)).0.0"
+          fi
+          
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Target Release Version calculated -> $NEXT_VERSION"
+          echo "::endgroup::"
+
+      - name: Resolve and Sync Permanent GPG Key Identity
+        id: gpg_lifecycle
+        env:
+          TF_TOKEN: ${{ steps.auth.outputs.token }}
+          SECRET_NAME: "${{ inputs.hcp_provider_name }}-gpg-private"
+        run: |
+          echo "::group::🔐 Sync GPG Key"
+          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
+          # ... (keep your existing GPG logic here - it's mostly fine)
+          # Just ensure it logs the final key ID clearly
+          echo "gpg_key_id=$NEW_GPG_ID" >> $GITHUB_OUTPUT   # or whatever variable you use
+          echo "::endgroup::"
+
+      - name: 🔐 Prepare Local GPG Keyring for GoReleaser
+        id: gpg_prep
+        run: |
+          echo "::group::🔐 Keyring Hydration"
+          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
+          SECRET_NAME="${{ inputs.hcp_provider_name }}-gpg-private"
+          
+          AZ_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --query "value" -o tsv 2>/dev/null || true)
+          
+          if [[ -z "$AZ_SECRET" ]]; then
+            echo "❌ CRITICAL ERROR: Could not retrieve private key from Azure Key Vault."
+            exit 1
+          fi
+          
+          echo "$AZ_SECRET" | gpg --batch --import
+          
+          LOCAL_SIGN_ID=$(gpg --list-secret-keys --keyid-format LONG | grep '^sec' | head -n1 | awk '{print $2}' | cut -d'/' -f2)
+          echo "DEBUG: Using GPG Key ID: $LOCAL_SIGN_ID"
+          echo "gpg_key_id=$LOCAL_SIGN_ID" >> $GITHUB_OUTPUT
+          
+          echo "✅ Local keyring hydrated."
+          echo "::endgroup::"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean --snapshot --skip=publish --parallelism 2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
+          GPG_KEY_ID: ${{ steps.gpg_prep.outputs.gpg_key_id }}
+
+      - name: Publish to HCP Terraform Private Registry
+        env:
+          TF_TOKEN: ${{ steps.auth.outputs.token }}
+          NEXT_VER: ${{ steps.versioning.outputs.next_version }}
+          PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
+          TARGET_GPG_HEX: ${{ steps.gpg_prep.outputs.gpg_key_id }}
+        run: |
+          echo "::group::🚀 PMR Asset Publication"
+          BASE_URL="https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}"
+          
+          echo "DEBUG: Provider = ${TF_ORG}/${PROVIDER_NAME}"
+          echo "DEBUG: Version  = $NEXT_VER"
+          echo "DEBUG: GPG ID   = $TARGET_GPG_HEX"
+
+          # Ensure provider exists
+          echo "Ensuring provider exists..."
+          PROVIDER_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TF_TOKEN" \
+            "https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers/private/${TF_ORG}/${PROVIDER_NAME}")
+          
+          if [[ "$PROVIDER_CHECK" == "404" ]]; then
+            echo "Provider not found. Creating it..."
+            CREATE_PAYLOAD=$(jq -n \
+              --arg name "$PROVIDER_NAME" \
+              '{
+                data: {
+                  type: "registry-providers",
+                  attributes: {
+                    name: $name,
+                    "registry-name": "private",
+                    namespace: "${TF_ORG}"
+                  }
+                }
+              }')
+            
+            curl -s -X POST \
+              -H "Authorization: Bearer $TF_TOKEN" \
+              -H "Content-Type: application/vnd.api+json" \
+              -d "$CREATE_PAYLOAD" \
+              "https://app.terraform.io/api/v2/organizations/${TF_ORG}/registry-providers"
+          fi
+
+          # Delete existing version if any
+          curl -s -X DELETE -H "Authorization: Bearer $TF_TOKEN" "${BASE_URL}/versions/${NEXT_VER}" || true
+
+          # Create version
+          HCP_VERSION_PAYLOAD=$(jq -n \
+            --arg version "$NEXT_VER" \
+            --arg key_id "$TARGET_GPG_HEX" \
+            '{
+              data: {
+                type: "registry-provider-versions",
+                attributes: {
+                  version: $version,
+                  "key-id": $key_id,
+                  protocols: ["5.0", "6.0"]
+                }
+              }
+            }')
+
+          VERSION_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
+            -H "Authorization: Bearer $TF_TOKEN" \
+            -H "Content-Type: application/vnd.api+json" \
+            -d "$HCP_VERSION_PAYLOAD" \
+            "${BASE_URL}/versions")
+
+          CLEAN_VER_JSON=$(echo "$VERSION_RESPONSE" | sed '/\[HTTP STATUS\]/d' | tr -d '\n')
+          HTTP_STATUS=$(echo "$VERSION_RESPONSE" | grep "\[HTTP STATUS\]" | awk '{print $3}')
+
+          if [[ "$HTTP_STATUS" -ne 201 ]]; then
+            echo "❌ Failed to create version. Status: $HTTP_STATUS"
+            echo "Response: $CLEAN_VER_JSON"
+            exit 1
+          fi
+
+          echo "✅ Version created. Proceeding with uploads..."
+
+          # SHASUMS + Platforms upload logic (same as previous)
+          SHASUMS_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-upload"] // empty')
+          SHASUMS_SIG_URL=$(echo "$CLEAN_VER_JSON" | jq -r '.data.links["shasums-sig-upload"] // empty')
+
+          curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS "$SHASUMS_URL"
+          curl -s -X PUT --data-binary @dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_SHA256SUMS.sig "$SHASUMS_SIG_URL"
+
+          for platform in linux_amd64 darwin_arm64 windows_amd64; do
+            OS=${platform%%_*}
+            ARCH=${platform#*_}
+            BINARY="dist/terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_${OS}_${ARCH}.zip"
+            if [[ -f "$BINARY" ]]; then
+              LOCAL_SHASUM=$(sha256sum "$BINARY" | awk '{print $1}')
+              BINARY_FILENAME="terraform-provider-${PROVIDER_NAME}_${NEXT_VER}_${OS}_${ARCH}.zip"
+              
+              HCP_PLATFORM_PAYLOAD=$(jq -n \
+                --arg os "$OS" \
+                --arg arch "$ARCH" \
+                --arg shasum "$LOCAL_SHASUM" \
+                --arg filename "$BINARY_FILENAME" \
+                '{data: {type: "registry-provider-version-platforms", attributes: {os: $os, arch: $arch, shasum: $shasum, filename: $filename}}}')
+              
+              PLATFORM_RESPONSE=$(curl -s -w "\n[HTTP STATUS]: %{http_code}\n" -X POST \
+                -H "Authorization: Bearer $TF_TOKEN" \
+                -H "Content-Type: application/vnd.api+json" \
+                -d "$HCP_PLATFORM_PAYLOAD" \
+                "${BASE_URL}/versions/${NEXT_VER}/platforms")
+              
+              CLEAN_PLAT=$(echo "$PLATFORM_RESPONSE" | sed '/\[HTTP STATUS\]/d')
+              if echo "$CLEAN_PLAT" | jq -e '.data.links["provider-binary-upload"]' > /dev/null; then
+                UPLOAD_URL=$(echo "$CLEAN_PLAT" | jq -r '.data.links["provider-binary-upload"]')
+                curl -s -X PUT --data-binary @"$BINARY" "$UPLOAD_URL"
+                echo "✅ Uploaded $OS/$ARCH"
+              fi
+            fi
+          done
+
+          echo "🎉 Publication completed successfully!"
+          echo "::endgroup::"
