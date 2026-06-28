@@ -207,26 +207,14 @@ jobs:
           # Injects the true version string target into GoReleaser's snapshot engine
           NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
 
-      - name: Sign Checksums with Isolated Private GPG Key
-        env:
-          NEXT_VER: ${{ steps.versioning.outputs.next_version }}
+      - name: 🔐 Prepare Local GPG Keyring for GoReleaser
+        id: gpg_prep
         run: |
-          echo "::group::🔏 Cryptographic Local Binary Signing"
-          SUMS_FILE="dist/terraform-provider-${{ inputs.hcp_provider_name }}_${NEXT_VER}_SHA256SUMS"
+          echo "::group::🔐 Keyring Hydration"
+          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
           SECRET_NAME="${{ inputs.hcp_provider_name }}-gpg-private"
           
-          if [[ ! -f "$SUMS_FILE" ]]; then
-            echo "❌ ERROR: Checksums file missing -> $SUMS_FILE"
-            exit 1
-          fi
-          
-          # 1. Clear out any pre-existing placeholder signature to prevent 'File exists' crashes
-          echo "Cleaning up any lingering signature artifacts..."
-          rm -f "${SUMS_FILE}.sig"
-          
-          # 2. Resolve Vault Name and Download the Backup Secret from Azure
-          VAULT_NAME=$(echo "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" | cut -d'/' -f3 | cut -d'.' -f1)
-          echo "INFO: Fetching private key from Key Vault: $SECRET_NAME..."
+          echo "INFO: Downloading private signing key from Vault..."
           AZ_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name "$SECRET_NAME" --query "value" -o tsv 2>/dev/null || true)
           
           if [[ -z "$AZ_SECRET" ]]; then
@@ -234,29 +222,27 @@ jobs:
             exit 1
           fi
           
-          # 3. Import the key into the current step's GPG keyring environment
           echo "$AZ_SECRET" | gpg --batch --import
           
-          # 4. Securely read the imported key ID using our foolproof colon parser
+          # Safely parse the Key ID to hand over to GoReleaser
           LOCAL_SIGN_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5 | head -n 1)
+          echo "gpg_key_id=$LOCAL_SIGN_ID" >> $GITHUB_OUTPUT
           
-          if [[ -z "$LOCAL_SIGN_ID" ]]; then
-            echo "❌ ERROR: Failed to extract Key ID from local keyring."
-            exit 1
-          fi
-          
-          echo "INFO: Signing checksum manifest using key identity -> $LOCAL_SIGN_ID"
-          
-          # 5. Generate the standard ASCII detached signature bundle (.sig)
-          gpg --batch --no-tty --pinentry-mode loopback \
-            --local-user "$LOCAL_SIGN_ID" \
-            --detach-sign \
-            --armor \
-            --output "${SUMS_FILE}.sig" \
-            "$SUMS_FILE"
-            
-          echo "✅ Signature successfully created -> ${SUMS_FILE}.sig"
+          echo "✅ Local keyring hydrated. Ready for native signing with Key ID: $LOCAL_SIGN_ID"
           echo "::endgroup::"
+
+      - name: Run GoReleaser (Compiles and Signs Natively)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean --snapshot --skip=publish --parallelism 2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HCP_PROVIDER_NAME: ${{ inputs.hcp_provider_name }}
+          NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
+          # GoReleaser maps these directly into its signs block variables
+          GPG_KEY_ID: ${{ steps.gpg_prep.outputs.gpg_key_id }}
 
 
       - name: Sign Checksums with Isolated Private GPG Key
