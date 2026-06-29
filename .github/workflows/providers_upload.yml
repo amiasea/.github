@@ -61,7 +61,7 @@ jobs:
           echo "::group::📖 Hydrating Documentation Suite"
           
           # Natively invokes the tfplugindocs compiler pinned inside your tools.go and go.mod configuration
-          go generate ./...
+          go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate
           
           echo "✅ docs/ directory successfully generated in runner workspace memory."
           echo "::endgroup::"
