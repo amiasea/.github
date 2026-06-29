@@ -66,6 +66,22 @@ jobs:
           echo "✅ docs/ directory successfully generated in runner workspace memory."
           echo "::endgroup::"
 
+      - name: Inspect generated docs
+        shell: bash
+        run: |
+          echo "PWD: $(pwd)"
+          echo
+          echo "Repository contents:"
+          ls -la
+          echo
+
+          echo "Looking for docs directories..."
+          find . -type d -name docs
+
+          echo
+          echo "Looking for generated Markdown..."
+          find . -name "*.md"
+
       - name: Az CLI Login
         uses: azure/login@v3
         with:
