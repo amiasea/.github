@@ -221,15 +221,18 @@ jobs:
           git tag ${{ steps.versioning.outputs.next_version }}
           git push origin ${{ steps.versioning.outputs.next_version }}
 
+      # - name: Clean untracked generated files
+      #   run: git clean -ffdx
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean --parallelism 2
+          args: release --clean --skip=validate --parallelism 2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
+          GORELEASER_CURRENT_TAG: ${{ steps.versioning.outputs.next_version }}
           GPG_KEY_ID: ${{ steps.gpg_prep.outputs.gpg_key_id }}
 
       - name: Publish to HCP Terraform Private Registry
