@@ -216,12 +216,17 @@ jobs:
           echo "✅ Local keyring hydrated."
           echo "::endgroup::"
 
+      - name: Push Automated Git Tag
+        run: |
+          git tag ${{ steps.versioning.outputs.next_version }}
+          git push origin ${{ steps.versioning.outputs.next_version }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean --snapshot --skip=publish --parallelism 2
+          args: release --clean --parallelism 2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXT_VERSION_TAG: ${{ steps.versioning.outputs.next_version }}
