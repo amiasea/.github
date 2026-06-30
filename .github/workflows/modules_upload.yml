@@ -9,7 +9,8 @@ on:
 
 jobs:
   list-modules:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    # Included workflow_call so the matrix logic doesn't skip during cross-repo execution
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true || github.event_name == 'workflow_call'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -62,6 +63,9 @@ jobs:
           RAW_TOKEN=$(az keyvault secret show --id "${{ vars.TF_TOKEN_VERSIONLESS_ID }}" --query value -o tsv)
           echo "::add-mask::$RAW_TOKEN"
           TF_TOKEN=$RAW_TOKEN
+          
+          # AUTOMATION AUTH FIX: Dynamically exposes token to the local Terraform binary for private registries
+          export TF_TOKEN_app_terraform_io="$TF_TOKEN"
 
           # 2. Critical File Check
           if [[ ! -f "$MODULE_DIR/main.tf" || ! -f "$MODULE_DIR/README.md" ]]; then
@@ -74,7 +78,7 @@ jobs:
           META_URL="$BASE_URL/private/$TF_ORG/${{ matrix.module }}/$TF_PROVIDER"
           VER_URL="$META_URL/versions"
 
-          # 4. Ensure Registry Shell exists (Corrected POST URL)
+          # 4. Ensure Registry Shell exists
           echo "LOG: Ensuring registry shell exists for ${{ matrix.module }}..."
           curl -s -o /dev/null --header "Authorization: Bearer $TF_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
@@ -84,16 +88,13 @@ jobs:
 
           # 5. Robust Version Retrieval
           MODULE_META=$(curl -s --header "Authorization: Bearer $TF_TOKEN" "$META_URL")
-          
           LATEST_VERSION=$(echo "$MODULE_META" | jq -r 'if .data.attributes."version-statuses" != null and (.data.attributes."version-statuses" | length > 0) then .data.attributes."version-statuses" | map(.version) | sort_by(split(".") | map(tonumber)) | last else "0.0.0" end')
-          
           if [[ "$LATEST_VERSION" == "null" || -z "$LATEST_VERSION" ]]; then LATEST_VERSION="0.0.0"; fi
           echo "LOG: Detected Latest Version: $LATEST_VERSION"
 
           # 6. Increment Logic
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
           MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
-
           if [[ "$PR_TITLE" == *"feat"* ]]; then
             NEXT_VERSION="$MAJOR.$((MINOR + 1)).0"
           elif [[ "$PR_TITLE" == *"fix"* ]]; then
@@ -103,9 +104,19 @@ jobs:
           fi
           echo "LOG: Next Target Version: $NEXT_VERSION"
 
-          # 7. Validation
+          # 7. Validation Gate with Fail-Fast Aborts
+          echo "LOG: Initializing and validating module layout..."
           cd "$MODULE_DIR"
-          terraform init -backend=false && terraform validate
+          
+          if ! terraform init -backend=false; then
+            echo "❌ CRITICAL ERROR: Terraform Init failed. Private provider lookup or registry access denied."
+            exit 1
+          fi
+          
+          if ! terraform validate; then
+            echo "❌ CRITICAL ERROR: Code evaluation syntax failed via 'terraform validate'."
+            exit 1
+          fi
           cd -
 
           # 8. Create Version & Upload
@@ -114,9 +125,8 @@ jobs:
             --request POST \
             --data "{\"data\":{\"type\":\"registry-module-versions\",\"attributes\":{\"version\":\"$NEXT_VERSION\"}}}" \
             "$VER_URL")
-          
           UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.links.upload // empty')
-
+          
           if [ -n "$UPLOAD_URL" ]; then
             cd "$MODULE_DIR"
             # Cleanup alias file exactly as named by the action
