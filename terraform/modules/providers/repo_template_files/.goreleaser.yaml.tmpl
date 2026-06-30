@@ -6,7 +6,7 @@ before:
 
 builds:
   - id: terraform-provider-${provider_name}
-    main: ./cmd/${provider_name}
+    main: .
     binary: terraform-provider-${provider_name}
     flags:
       - -trimpath
@@ -37,7 +37,6 @@ checksum:
 snapshot:
   version_template: "{{ .Env.NEXT_VERSION_TAG }}"
 
-# NEW: Native signing engine block that eliminates custom bash steps
 signs:
   - id: terraform-provider-signing
     cmd: gpg
@@ -49,11 +48,7 @@ signs:
       - "--local-user"
       - "{{ .Env.GPG_KEY_ID }}"
       - "--detach-sign"
-      - "--armor"
       - "--output"
       - "${signature}"
       - "${artifact}"
     artifacts: checksum
-
-release:
-  disable: true
