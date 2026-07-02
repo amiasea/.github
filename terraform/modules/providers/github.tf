@@ -10,16 +10,16 @@ resource "github_repository" "provider_template" {
   has_wiki         = false
 }
 
-resource "github_repository_file" "workflow_call" {
-  repository          = github_repository.provider_template.name
-  branch              = "main"
-  file                = ".github/workflows/call_providers_upload.yml"
-  overwrite_on_create = true
+# resource "github_repository_file" "workflow_call" {
+#   repository          = github_repository.provider_template.name
+#   branch              = "main"
+#   file                = ".github/workflows/call_providers_upload.yml"
+#   overwrite_on_create = true
   
-  content             = file("${path.module}/repo_template_files/call_providers_upload.yml")
+#   content             = file("${path.module}/repo_template_files/call_providers_upload.yml")
 
-  depends_on = [github_repository.provider_template]
-}
+#   depends_on = [github_repository.provider_template]
+# }
 
 resource "github_repository" "provider_repos" {
   for_each        = toset(var.provider_names)
@@ -43,7 +43,7 @@ resource "github_repository" "provider_repos" {
 
 resource "github_repository_file" "workflow_call" {
   for_each        = toset(var.provider_names)
-  
+
   repository          = github_repository.provider_repos[each.key].name
   branch              = "main"
   file                = ".github/workflows/call_providers_upload.yml"
