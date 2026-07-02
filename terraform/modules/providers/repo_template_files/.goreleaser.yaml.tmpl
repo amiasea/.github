@@ -49,6 +49,6 @@ signs:
       - "{{ .Env.GPG_KEY_ID }}"
       - "--detach-sign"
       - "--output"
-      - "${{signature}}"
-      - "${{artifact}}"
+      - "$${signature}}"
+      - "$${artifact}}"
     artifacts: checksum
