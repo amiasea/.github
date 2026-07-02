@@ -25,6 +25,35 @@ resource "github_organization_settings" "org_bootstrap" {
   members_can_create_internal_repositories = false
 }
 
+resource "github_organization_ruleset" "global_provider_repo_lock" {
+  name        = "global-provider-repo-lock"
+  target      = "push"
+  enforcement = "active"
+
+  # 1. Target only your provider repositories based on your naming pattern
+  conditions {
+    repository_name {
+      include = ["terraform-provider-*"] # Targets all current and future provider repos
+      exclude = []
+    }
+  }
+
+  # 2. Set the global path restrictions
+  rules {
+    file_path_restriction {
+      restricted_file_paths = [
+        ".github/workflows/**/*",
+        ".goreleaser.yaml"
+      ]
+    }
+  }
+
+  bypass_actors {
+    actor_id    = "2670685"
+    actor_type  = "Integration"
+    bypass_mode = "always"
+  }
+}
 
 resource "github_actions_organization_variable" "arm_client_id" {
   variable_name = "AZURE_CLIENT_ID"
