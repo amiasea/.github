@@ -1,3 +1,7 @@
+variable "billing_email" {
+  type = string
+}
+
 variable "billing_account_id" {
   type        = string
   description = "The billing account ID to link the subscription to. This is required for new subscriptions created under an Enterprise Agreement (EA)."

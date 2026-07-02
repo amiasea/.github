@@ -11,7 +11,7 @@ resource "azurerm_dns_cname_record" "ui_env" {
   zone_name           = data.azurerm_dns_zone.sovereign.name
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
-  record              = azurerm_static_web_app.aviator_ui.default_host_name
+  record              = azurerm_static_web_app.amiasea_ui.default_host_name
 
     # This "loops" until nslookup actually finds the record
 }
@@ -23,7 +23,7 @@ resource "azurerm_dns_cname_record" "ui_www" {
   zone_name           = data.azurerm_dns_zone.sovereign.name
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
-  record              = azurerm_static_web_app.aviator_ui.default_host_name
+  record              = azurerm_static_web_app.amiasea_ui.default_host_name
 }
 
 # DNS RECORD: Root Alias A-Record (Prod only)
@@ -33,12 +33,12 @@ resource "azurerm_dns_a_record" "ui_root" {
   zone_name           = data.azurerm_dns_zone.sovereign.name
   resource_group_name = data.azurerm_dns_zone.sovereign.resource_group_name
   ttl                 = 300
-  target_resource_id  = azurerm_static_web_app.aviator_ui.id # Alias to SWA
+  target_resource_id  = azurerm_static_web_app.amiasea_ui.id # Alias to SWA
 }
 
 # Main Domain Binding (e.g., amiasea.com or dev.amiasea.com)
 resource "azurerm_static_web_app_custom_domain" "ui_main" {
-  static_web_app_id = azurerm_static_web_app.aviator_ui.id
+  static_web_app_id = azurerm_static_web_app.amiasea_ui.id
   domain_name       = "${local.subdomain}.${var.domain}"
   
   # Root (Prod) MUST use dns-txt-token; Subdomains use cname-delegation
@@ -52,7 +52,7 @@ resource "azurerm_static_web_app_custom_domain" "ui_main" {
 
 # WWW Subdomain Binding
 resource "azurerm_static_web_app_custom_domain" "ui_www" {
-  static_web_app_id = azurerm_static_web_app.aviator_ui.id
+  static_web_app_id = azurerm_static_web_app.amiasea_ui.id
   domain_name       = "www.${local.subdomain}.${var.domain}"
   validation_type   = "cname-delegation"
 

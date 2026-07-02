@@ -1,3 +1,31 @@
+
+# Enable this if .github goes private
+# resource "github_actions_repository_access_level" "central_hub_sharing" {
+#   repository   = ".github"
+#   access_level = "organization"
+# }
+
+resource github_repository_file "central_hub_workflow" {
+  repository          = ".github"
+  branch              = "main"
+  file                = ".github/workflows/test.yml"
+  commit_message      = "Managed by Terraform"
+  overwrite_on_create = true
+
+  content = file("${path.module}/test.yml")
+}
+
+resource "github_organization_settings" "org_bootstrap" {
+  billing_email = var.billing_email
+  
+  # Prevents standard developers from creating repos via the UI/CLI
+  members_can_create_repositories        = false
+  members_can_create_public_repositories = false
+  members_can_create_private_repositories = false
+  members_can_create_internal_repositories = false
+}
+
+
 resource "github_actions_organization_variable" "arm_client_id" {
   variable_name = "AZURE_CLIENT_ID"
   value         = azuread_service_principal.delegated_permissions_sp.client_id
