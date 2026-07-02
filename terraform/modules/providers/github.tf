@@ -41,6 +41,19 @@ resource "github_repository" "provider_repos" {
   depends_on = [github_repository.provider_template]
 }
 
+resource "github_repository_file" "workflow_call" {
+  for_each        = toset(var.provider_names)
+  
+  repository          = github_repository.provider_repos[each.key].name
+  branch              = "main"
+  file                = ".github/workflows/call_providers_upload.yml"
+  overwrite_on_create = true
+  
+  content             = file("${path.module}/repo_template_files/call_providers_upload.yml")
+
+  depends_on = [github_repository.provider_template]
+}
+
 resource "github_repository_file" "goreleaser_config" {
   for_each            = toset(var.provider_names)
 
