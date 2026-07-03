@@ -39,7 +39,7 @@ resource "github_organization_security_configuration" "disable_auto_scans" {
 
 resource "github_organization_ruleset" "global_provider_repo_lock" {
   name        = "global-provider-repo-lock"
-  target      = "push"
+  target      = "branch"
   enforcement = "active"
 
   # 1. Target only your provider repositories based on your naming pattern
