@@ -205,7 +205,10 @@ resource "tfe_stack" "stacks" {
                 "identifier": "amiasea/.github",
                 "branch": "main",
                 "github-app-installation-id": "${data.tfe_github_app_installation.amiasea_vcs.id}",
-                "working-directory": "terraform/stacks/${each.key}"
+                "working-directory": "terraform/stacks/${each.key}/orchestration",
+                "trigger-patterns": [
+                  "terraform/stacks/${each.key}/orchestration"
+                ]
               }
             }
           }
