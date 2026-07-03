@@ -25,6 +25,18 @@ resource "github_organization_settings" "org_bootstrap" {
   members_can_create_internal_repositories = false
 }
 
+resource "github_organization_security_configuration" "disable_auto_scans" {
+  name        = "custom-lean-pipeline"
+  description = "Disables default security scanning to prioritize minted workflows"
+
+  # Turns off the automated background engine
+  code_scanning_default_setup = "disabled"
+  
+  # Optional: Keep secret scanning active but skip full code analysis
+  secret_scanning             = "enabled"
+  secret_scanning_push_protection = "enabled"
+}
+
 resource "github_organization_ruleset" "global_provider_repo_lock" {
   name        = "global-provider-repo-lock"
   target      = "push"
