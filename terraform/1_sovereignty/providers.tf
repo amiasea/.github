@@ -11,7 +11,7 @@ terraform {
       version = "~> 4.63.0" # Version 4.x has improved OIDC stability
     }
     github = {
-      source  = "hashicorp/github"
+      source  = "integrations/github"
       version = "~> 6.0"
     }
     azapi = {

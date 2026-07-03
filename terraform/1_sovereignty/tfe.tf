@@ -205,57 +205,15 @@ resource "tfe_stack" "stacks" {
                 "identifier": "amiasea/.github",
                 "branch": "main",
                 "github-app-installation-id": "${data.tfe_github_app_installation.amiasea_vcs.id}",
-                "working-directory": "terraform/stacks/${each.key}/orchestration",
+                "working-directory": "terraform/stacks/${each.key}",
                 "trigger-patterns": [
-                  "terraform/stacks/${each.key}/orchestration"
+                  "terraform/stacks/${each.key}"
                 ]
               }
             }
           }
         }' \
         https://app.terraform.io/api/v2/stacks/${self.id}
-    EOT
-  }
-}
-
-resource "null_resource" "create_registry_component" {
-  provisioner "local-exec" {
-    command = <<EOT
-      curl --request POST \
-        --header "Authorization: Bearer ${var.tfe_pat}" \
-        --header "Content-Type: application/vnd.api+json" \
-        --data '{
-          "data": {
-            "type": "registry-components",
-            "attributes": {
-              "name": "alfredoball-test-2",
-              "vcs-repo": {
-                "display-identifier": null,
-                "identifier": "amiasea/.github",
-                "oauth-token-id": null,
-                "github-app-installation-id": "ghain-Jw5FfUiC8xQE5mZE",
-                "branch": "main",
-                "ingress-submodules": false,
-                "webhook-url": "",
-                "service-provider": null,
-                "repository-http-url": null,
-                "tags-regex": null,
-                "sparse-checkout-patterns": [],
-                "source-directory": "terraform/stacks/providers/blueprint",
-                "tag-prefix": null
-              }
-            },
-            "relationships": {
-              "organization": {
-                "data": {
-                  "type": "organizations",
-                  "id": "amiasea"
-                }
-              }
-            }
-          }
-        }' \
-        https://app.terraform.io/api/v2/registry-components
     EOT
   }
 }
