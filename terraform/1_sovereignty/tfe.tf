@@ -155,18 +155,62 @@ locals {
 
 import {
   to = tfe_stack.stacks["vending_machine"]
-  id = "st-o53cTwA1Z8QsKF2c" 
+  id = "st-o53cTwA1Z8QsKF2c"
+  provider        = tfe.gh_app
 }
 
 import {
   to = tfe_stack.stacks["providers"]
   id = "st-Jsar3E2fmKbqWcKm" 
+  provider        = tfe.gh_app
+}
+
+data "tfe_github_app_installation" "amiasea_vcs" {
+  # Pass your real 8-digit GitHub Organization App Installation ID
+  installation_id = 117633797
+  provider        = tfe.gh_app
 }
 
 resource "tfe_stack" "stacks" {
   for_each    = local.discovered_stacks
+
+  provider        = tfe.gh_app
   
   name        = each.value
   project_id  = data.tfe_project.amiasea_project.id
   description = "Continuous Delivery Stack for custom module: ${each.value}"
+  
+  vcs_repo {
+    identifier      = "amiasea/.github"
+    branch          = "main"
+    
+    github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
+  }
+
+  # --- PATCH WORKAROUND ---
+  # Replace this when the tfe provider supports the working_directory attribute for stacks and remove the HCP PAT token
+  # https://github.com/hashicorp/terraform-provider-tfe/issues/2027
+  provisioner "local-exec" {
+    command = <<EOT
+      curl \
+        --request PATCH \
+        --header "Authorization: Bearer ${var.tfe_pat}" \
+        --header "Content-Type: application/vnd.api+json" \
+        --data '{
+          "data": {
+            "id": "${self.id}",
+            "type": "stacks",
+            "attributes": {
+              "vcs-repo": {
+                "identifier": "amiasea/.github",
+                "branch": "main",
+                "github-app-installation-id": "${data.tfe_github_app_installation.amiasea_vcs.id}",
+                "working-directory": "terraform/stacks/${each.key}"
+              }
+            }
+          }
+        }' \
+        https://app.terraform.io/api/v2/stacks/${self.id}
+    EOT
+  }
 }

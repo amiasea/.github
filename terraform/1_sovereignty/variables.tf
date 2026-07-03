@@ -83,6 +83,11 @@ variable "tf_token" {
   ephemeral = true
 }
 
+variable "tfe_pat" {
+  type      = string
+  ephemeral = true
+}
+
 variable "amiasea_github_private_key" {
   type      = string
   ephemeral = true

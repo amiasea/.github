@@ -56,3 +56,9 @@ provider "azapi" {
 provider "tfe" {
   hostname = "app.terraform.io"
 }
+
+provider "tfe"{
+  alias = "gh_app"
+  hostname = "app.terraform.io"
+  token = var.tfe_pat
+}
