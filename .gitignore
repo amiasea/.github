@@ -37,7 +37,6 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 .terraformignore
-.terraform.lock.hcl
 
 # Local environment files
 .env
