@@ -181,7 +181,6 @@ resource "tfe_registry_module" "private_modules" {
   vcs_repo {
     display_identifier         = "${each.key}"
     identifier                 = "amiasea/.github"
-    branch                     = "main"
     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
     source_directory           = "terraform/modules/${each.key}"
     tag_prefix                 = "${each.key}-"
@@ -212,6 +211,7 @@ resource "tfe_stack" "stacks" {
   
   vcs_repo {
     identifier      = "amiasea/.github"
+    branch          = "main"
     
     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
   }
