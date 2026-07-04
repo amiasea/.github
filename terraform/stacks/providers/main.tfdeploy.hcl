@@ -19,7 +19,7 @@ deployment "global_scaffolding" {
     amiasea_gh_app_id               = store.varset.shared_bootstrap_set.stable.amiasea_gh_app_id
   }
 
-  deployment_group = deployment_group.my_automated_group.id
+  deployment_group = deployment_group.my_automated_group.name
 }
 
 deployment_auto_approve "safe_provider_expansion" {
@@ -36,7 +36,7 @@ deployment_auto_approve "safe_provider_expansion" {
 deployment_group "my_automated_group" {
   # This array links your checks directly to the execution group
   auto_approve_checks = [
-    deployment_auto_approve.safe_provider_expansion.id
+    deployment_auto_approve.safe_provider_expansion.name
   ]
 }
 
