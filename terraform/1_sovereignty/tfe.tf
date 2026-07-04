@@ -184,7 +184,8 @@ resource "tfe_registry_module" "private_modules" {
     branch                     = "main"
     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
     source_directory           = "terraform/modules/${each.key}"
-    tag_prefix                 = "${each.key}-" 
+    tag_prefix                 = "${each.key}-"
+    tags                       = true
   }
 }
 
