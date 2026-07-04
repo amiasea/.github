@@ -169,8 +169,9 @@ locals {
 resource "tfe_registry_module" "private_modules" {
   for_each = local.discovered_modules
 
-  organization   = var.organization_name
   provider = tfe.gh_app
+
+  organization   = var.organization_name
   module_provider = "amiasea"
   registry_name = "private"
 
