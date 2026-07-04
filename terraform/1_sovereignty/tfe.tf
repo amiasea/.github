@@ -158,11 +158,11 @@ data "tfe_github_app_installation" "amiasea_vcs" {
 }
 
 locals {
-    discovered_modules = toset([
-    for path in fileset("${path.module}/../modules", "**/README.md") : basename(dirname(path))
+  discovered_modules = toset([
+    for path in fileset("${path.module}/../modules", "*/README.md") : basename(dirname(path))
   ])
   discovered_stacks = toset([
-    for path in fileset("${path.module}/../stacks", "**/README.md") : basename(dirname(path))
+    for path in fileset("${path.module}/../stacks", "*/README.md") : basename(dirname(path))
   ])
 }
 
@@ -187,20 +187,6 @@ resource "tfe_registry_module" "private_modules" {
     tag_prefix                 = "${each.key}-" 
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 import {
   to = tfe_stack.stacks["vending_machine"]
@@ -261,3 +247,5 @@ resource "tfe_stack" "stacks" {
     EOT
   }
 }
+
+# Test Change
