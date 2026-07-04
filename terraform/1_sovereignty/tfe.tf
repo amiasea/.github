@@ -178,7 +178,7 @@ resource "tfe_stack" "stacks" {
   
   name        = each.value
   project_id  = data.tfe_project.amiasea_project.id
-  description = "Continuous Delivery Stack for custom module: ${each.value}"
+  description = "CI Stack for custom module: ${each.value}"
   
   vcs_repo {
     identifier      = "amiasea/.github"
@@ -188,7 +188,7 @@ resource "tfe_stack" "stacks" {
   }
 
   # --- PATCH WORKAROUND ---
-  # Replace this when the tfe provider supports the working_directory attribute for stacks and remove the HCP PAT token
+  # Replace this when the tfe provider supports the working_directory attribute for stacks and remove the TFE PAT token
   # https://github.com/hashicorp/terraform-provider-tfe/issues/2027
   provisioner "local-exec" {
     command = <<EOT
