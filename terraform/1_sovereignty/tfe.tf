@@ -178,7 +178,7 @@ resource "tfe_stack" "stacks" {
   
   name        = each.value
   project_id  = data.tfe_project.amiasea_project.id
-  description = "CI Stack for custom module: ${each.value}"
+  description = "CI stack for custom module: ${each.value}"
   
   vcs_repo {
     identifier      = "amiasea/.github"
