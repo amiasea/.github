@@ -178,7 +178,7 @@ resource "tfe_stack" "stacks" {
   
   name        = each.value
   project_id  = data.tfe_project.amiasea_project.id
-  description = "CI stack for custom module: ${each.value}"
+  description = "CI Stack for custom module: ${each.value}"
   
   vcs_repo {
     identifier      = "amiasea/.github"
@@ -191,6 +191,7 @@ resource "tfe_stack" "stacks" {
   # Replace this when the tfe provider supports the working_directory attribute for stacks and remove the TFE PAT token
   # https://github.com/hashicorp/terraform-provider-tfe/issues/2027
   provisioner "local-exec" {
+    
     command = <<EOT
       curl \
         --request PATCH \
@@ -207,7 +208,7 @@ resource "tfe_stack" "stacks" {
                 "github-app-installation-id": "${data.tfe_github_app_installation.amiasea_vcs.id}",
                 "working-directory": "terraform/stacks/${each.key}",
                 "trigger-patterns": [
-                  "terraform/stacks/${each.key}"
+                  "terraform/stacks/${each.key}/**/*"
                 ]
               }
             }
