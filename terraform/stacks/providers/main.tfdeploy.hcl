@@ -10,7 +10,7 @@ deployment "global_scaffolding" {
     tfe_org_name                    = "amiasea"
     
     # Custom provider orchestration list matrix array
-    provider_names                  = []
+    provider_names                  = ["test2"]
 
     # Pulls corporate values programmatically out of your shared bootstrap varset bucket
     sovereign_azure_tenant_id       = store.varset.shared_bootstrap_set.stable.sovereign_azure_tenant_id
@@ -18,6 +18,8 @@ deployment "global_scaffolding" {
     sovereign_azure_client_id       = store.varset.shared_bootstrap_set.stable.sovereign_azure_client_id
     amiasea_gh_app_id               = store.varset.shared_bootstrap_set.stable.amiasea_gh_app_id
   }
+
+  deployment_group = deployment_group.my_automated_group.id
 }
 
 deployment_auto_approve "safe_provider_expansion" {
@@ -29,6 +31,13 @@ deployment_auto_approve "safe_provider_expansion" {
   #   condition = context.plan.changes.remove == 0
   #   reason    = "The execution plan contains explicit resource deletion arguments."
   # }
+}
+
+deployment_group "my_automated_group" {
+  # This array links your checks directly to the execution group
+  auto_approve_checks = [
+    deployment_auto_approve.safe_provider_expansion.id
+  ]
 }
 
 store "varset" "shared_bootstrap_set" {
