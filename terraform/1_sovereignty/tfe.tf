@@ -212,7 +212,6 @@ resource "tfe_stack" "stacks" {
   
   vcs_repo {
     identifier      = "amiasea/.github"
-    branch          = "main"
     
     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
   }
