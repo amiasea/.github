@@ -147,11 +147,59 @@ resource "tfe_variable" "tf_token_versionless_id" {
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
 }
 
+# ==============================================================================
+# SECTION 5: MODULES & STACKS - DYNAMICALLY DISCOVERED AND CREATED
+# ==============================================================================
+
+data "tfe_github_app_installation" "amiasea_vcs" {
+  # Pass your real 8-digit GitHub Organization App Installation ID
+  installation_id = 117633797
+  provider        = tfe.gh_app
+}
+
 locals {
+    discovered_modules = toset([
+    for path in fileset("${path.module}/../modules", "**/README.md") : basename(dirname(path))
+  ])
   discovered_stacks = toset([
     for path in fileset("${path.module}/../stacks", "**/README.md") : basename(dirname(path))
   ])
 }
+
+resource "tfe_registry_module" "private_modules" {
+  for_each = local.discovered_modules
+
+  organization   = var.organization_name
+  provider = tfe.gh_app
+  module_provider = "amiasea"
+  registry_name = "private"
+
+  name         = "${each.key}"
+  
+  # Connects the module natively to the VCS provider
+  vcs_repo {
+    display_identifier         = "${each.key}"
+    identifier                 = "amiasea/.github"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
+    source_directory           = "terraform/modules/${each.key}"
+    tag_prefix                 = "${each.key}-" 
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import {
   to = tfe_stack.stacks["vending_machine"]
@@ -162,12 +210,6 @@ import {
 import {
   to = tfe_stack.stacks["providers"]
   id = "st-Jsar3E2fmKbqWcKm" 
-  provider        = tfe.gh_app
-}
-
-data "tfe_github_app_installation" "amiasea_vcs" {
-  # Pass your real 8-digit GitHub Organization App Installation ID
-  installation_id = 117633797
   provider        = tfe.gh_app
 }
 
@@ -191,7 +233,7 @@ resource "tfe_stack" "stacks" {
   # Replace this when the tfe provider supports the working_directory attribute for stacks and remove the TFE PAT token
   # https://github.com/hashicorp/terraform-provider-tfe/issues/2027
   provisioner "local-exec" {
-    
+
     command = <<EOT
       curl \
         --request PATCH \

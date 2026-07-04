@@ -5,16 +5,6 @@
 #   access_level = "organization"
 # }
 
-resource github_repository_file "central_hub_workflow" {
-  repository          = ".github"
-  branch              = "main"
-  file                = ".github/workflows/test.yml"
-  commit_message      = "Managed by Terraform"
-  overwrite_on_create = true
-
-  content = file("${path.module}/test.yml")
-}
-
 resource "github_organization_settings" "org_bootstrap" {
   billing_email = var.billing_email
   
