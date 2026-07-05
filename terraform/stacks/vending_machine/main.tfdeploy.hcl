@@ -59,3 +59,5 @@ store "varset" "azure_ids" {
   name     = "Stack-Specific Credentials"
   category = "terraform"
 }
+
+# Test
