@@ -183,7 +183,7 @@ resource "tfe_registry_module" "private_modules" {
     identifier                 = "amiasea/.github"
     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
     source_directory           = "terraform/modules/${each.key}"
-    tag_prefix                 = "${each.key}-"
+    tag_prefix                 = "${each.key}-v"
     tags                       = true
   }
 }
@@ -233,7 +233,8 @@ resource "tfe_stack" "stacks" {
             "attributes": {
               "vcs-repo": {
                 "identifier": "amiasea/.github",
-                "branch": "main",
+                "tags-regex": "^${each.key}-v\d+\.\d+\.\d+$"
+                "tags": true
                 "github-app-installation-id": "${data.tfe_github_app_installation.amiasea_vcs.id}",
                 "working-directory": "terraform/stacks/${each.key}",
                 "trigger-patterns": [
