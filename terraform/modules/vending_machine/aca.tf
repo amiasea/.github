@@ -7,6 +7,19 @@ resource "azurerm_container_app_environment" "main" {
   depends_on = [ data.azurerm_resource_group.rg ]
 }
 
+data "hcp_packer_iteration" "api" {
+  bucket_name = "amiasea-api"
+  version     = var.api_image_tag  # Maps directly to your exact "api-v1.3.0" Git tag context
+}
+
+# 2. Extract the specific artifact properties using the iteration fingerprint
+data "hcp_packer_artifact" "api_container" {
+  bucket_name         = "amiasea-api"
+  version_fingerprint = data.hcp_packer_iteration.api.fingerprint
+  platform            = "docker"
+  region              = "ghcr.io"
+}
+
 resource "azurerm_container_app" "amiasea_api" {
   provider = azurerm.sub
   name                         = "ca-${var.prefix}-api-${var.env}"
@@ -31,7 +44,7 @@ resource "azurerm_container_app" "amiasea_api" {
 
     container {
       name   = "amiasea-api"
-      image  = "ghcr.io/amiasea/amiasea-api:${var.api_image_tag}"
+      image  = data.hcp_packer_artifact.api_container.external_identifier
       cpu    = 0.25
       memory = "0.5Gi"
 

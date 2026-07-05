@@ -119,3 +119,18 @@ variable "environments" {
   description = "Environments"
   default = ["dev", "prod"]
 }
+
+variable "hcp_project_id" {
+  type        = string
+  description = "The unique identifier for the HCP platform project"
+}
+
+variable "hcp_service_principal_name" {
+  type        = string
+  description = "The precise string name for the automation bot service principal"
+}
+
+variable "hcp_provider_name" {
+  type        = string
+  description = "The precise string name for the HCP workload identity provider"
+}

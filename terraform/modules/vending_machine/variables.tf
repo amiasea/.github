@@ -49,8 +49,17 @@ variable "sovereign_key_vault_id" {
 }
 
 variable "api_image_tag" {
-  type    = string
-  default = "latest" # Or a "stable" tag like "v1"
+  type        = string
+  description = "The  Git tag string natively passed from the stack execution context"
+
+  # Enforce strict platform validation gates
+  validation {
+    # 1. Condition: Ensure the tag is not empty AND starts with your exact prefix
+    condition     = var.api_image_tag != "" && startswith(var.api_image_tag, "api-v")
+    
+    # 2. Hard Failure Message: Thrown immediately in the Stack UI logs if violated
+    error_message = "The api_image_tag input variable must be a valid, non-empty release tag string beginning with the 'api-v' prefix."
+  }
 }
 
 variable "neon_project_id" {

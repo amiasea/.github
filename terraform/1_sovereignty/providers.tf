@@ -30,6 +30,11 @@ terraform {
       source  = "kislerdm/neon"
       version = "~> 0.13.0" # Latest stable version
     }
+
+    hcp = {
+      source  = "hashicorp/hcp"
+      version = "0.112.0"
+    }
   }
 }
 
@@ -62,3 +67,5 @@ provider "tfe"{
   hostname = "app.terraform.io"
   token = var.tfe_pat
 }
+
+provider "hcp" {}

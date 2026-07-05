@@ -1,0 +1,86 @@
+name: Build App Container and Trigger Deploy Stack
+
+on:
+  push:
+    tags:
+      - 'api-v*'
+    paths:
+      - 'services/API/Amiasea.API/**'
+
+jobs:
+#   semver-chronology-guard:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Checkout Full Git History
+#       uses: actions/checkout@v4
+#       with:
+#         fetch-depth: 0
+
+#     - name: Validate Incremental Sequence
+#       id: check
+#       run: |
+#         INCOMING_TAG=$(echo '${{ github.ref }}' | sed 's|refs/tags/||')
+#         INCOMING_VER=$(echo "$INCOMING_TAG" | sed 's|api-v||')
+        
+#         LATEST_HISTORICAL_TAG=$(git tag -l "api-v*" | sort -V | tail -n 2 | head -n 1)
+#         LATEST_HISTORICAL_VER=$(echo "$LATEST_HISTORICAL_TAG" | sed 's|api-v||')
+        
+#         if [ "$(printf '%s\n%s' "$LATEST_HISTORICAL_VER" "$INCOMING_VER" | sort -V | head -n 1)" != "$LATEST_HISTORICAL_VER" ]; then
+#           echo "::error title=SemVer Violation::Manual local push bypass detected!"
+#           echo "❌ failure"
+#           exit 1
+#         fi
+
+#     - name: Alert Platform Leadership on Bypass Attempt
+#       if: failure() && steps.check.outcome == 'failure'
+#       uses: dawidd6/action-send-mail@v3
+#       with:
+#         server_address: ://office365.com
+#         server_port: 587
+#         username: ${{ secrets.PLATFORM_NOTIFIER_USER }}
+#         password: ${{ secrets.PLATFORM_NOTIFIER_PASS }}
+#         subject: "🚨 SECURITY POLICY VIOLATION: Manual Tag Bypass Detected"
+#         to: "platform-alerts@amiasea.io"
+#         from: "GitOps Bot <noreply@amiasea.io>"
+#         body: |
+#           A developer has explicitly bypassed the local pre-push chronology hooks.
+          
+#           Repository:    ${{ github.repository }}
+#           Violating Tag: ${{ github.ref_name }}
+#           Pushed By:     ${{ github.actor }}
+#           Commit Hash:   ${{ github.sha }}
+          
+#           The pipeline was terminated immediately. The container was not compiled, and no HCP Stacks deployments were executed.
+
+  packer-build-and-deploy:
+    # needs: semver-chronology-guard 
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read     
+      packages: write
+      id-token: write
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Packer
+      uses: hashicorp/setup-packer@main
+
+    - name: Authenticate to HCP via OIDC
+      uses: hashicorp/hcp-auth-action@v0
+      with:
+        workload_identity_provider: "iam/project/${{ vars.HCP_PROJECT_ID }}/service-principal/${{ vars.HCP_SERVICE_PRINCIPAL_NAME }}/workload-identity-provider/${{ vars.HCP_WORKLOAD_IDENTITY_PROVIDER_NAME }}"
+
+    - name: Packer Init
+      run: packer init packer/
+
+    - name: Run Packer Build
+      run: |
+        SEMVER_TAG=$(echo '${{ github.ref }}' | sed 's|refs/tags/||')
+        packer build \
+          -var "github_actor=${{ github.actor }}" \
+          -var "github_token=${{ secrets.GITHUB_TOKEN }}" \
+          -var "repo_name=${{ github.event.repository.name }}" \
+          -var "semver_tag=$SEMVER_TAG" \
+          -var "dockerfile_path=./services/API/Amiasea.API/Dockerfile" \
+          packer/template.packer.hcl
