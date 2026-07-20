@@ -1,0 +1,52 @@
+name: Feature
+description: Define a new capability or change
+title: "[Feature]: "
+labels:
+  - feature
+
+body:
+  - type: input
+    id: feature_slug
+    attributes:
+      label: Feature Slug
+      description: >
+        Short machine-friendly identifier used for automation.
+        Use lowercase kebab-case only.
+        Example: oidc-authentication
+      placeholder: oidc-authentication
+    validations:
+      required: true
+
+  - type: input
+    id: feature_name
+    attributes:
+      label: Feature Name
+      description: Human-readable name for this capability.
+      placeholder: OIDC Authentication
+    validations:
+      required: true
+
+  - type: textarea
+    id: intent
+    attributes:
+      label: Intent
+      description: >
+        Describe the capability being introduced and the outcome it enables.
+      placeholder: >
+        Enable workload identity authentication so automation does not require
+        long-lived credentials.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: >
+        Define how we know this capability is complete.
+      placeholder: |
+        - Workload identity authentication is supported
+        - Static credentials are no longer required
+        - Documentation is updated
+    validations:
+      required: true

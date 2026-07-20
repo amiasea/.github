@@ -5,11 +5,15 @@ required_providers {
   }
   github = {
     source  = "integrations/github"
-    version = "~> 6.12.1"
+    version = "~> 6.13.0"
   }
   tfe = {
     source  = "hashicorp/tfe"
     version = "~> 0.78.0"
+  }
+  azapi = {
+    source  = "azure/azapi"
+    version = "~> 2.10.0"
   }
 }
 
@@ -30,7 +34,6 @@ provider "github" "main" {
     app_auth {
       id              = var.amiasea_gh_app_id
       installation_id = "105130264"
-      # CROSS-COMPONENT OUTPUT LINK: Pulls the true raw .pem text content from Component A
       pem_file        = component.whisper_genie_gh_private_key.secret_value
     }
   }

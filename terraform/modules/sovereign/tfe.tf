@@ -11,18 +11,10 @@ data "tfe_project" "amiasea_project" {
   organization = "amiasea"
 }
 
-resource "tfe_workspace" "workspace_dev" {
-  name         = "amiasea-dev"
-  organization = "amiasea"
-  project_id   = data.tfe_project.amiasea_project.id
+data "tfe_outputs" "sovereign_workspace" {
+  organization = var.organization_name
+  workspace = "sovereign"
 }
-
-resource "tfe_workspace" "workspace_prod" {
-  name         = "amiasea-prod"
-  organization = "amiasea"
-  project_id   = data.tfe_project.amiasea_project.id
-}
-
 
 # ==============================================================================
 # SECTION 3: GROUP A - CROSS-PROJECT SHARED VARIABLE BUCKET
@@ -51,21 +43,21 @@ resource "tfe_variable" "sovereign_key_vault_id" {
 
 resource "tfe_variable" "sovereign_azure_tenant_id" {
   key             = "sovereign_azure_tenant_id"
-  value           = var.tenant_id
+  value           = data.tfe_outputs.sovereign_workspace.nonsensitive_values.tenant_id
   category        = "terraform"
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
 }
 
 resource "tfe_variable" "sovereign_azure_subscription_id" {
   key             = "sovereign_azure_subscription_id"
-  value           = var.subscription_id
+  value           = data.tfe_outputs.sovereign_workspace.nonsensitive_values.subscription_id
   category        = "terraform"
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
 }
 
 resource "tfe_variable" "sovereign_azure_client_id" {
   key             = "sovereign_azure_client_id"
-  value           = azuread_application.delegated_permissions.client_id
+  value           = data.tfe_outputs.sovereign_workspace.nonsensitive_values.client_id
   category        = "terraform"
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
 }
@@ -87,13 +79,6 @@ resource "tfe_variable" "location" {
 resource "tfe_variable" "sql_admins_group_id" {
   key             = "sql_admins_group_id"
   value           = azuread_group.sql_admins.object_id
-  category        = "terraform"
-  variable_set_id = tfe_variable_set.shared_bootstrap_set.id
-}
-
-resource "tfe_variable" "neon_project_id" {
-  key             = "neon_project_id"
-  value           = var.neon_project_id
   category        = "terraform"
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
 }
@@ -147,106 +132,106 @@ resource "tfe_variable" "tf_token_versionless_id" {
   variable_set_id = tfe_variable_set.shared_bootstrap_set.id
 }
 
-# ==============================================================================
-# SECTION 5: MODULES & STACKS - DYNAMICALLY DISCOVERED AND CREATED
-# ==============================================================================
 
-data "tfe_github_app_installation" "amiasea_vcs" {
-  # Pass your real 8-digit GitHub Organization App Installation ID
-  installation_id = 117633797
-  provider        = tfe.gh_app
-}
 
-locals {
-  discovered_modules = toset([
-    for path in fileset("${path.module}/../modules", "*/README.md") : basename(dirname(path))
-  ])
-  discovered_stacks = toset([
-    for path in fileset("${path.module}/../stacks", "*/README.md") : basename(dirname(path))
-  ])
-}
+# # ==============================================================================
+# # SECTION 5: MODULES & STACKS - DYNAMICALLY DISCOVERED AND CREATED
+# # ==============================================================================
 
-resource "tfe_registry_module" "private_modules" {
-  for_each = local.discovered_modules
+# data "tfe_github_app_installation" "amiasea_vcs" {
+#   # Pass your real 8-digit GitHub Organization App Installation ID
+#   installation_id = 117633797
+#   provider        = tfe.gh_app
+# }
 
-  provider = tfe.gh_app
+# locals {
+#   discovered_modules = toset([
+#     for path in fileset("${path.module}/../modules", "*/README.md") : basename(dirname(path))
+#   ])
+#   discovered_stacks = toset([
+#     for path in fileset("${path.module}/../stacks", "*/README.md") : basename(dirname(path))
+#   ])
+# }
 
-  organization   = var.organization_name
-  module_provider = "amiasea"
-  registry_name = "private"
+# resource "tfe_registry_module" "private_modules" {
+#   for_each = local.discovered_modules
 
-  name         = "${each.key}"
+#   provider = tfe.gh_app
+
+#   organization   = var.organization_name
+#   module_provider = "amiasea"
+#   registry_name = "private"
+
+#   name         = "${each.key}"
   
-  # Connects the module natively to the VCS provider
-  vcs_repo {
-    display_identifier         = "${each.key}"
-    identifier                 = "amiasea/.github"
-    github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
-    source_directory           = "terraform/modules/${each.key}"
-    tag_prefix                 = "${each.key}-v"
-    tags                       = true
-  }
-}
+#   # Connects the module natively to the VCS provider
+#   vcs_repo {
+#     display_identifier         = "${each.key}"
+#     identifier                 = "amiasea/.github"
+#     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
+#     source_directory           = "terraform/modules/${each.key}"
+#     tag_prefix                 = "${each.key}-v"
+#     tags                       = true
+#   }
+# }
 
-import {
-  to = tfe_stack.stacks["vending_machine"]
-  id = "st-o53cTwA1Z8QsKF2c"
-  provider        = tfe.gh_app
-}
+# import {
+#   to = tfe_stack.stacks["vending_machine"]
+#   id = "st-o53cTwA1Z8QsKF2c"
+#   provider        = tfe.gh_app
+# }
 
-import {
-  to = tfe_stack.stacks["providers"]
-  id = "st-Jsar3E2fmKbqWcKm" 
-  provider        = tfe.gh_app
-}
+# import {
+#   to = tfe_stack.stacks["providers"]
+#   id = "st-Jsar3E2fmKbqWcKm" 
+#   provider        = tfe.gh_app
+# }
 
-resource "tfe_stack" "stacks" {
-  for_each    = local.discovered_stacks
+# resource "tfe_stack" "stacks" {
+#   for_each    = local.discovered_stacks
 
-  provider        = tfe.gh_app
+#   provider        = tfe.gh_app
   
-  name        = each.value
-  project_id  = data.tfe_project.amiasea_project.id
-  description = "CI Stack for custom module: ${each.value}"
+#   name        = each.value
+#   project_id  = data.tfe_project.amiasea_project.id
+#   description = "CI Stack for custom module: ${each.value}"
   
-  vcs_repo {
-    identifier      = "amiasea/.github"
-    branch          = "main"
+#   vcs_repo {
+#     identifier      = "amiasea/.github"
+#     branch          = "main"
     
-    github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
-  }
+#     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
+#   }
 
-  # --- PATCH WORKAROUND ---
-  # Replace this when the tfe provider supports the working_directory attribute for stacks and remove the TFE PAT token
-  # https://github.com/hashicorp/terraform-provider-tfe/issues/2027
-  provisioner "local-exec" {
+#   # --- PATCH WORKAROUND ---
+#   # Replace this when the tfe provider supports the working_directory attribute for stacks and remove the TFE PAT token
+#   # https://github.com/hashicorp/terraform-provider-tfe/issues/2027
+#   provisioner "local-exec" {
 
-    command = <<EOT
-      curl \
-        --request PATCH \
-        --header "Authorization: Bearer ${var.tfe_pat}" \
-        --header "Content-Type: application/vnd.api+json" \
-        --data '{
-          "data": {
-            "id": "${self.id}",
-            "type": "stacks",
-            "attributes": {
-              "vcs-repo": {
-                "identifier": "amiasea/.github",
-                "tags-regex": "^${each.key}-v\d+\.\d+\.\d+$"
-                "tags": true
-                "github-app-installation-id": "${data.tfe_github_app_installation.amiasea_vcs.id}",
-                "working-directory": "terraform/stacks/${each.key}",
-                "trigger-patterns": [
-                  "terraform/stacks/${each.key}/**/*"
-                ]
-              }
-            }
-          }
-        }' \
-        https://app.terraform.io/api/v2/stacks/${self.id}
-    EOT
-  }
-}
+#     command = <<EOT
+#       curl \
+#         --request PATCH \
+#         --header "Authorization: Bearer ${var.tfe_pat}" \
+#         --header "Content-Type: application/vnd.api+json" \
+#         --data '{
+#           "data": {
+#             "id": "${self.id}",
+#             "type": "stacks",
+#             "attributes": {
+#               "vcs-repo": {
+#                 "identifier": "amiasea/.github",
+#                 "github-app-installation-id": "${data.tfe_github_app_installation.amiasea_vcs.id}",
+#                 "working-directory": "terraform/stacks/${each.key}",
+#                 "trigger-patterns": [
+#                   "terraform/stacks/${each.key}/**/*"
+#                 ]
+#               }
+#             }
+#           }
+#         }' \
+#         https://app.terraform.io/api/v2/stacks/${self.id}
+#     EOT
+#   }
+# }
 
-# Test Change
+# # Test Change

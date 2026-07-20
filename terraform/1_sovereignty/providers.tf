@@ -12,11 +12,11 @@ terraform {
     }
     github = {
       source  = "integrations/github"
-      version = "~> 6.0"
+      version = "~> 6.13.0"
     }
     azapi = {
-      source  = "Azure/azapi"
-      version = "~> 2.8.0"
+      source  = "azure/azapi"
+      version = "~> 2.10.0"
     }
     http = {
       source  = "hashicorp/http"
@@ -52,6 +52,16 @@ provider "azuread" {
 provider "github" {
   owner = "amiasea"
 }
+
+# provider "github"{
+#   alias = "test"
+#   owner = "amiasea"
+#   app_auth {
+#     id              = "2670685"
+#     installation_id = "105130264"
+#     pem_file = var.amiasea_github_private_key
+#   }
+# }
 
 provider "azapi" {
   subscription_id = var.subscription_id

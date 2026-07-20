@@ -19,7 +19,7 @@ resource "azurerm_key_vault" "sovereign_vault" {
 resource "azurerm_key_vault_secret" "ghcr_pat" {
   depends_on       = [azurerm_role_assignment.terraform_kv_admin]
   name             = "ghcr-pat"
-  value_wo         = var.ghcr_pat
+  value_wo         = "SSOVEREIGN CEREMONY"
   value_wo_version = 1
   key_vault_id     = azurerm_key_vault.sovereign_vault.id
 }
@@ -27,7 +27,7 @@ resource "azurerm_key_vault_secret" "ghcr_pat" {
 resource "azurerm_key_vault_secret" "tf_token" {
   depends_on       = [azurerm_role_assignment.terraform_kv_admin]
   name             = "tf-token"
-  value_wo         = var.tf_token
+  value_wo         = "SOVEREIGN CEREMONY"
   value_wo_version = 1
   key_vault_id     = azurerm_key_vault.sovereign_vault.id
 }
@@ -35,7 +35,7 @@ resource "azurerm_key_vault_secret" "tf_token" {
 resource "azurerm_key_vault_secret" "amiasea_github_private_key" {
   depends_on       = [azurerm_role_assignment.terraform_kv_admin]
   name             = "amiasea-github-private-key"
-  value_wo         = var.amiasea_github_private_key
+  value_wo         = "SOVEREIGN CEREMONY"
   value_wo_version = 1
   key_vault_id     = azurerm_key_vault.sovereign_vault.id
 }
@@ -43,7 +43,7 @@ resource "azurerm_key_vault_secret" "amiasea_github_private_key" {
 resource "azurerm_key_vault_secret" "neon_org_api_key" {
   depends_on       = [azurerm_role_assignment.terraform_kv_admin]
   name             = "neon-org-api-key"
-  value_wo         = var.neon_org_api_key
+  value_wo         = "SOVEREIGN CEREMONY"
   value_wo_version = 1
   key_vault_id     = azurerm_key_vault.sovereign_vault.id
 }
