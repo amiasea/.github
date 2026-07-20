@@ -1,6 +1,7 @@
 name: Feature
 description: Define a new capability or change
 title: "[Feature]: "
+type: feature
 labels:
   - feature
 
