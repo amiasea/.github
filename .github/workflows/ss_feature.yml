@@ -3,9 +3,14 @@ name: ss_feature_reservation
 on:
   workflow_dispatch:
 
+  # schedule:
+  #   - cron: "*/15 * * * *"
+
+
 permissions:
   contents: write
   issues: write
+
 
 jobs:
   feature-reservation:
@@ -27,11 +32,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+
           gh label create "feature-reserved" \
             --repo "${{ github.repository }}" \
             --description "Feature reservation completed" \
             --color "0E8A16" \
             || true
+
 
           gh label create "rejected-validation-error" \
             --repo "${{ github.repository }}" \
@@ -48,18 +55,30 @@ jobs:
           echo "Querying Feature issues..."
 
 
-          gh issue list \
+          ISSUES=$(gh issue list \
             --repo "${{ github.repository }}" \
             --state open \
             --type Feature \
             --limit 100 \
             --json number,title \
-            --jq '.[] | "\(.number)|\(.title)"' |
+            --jq '.[] | "\(.number)|\(.title)"')
+
+
+          if [ -z "$ISSUES" ]; then
+            echo "No Feature issues found."
+            exit 0
+          fi
+
+
+          echo "$ISSUES"
+
+
           while IFS="|" read -r NUMBER TITLE
           do
 
+            echo ""
             echo "---------------------------------"
-            echo "Processing #$NUMBER"
+            echo "Processing issue #$NUMBER"
             echo "Title: $TITLE"
 
 
@@ -68,6 +87,7 @@ jobs:
 
               FEATURE_SLUG="${BASH_REMATCH[1]}"
 
+
               echo "Feature Slug: $FEATURE_SLUG"
               echo "Validation passed"
 
@@ -75,14 +95,19 @@ jobs:
               BRANCH_NAME="feat-${FEATURE_SLUG}-${NUMBER}"
 
 
-              echo "Creating linked branch:"
-              echo "$BRANCH_NAME"
+              echo "Creating linked development branch"
+              echo "Branch: $BRANCH_NAME"
+              echo "Base: main"
 
 
               gh issue develop "$NUMBER" \
                 --repo "${{ github.repository }}" \
+                --branch-repo "${{ github.repository }}" \
                 --name "$BRANCH_NAME" \
                 --base main
+
+
+              echo "Branch created and linked"
 
 
               gh issue edit "$NUMBER" \
@@ -90,7 +115,7 @@ jobs:
                 --add-label "feature-reserved"
 
 
-              echo "Reservation complete"
+              echo "Feature reservation complete"
 
 
             else
@@ -106,24 +131,66 @@ jobs:
               gh issue comment "$NUMBER" \
                 --repo "${{ github.repository }}" \
                 --body "
-                ## Feature rejected
+                  ## Feature rejected
 
-                The Feature title failed validation.
+                  The Feature title failed validation.
 
-                Expected format:
+                  Expected format:
 
-                \`[Feature]: feature-slug\`
+                  \`[Feature]: feature-slug\`
 
-                Received:
+                  Received:
 
-                \`$TITLE\`
-                "
+                  \`$TITLE\`
+                  "
 
 
               gh issue close "$NUMBER" \
                 --repo "${{ github.repository }}"
 
 
+              echo "Issue rejected"
+
+
             fi
 
-          done
+
+          done <<< "$ISSUES"
+
+
+      - name: Verify linked branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+
+          echo "Verifying linked branches..."
+
+
+          ISSUES=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --label feature-reserved \
+            --limit 100 \
+            --json number \
+            --jq '.[].number')
+
+
+          if [ -z "$ISSUES" ]; then
+            echo "No reserved features found."
+            exit 0
+          fi
+
+
+          while read -r NUMBER
+          do
+
+            echo ""
+            echo "Issue #$NUMBER"
+
+
+            gh issue develop \
+              --repo "${{ github.repository }}" \
+              --list "$NUMBER"
+
+
+          done <<< "$ISSUES"
