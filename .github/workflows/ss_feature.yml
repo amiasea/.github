@@ -1,9 +1,6 @@
 name: ss_feature_reservation
 
 on:
-  # schedule:
-  #   - cron: "*/15 * * * *"
-
   workflow_dispatch:
 
 permissions:
@@ -30,13 +27,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-
           gh label create "feature-reserved" \
             --repo "${{ github.repository }}" \
             --description "Feature reservation completed" \
             --color "0E8A16" \
             || true
-
 
           gh label create "rejected-validation-error" \
             --repo "${{ github.repository }}" \
@@ -45,8 +40,7 @@ jobs:
             || true
 
 
-      - name: Query Feature issues
-        id: query
+      - name: Process Feature issues
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -54,51 +48,19 @@ jobs:
           echo "Querying Feature issues..."
 
 
-          FEATURES=$(gh issue list \
+          gh issue list \
             --repo "${{ github.repository }}" \
             --state open \
             --type Feature \
             --limit 100 \
             --json number,title \
-            --jq '.[] | "\(.number)|\(.title)"')
-
-
-          echo ""
-          echo "Feature issues:"
-          echo "$FEATURES"
-
-
-          echo "features<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$FEATURES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-
-      - name: Validate Feature titles
-        id: validate
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FEATURES: ${{ steps.query.outputs.features }}
-        run: |
-
-          echo "Validating Feature titles..."
-
-
-          VALIDATED=""
-
-
+            --jq '.[] | "\(.number)|\(.title)"' |
           while IFS="|" read -r NUMBER TITLE
           do
-
-            [ -z "$NUMBER" ] && continue
-
 
             echo "---------------------------------"
             echo "Processing #$NUMBER"
             echo "Title: $TITLE"
-
-            echo "Raw title:"
-            printf '%q\n' "$TITLE"
-            echo "Length: ${#TITLE}"
 
 
             if [[ "$TITLE" =~ ^\[Feature\]:[[:space:]]*([a-z][a-z0-9]*(-[a-z0-9]+)*)$ ]]
@@ -108,6 +70,28 @@ jobs:
 
               echo "Feature Slug: $FEATURE_SLUG"
               echo "Validation passed"
+
+
+              BRANCH_NAME="feat-${FEATURE_SLUG}-${NUMBER}"
+
+
+              echo "Creating linked branch:"
+              echo "$BRANCH_NAME"
+
+
+              gh issue develop "$NUMBER" \
+                --repo "${{ github.repository }}" \
+                --name "$BRANCH_NAME" \
+                --base main
+
+
+              gh issue edit "$NUMBER" \
+                --repo "${{ github.repository }}" \
+                --add-label "feature-reserved"
+
+
+              echo "Reservation complete"
+
 
             else
 
@@ -122,18 +106,18 @@ jobs:
               gh issue comment "$NUMBER" \
                 --repo "${{ github.repository }}" \
                 --body "
-                    ## Feature rejected
+                ## Feature rejected
 
-                    The Feature title failed validation.
+                The Feature title failed validation.
 
-                    Expected format:
+                Expected format:
 
-                    \`\[Feature\]: feature-slug\`
+                \`[Feature]: feature-slug\`
 
-                    Received:
+                Received:
 
-                    \`$TITLE\`
-                    "
+                \`$TITLE\`
+                "
 
 
               gh issue close "$NUMBER" \
@@ -142,104 +126,4 @@ jobs:
 
             fi
 
-
-          done <<< "$FEATURES"
-
-
-          echo ""
-          echo "Validated features:"
-          echo "$VALIDATED"
-
-
-          echo "validated<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$VALIDATED" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-
-      - name: Create linked feature branches
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FEATURES: ${{ steps.validate.outputs.validated }}
-        run: |
-
-          echo "Creating linked feature branches..."
-
-
-          while IFS="|" read -r NUMBER FEATURE_SLUG
-          do
-
-            [ -z "$NUMBER" ] && continue
-
-
-            BRANCH_NAME="feat-${FEATURE_SLUG}-${NUMBER}"
-
-
-            echo "---------------------------------"
-            echo "Issue: #$NUMBER"
-            echo "Branch: $BRANCH_NAME"
-            echo "Base: main"
-
-
-            gh issue develop "$NUMBER" \
-              --repo "${{ github.repository }}" \
-              --name "$BRANCH_NAME" \
-              --base main
-
-
-            echo "Branch created and linked"
-
-
-          done <<< "$FEATURES"
-
-
-      - name: Apply reservation label
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FEATURES: ${{ steps.validate.outputs.validated }}
-        run: |
-
-          echo "Applying reservation labels..."
-
-
-          while IFS="|" read -r NUMBER FEATURE_SLUG
-          do
-
-            [ -z "$NUMBER" ] && continue
-
-
-            gh issue edit "$NUMBER" \
-              --repo "${{ github.repository }}" \
-              --add-label "feature-reserved"
-
-
-            echo "Reserved issue #$NUMBER"
-
-
-          done <<< "$FEATURES"
-
-
-      - name: Verify development links
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FEATURES: ${{ steps.validate.outputs.validated }}
-        run: |
-
-          echo "Verifying linked branches..."
-
-
-          while IFS="|" read -r NUMBER FEATURE_SLUG
-          do
-
-            [ -z "$NUMBER" ] && continue
-
-
-            echo ""
-            echo "Issue #$NUMBER"
-
-
-            gh issue develop \
-              --repo "${{ github.repository }}" \
-              --list "$NUMBER"
-
-
-          done <<< "$FEATURES"
+          done
