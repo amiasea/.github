@@ -16,359 +16,199 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Process Feature issues
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
 
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            console.log("=================================");
-            console.log("Solution Story Feature Reservation");
-            console.log("=================================");
-            console.log(`Repository: ${owner}/${repo}`);
-            console.log(`Run ID: ${context.runId}`);
+      - name: Repository metadata
+        run: |
+          echo "================================="
+          echo "Solution Story Feature Reservation"
+          echo "================================="
+          echo "Repository: ${{ github.repository }}"
+          echo "Run ID: ${{ github.run_id }}"
 
 
-            const slugRegex =
-              /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+      - name: Query Feature issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+
+          echo "Querying Feature issues..."
+
+          gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --type Feature \
+            --limit 100 \
+            --json number,title,body \
+            > feature-issues.json
 
 
-            //
-            // Query open issues with Issue Type
-            //
-            console.log("");
-            console.log("Querying open issues...");
+          echo ""
+          echo "Feature issues found:"
+
+          jq -r '
+            .[] |
+            "Issue #\(.number): \(.title)"
+          ' feature-issues.json
 
 
-            const query = `
-              query($owner:String!, $repo:String!) {
-                repository(owner:$owner, name:$repo) {
-                  issues(first:100, states:OPEN) {
-                    nodes {
-                      number
-                      title
-                      body
-                      url
-                      issueType {
-                        name
-                      }
-                    }
-                  }
+      - name: Validate Feature issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+
+          echo "Validating Feature Slugs..."
+
+          rm -f validated-features.txt
+
+
+          jq -c '.[]' feature-issues.json | while read ISSUE
+          do
+
+            NUMBER=$(echo "$ISSUE" | jq -r '.number')
+            TITLE=$(echo "$ISSUE" | jq -r '.title')
+            BODY=$(echo "$ISSUE" | jq -r '.body // ""')
+
+
+            echo "---------------------------------"
+            echo "Processing #$NUMBER"
+            echo "Title: $TITLE"
+
+
+            FEATURE_SLUG=$(echo "$BODY" |
+              awk '
+                /### Feature Slug/ {
+                  getline
+                  print
+                  exit
                 }
-              }
-            `;
+              ' |
+              xargs)
 
 
-            const result =
-              await github.graphql(
-                query,
-                {
-                  owner,
-                  repo
-                }
-              );
+            echo "Feature Slug: $FEATURE_SLUG"
 
 
-            const issues =
-              result.repository.issues.nodes;
+            if [[ "$FEATURE_SLUG" =~ ^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$ ]]
+            then
 
+              echo "Feature Slug validation passed"
 
-            console.log(
-              `Open issues found: ${issues.length}`
-            );
+              echo "$NUMBER|$FEATURE_SLUG" \
+                >> validated-features.txt
 
+            else
 
-            for (const issue of issues) {
+              echo "Feature Slug validation failed"
 
-              console.log("---------------------------------");
-              console.log(`#${issue.number}: ${issue.title}`);
-              console.log(
-                `Issue Type: ${
-                  issue.issueType?.name ?? "none"
-                }`
-              );
 
-            }
+              gh issue edit "$NUMBER" \
+                --repo "${{ github.repository }}" \
+                --add-label "rejected-validation-error"
 
 
-            //
-            // Only process Feature issues
-            //
-            const featureIssues =
-              issues.filter(issue =>
-                issue.issueType?.name === "Feature"
-              );
+              gh issue comment "$NUMBER" \
+                --repo "${{ github.repository }}" \
+                --body "
+                ## Feature rejected
 
+                This Feature issue failed validation.
 
-            console.log("");
-            console.log(
-              `Feature issues found: ${featureIssues.length}`
-            );
+                Reason:
+                Invalid Feature Slug:
+                \`$FEATURE_SLUG\`
 
+                Expected:
+                lowercase kebab-case
+                "
 
-            for (const issue of featureIssues) {
 
-              console.log("");
-              console.log("===============================");
-              console.log(
-                `Processing Feature #${issue.number}`
-              );
+              gh issue close "$NUMBER" \
+                --repo "${{ github.repository }}"
 
 
-              const body =
-                issue.body ?? "";
+            fi
 
+          done
 
-              //
-              // Extract Feature Slug
-              //
-              const slugMatch =
-                body.match(
-                  /### Feature Slug\s*\n\s*([^\n]+)/i
-                );
 
+      - name: Create linked feature branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
 
-              if (!slugMatch) {
+          if [ ! -f validated-features.txt ]; then
+            echo "No validated features."
+            exit 0
+          fi
 
-                await rejectIssue(
-                  issue,
-                  "Feature Slug was not found."
-                );
 
-                continue;
-              }
+          while IFS="|" read -r NUMBER FEATURE_SLUG
+          do
 
+            BRANCH_NAME="feat-${FEATURE_SLUG}-${NUMBER}"
 
-              const featureSlug =
-                slugMatch[1].trim();
 
+            echo "================================="
+            echo "Creating linked branch"
+            echo "Issue: #$NUMBER"
+            echo "Branch: $BRANCH_NAME"
+            echo "Base: main"
 
-              console.log(
-                `Feature Slug: ${featureSlug}`
-              );
 
+            gh issue develop "$NUMBER" \
+              --repo "${{ github.repository }}" \
+              --name "$BRANCH_NAME" \
+              --base main
 
-              if (!slugRegex.test(featureSlug)) {
 
-                await rejectIssue(
-                  issue,
-                  `Invalid Feature Slug '${featureSlug}'. Expected lowercase kebab-case.`
-                );
+            echo "Development branch created"
 
-                continue;
-              }
+          done < validated-features.txt
 
 
-              console.log(
-                "Feature Slug validation passed"
-              );
+      - name: Apply reservation label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
 
+          if [ ! -f validated-features.txt ]; then
+            echo "No validated features."
+            exit 0
+          fi
 
-              const branchName =
-                `feat-${featureSlug}-${issue.number}`;
 
+          while IFS="|" read -r NUMBER FEATURE_SLUG
+          do
 
-              console.log(
-                `Target branch: ${branchName}`
-              );
+            gh issue edit "$NUMBER" \
+              --repo "${{ github.repository }}" \
+              --add-label "feature-reserved"
 
 
-              //
-              // Check branch existence
-              //
-              let branchExists = true;
+            echo "Issue #$NUMBER marked feature-reserved"
 
+          done < validated-features.txt
 
-              try {
 
-                await github.rest.repos.getBranch({
-                  owner,
-                  repo,
-                  branch: branchName
-                });
+      - name: Verify development links
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
 
-              } catch {
+          if [ ! -f validated-features.txt ]; then
+            echo "No validated features."
+            exit 0
+          fi
 
-                branchExists = false;
 
-              }
+          while IFS="|" read -r NUMBER FEATURE_SLUG
+          do
 
+            echo ""
+            echo "Development links for issue #$NUMBER"
 
-              console.log(
-                `Branch exists: ${branchExists}`
-              );
+            gh issue develop \
+              --repo "${{ github.repository }}" \
+              --list "$NUMBER"
 
-
-              //
-              // Create branch
-              //
-              if (!branchExists) {
-
-                console.log(
-                  "Creating branch from main..."
-                );
-
-
-                const main =
-                  await github.rest.repos.getBranch({
-                    owner,
-                    repo,
-                    branch: "main"
-                  });
-
-
-                await github.rest.git.createRef({
-                  owner,
-                  repo,
-                  ref: `refs/heads/${branchName}`,
-                  sha: main.data.commit.sha
-                });
-
-
-                console.log(
-                  "Branch created"
-                );
-
-              }
-
-
-              //
-              // Update issue labels
-              //
-              await github.rest.issues.addLabels({
-                owner,
-                repo,
-                issue_number: issue.number,
-                labels: [
-                  "feature-reserved"
-                ]
-              });
-
-
-              console.log(
-                "Lifecycle label applied"
-              );
-
-
-              //
-              // Update evidence block
-              //
-              await updateEvidence(
-                issue,
-                branchName
-              );
-
-
-              console.log(
-                "Feature reservation complete"
-              );
-
-            }
-
-
-
-            async function rejectIssue(issue, reason) {
-
-              console.log(
-                `Rejecting issue #${issue.number}`
-              );
-
-              console.log(reason);
-
-
-              await github.rest.issues.addLabels({
-                owner,
-                repo,
-                issue_number: issue.number,
-                labels: [
-                  "rejected-validation-error"
-                ]
-              });
-
-
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issue.number,
-                body:
-            `## Feature rejected
-
-            This Feature issue failed validation.
-
-            Reason:
-            ${reason}
-
-            Create a new Feature issue after correcting the problem.`
-                          });
-
-
-                          await github.rest.issues.update({
-                            owner,
-                            repo,
-                            issue_number: issue.number,
-                            state: "closed"
-                          });
-
-                        }
-
-
-
-            async function updateEvidence(issue, branchName) {
-
-              const markerStart =
-                "<!-- solution-story-managed -->";
-
-              const markerEnd =
-                "<!-- end solution-story-managed -->";
-
-
-              const evidence =
-              `${markerStart}
-
-              Status:
-              Reserved
-
-              Branch:
-              [${branchName}](https://github.com/${owner}/${repo}/tree/${branchName})
-
-              ${markerEnd}`;
-
-
-              const body =
-                issue.body ?? "";
-
-
-              const updated =
-                body.replace(
-                  /<!-- solution-story-managed -->[\s\S]*<!-- end solution-story-managed -->/,
-                  evidence
-                );
-
-
-              if (updated === body) {
-
-                console.log(
-                  "No evidence marker found. Skipping body update."
-                );
-
-                return;
-
-              }
-
-
-              await github.rest.issues.update({
-                owner,
-                repo,
-                issue_number: issue.number,
-                body: updated
-              });
-
-
-              console.log(
-                "Evidence block updated"
-              );
-
-            }
+          done < validated-features.txt
