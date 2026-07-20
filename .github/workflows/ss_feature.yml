@@ -35,7 +35,7 @@ jobs:
                 owner,
                 repo,
                 state: "open",
-                labels: "feature",
+                labels: "Feature",
                 per_page: 100
               }
             );
