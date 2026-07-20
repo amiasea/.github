@@ -101,18 +101,13 @@ jobs:
             echo "Length: ${#TITLE}"
 
 
-            if [[ "$TITLE" =~ ^\[Feature\]:[[:space:]]*([a-z][a-z0-9]*(?:-[a-z0-9]+)*)$ ]]
+            if [[ "$TITLE" =~ ^\[Feature\]:[[:space:]]*([a-z][a-z0-9]*(-[a-z0-9]+)*)$ ]]
             then
 
               FEATURE_SLUG="${BASH_REMATCH[1]}"
 
-
               echo "Feature Slug: $FEATURE_SLUG"
               echo "Validation passed"
-
-
-              VALIDATED="${VALIDATED}${NUMBER}|${FEATURE_SLUG}"$'\n'
-
 
             else
 
