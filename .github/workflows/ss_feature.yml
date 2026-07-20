@@ -109,11 +109,11 @@ jobs:
 
               if (!branchExists) {
 
-                const development =
+                const main =
                   await github.rest.repos.getBranch({
                     owner,
                     repo,
-                    branch: "development"
+                    branch: "main"
                   });
 
 
@@ -121,7 +121,7 @@ jobs:
                   owner,
                   repo,
                   ref: `refs/heads/${branchName}`,
-                  sha: development.data.commit.sha
+                  sha: main.data.commit.sha
                 });
 
               }
