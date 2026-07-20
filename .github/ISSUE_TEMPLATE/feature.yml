@@ -38,16 +38,3 @@ body:
         long-lived credentials.
     validations:
       required: true
-
-  - type: markdown
-    attributes:
-      value: |
-        ---
-
-        ## Solution Story Evidence
-
-        <!-- solution-story-managed -->
-
-        Pending automation.
-
-        <!-- end solution-story-managed -->

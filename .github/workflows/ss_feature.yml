@@ -96,6 +96,10 @@ jobs:
             echo "Processing #$NUMBER"
             echo "Title: $TITLE"
 
+            echo "Raw title:"
+            printf '%q\n' "$TITLE"
+            echo "Length: ${#TITLE}"
+
 
             if [[ "$TITLE" =~ ^\[Feature\]:[[:space:]]*([a-z][a-z0-9]*(?:-[a-z0-9]+)*)$ ]]
             then
