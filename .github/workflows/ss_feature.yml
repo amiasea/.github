@@ -16,8 +16,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Process feature issues
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -25,45 +26,131 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            const slugRegex =
-              /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+            console.log("=================================");
+            console.log("Solution Story Feature Reservation");
+            console.log("=================================");
+            console.log(`Owner: ${owner}`);
+            console.log(`Repository: ${repo}`);
+            console.log(`Run ID: ${context.runId}`);
 
 
-            const issues = await github.paginate(
-              github.rest.issues.listForRepo,
-              {
+            //
+            // STEP 1 - Verify repository access
+            //
+            console.log("");
+            console.log("STEP 1: Repository metadata");
+
+
+            const repository =
+              await github.rest.repos.get({
                 owner,
-                repo,
-                state: "open",
-                labels: "Feature",
-                per_page: 100
-              }
+                repo
+              });
+
+
+            console.log(
+              `Default branch: ${repository.data.default_branch}`
+            );
+
+
+            //
+            // STEP 2 - Query issues
+            //
+            console.log("");
+            console.log("STEP 2: Query open issues");
+
+
+            const issues =
+              await github.paginate(
+                github.rest.issues.listForRepo,
+                {
+                  owner,
+                  repo,
+                  state: "open",
+                  per_page: 100
+                }
+              );
+
+
+            console.log(
+              `Open issues found: ${issues.length}`
             );
 
 
             for (const issue of issues) {
 
-              if (issue.pull_request) {
-                continue;
-              }
+              console.log("---------------------------------");
+              console.log(`Issue #${issue.number}`);
+              console.log(`Title: ${issue.title}`);
+              console.log(
+                `Labels: ${
+                  issue.labels
+                    .map(l => l.name)
+                    .join(", ")
+                }`
+              );
+
+              console.log(
+                `Has body: ${!!issue.body}`
+              );
+
+              console.log(
+                `Is PR: ${!!issue.pull_request}`
+              );
+
+            }
 
 
-              console.log(`Processing issue #${issue.number}`);
+            //
+            // STEP 3 - Filter feature issues
+            //
+            console.log("");
+            console.log("STEP 3: Filter feature issues");
+
+
+            const featureIssues =
+              issues.filter(issue =>
+                issue.labels.some(
+                  label =>
+                    label.name.toLowerCase() === "feature"
+                )
+              );
+
+
+            console.log(
+              `Feature issues found: ${featureIssues.length}`
+            );
+
+
+            //
+            // STEP 4 - Process each issue
+            //
+            for (const issue of featureIssues) {
+
+              console.log("");
+              console.log("===============================");
+              console.log(
+                `Processing issue #${issue.number}`
+              );
 
 
               const body = issue.body ?? "";
 
 
-              const slugMatch = body.match(
-                /Feature Slug\s*\n\s*([^\n]+)/i
-              );
+              console.log("Issue body:");
+              console.log(body);
+
+
+              const slugMatch =
+                body.match(
+                  /### Feature Slug\s*\n\s*([^\n]+)/i
+                );
 
 
               if (!slugMatch) {
 
-                await rejectIssue(
-                  issue,
-                  "Feature Slug was not found."
+                console.log(
+                  "FAILED: Feature Slug not found"
                 );
 
                 continue;
@@ -74,19 +161,45 @@ jobs:
                 slugMatch[1].trim();
 
 
+              console.log(
+                `Feature slug: ${featureSlug}`
+              );
+
+
+              const slugRegex =
+                /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+
+
               if (!slugRegex.test(featureSlug)) {
 
-                await rejectIssue(
-                  issue,
-                  `Invalid Feature Slug '${featureSlug}'. Expected lowercase kebab-case.`
+                console.log(
+                  "FAILED: Invalid slug format"
                 );
 
                 continue;
               }
 
 
+              console.log(
+                "PASSED: Feature slug validation"
+              );
+
+
               const branchName =
                 `feat-${featureSlug}-${issue.number}`;
+
+
+              console.log(
+                `Target branch: ${branchName}`
+              );
+
+
+              //
+              // STEP 5 - Check branch
+              //
+              console.log(
+                "Checking branch existence..."
+              );
 
 
               let branchExists = true;
@@ -100,6 +213,7 @@ jobs:
                   branch: branchName
                 });
 
+
               } catch {
 
                 branchExists = false;
@@ -107,7 +221,20 @@ jobs:
               }
 
 
+              console.log(
+                `Branch exists: ${branchExists}`
+              );
+
+
+              //
+              // STEP 6 - Create branch
+              //
               if (!branchExists) {
+
+                console.log(
+                  "Getting main branch..."
+                );
+
 
                 const main =
                   await github.rest.repos.getBranch({
@@ -117,6 +244,11 @@ jobs:
                   });
 
 
+                console.log(
+                  `Creating branch from SHA ${main.data.commit.sha}`
+                );
+
+
                 await github.rest.git.createRef({
                   owner,
                   repo,
@@ -124,7 +256,20 @@ jobs:
                   sha: main.data.commit.sha
                 });
 
+
+                console.log(
+                  "Branch created successfully"
+                );
+
               }
+
+
+              //
+              // STEP 7 - Update issue
+              //
+              console.log(
+                "Adding labels..."
+              );
 
 
               await github.rest.issues.addLabels({
@@ -138,94 +283,17 @@ jobs:
               });
 
 
-              await updateEvidence(
-                issue,
-                branchName
+              console.log(
+                "Labels updated"
+              );
+
+
+              console.log(
+                "COMPLETE"
               );
 
             }
 
 
-
-            async function rejectIssue(issue, reason) {
-
-              await github.rest.issues.addLabels({
-                owner,
-                repo,
-                issue_number: issue.number,
-                labels: [
-                  "rejected-validation-error"
-                ]
-              });
-
-
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issue.number,
-                body:
-            `## Feature rejected
-
-            This feature intent could not be reserved.
-
-            Reason:
-            ${reason}
-
-            Please correct the Feature Issue and create a new request.`
-                          });
-
-
-                          await github.rest.issues.update({
-                            owner,
-                            repo,
-                            issue_number: issue.number,
-                            state: "closed"
-                          });
-
-                        }
-
-
-
-            async function updateEvidence(issue, branchName) {
-
-              const markerStart =
-                "<!-- solution-story-managed -->";
-
-              const markerEnd =
-                "<!-- end solution-story-managed -->";
-
-
-              const evidence =
-              `${markerStart}
-
-              Status:
-              Reserved
-
-              Branch:
-              [${branchName}](https://github.com/${owner}/${repo}/tree/${branchName})
-
-              ${markerEnd}`;
-
-
-              const body = issue.body ?? "";
-
-
-              const updated =
-                body.replace(
-                  /<!-- solution-story-managed -->[\s\S]*<!-- end solution-story-managed -->/,
-                  evidence
-                );
-
-
-              if (updated !== body) {
-
-                await github.rest.issues.update({
-                  owner,
-                  repo,
-                  issue_number: issue.number,
-                  body: updated
-                });
-
-              }
-
-            }
+            console.log("");
+            console.log("Workflow complete");
