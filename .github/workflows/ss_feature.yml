@@ -16,8 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Process feature issues
+      - name: Process Feature issues
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -29,47 +28,52 @@ jobs:
             console.log("=================================");
             console.log("Solution Story Feature Reservation");
             console.log("=================================");
-            console.log(`Owner: ${owner}`);
-            console.log(`Repository: ${repo}`);
+            console.log(`Repository: ${owner}/${repo}`);
             console.log(`Run ID: ${context.runId}`);
 
 
-            //
-            // STEP 1 - Verify repository access
-            //
-            console.log("");
-            console.log("STEP 1: Repository metadata");
-
-
-            const repository =
-              await github.rest.repos.get({
-                owner,
-                repo
-              });
-
-
-            console.log(
-              `Default branch: ${repository.data.default_branch}`
-            );
+            const slugRegex =
+              /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 
             //
-            // STEP 2 - Query issues
+            // Query open issues with Issue Type
             //
             console.log("");
-            console.log("STEP 2: Query open issues");
+            console.log("Querying open issues...");
+
+
+            const query = `
+              query($owner:String!, $repo:String!) {
+                repository(owner:$owner, name:$repo) {
+                  issues(first:100, states:OPEN) {
+                    nodes {
+                      number
+                      title
+                      body
+                      url
+                      issueType {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+
+            const result =
+              await github.graphql(
+                query,
+                {
+                  owner,
+                  repo
+                }
+              );
 
 
             const issues =
-              await github.paginate(
-                github.rest.issues.listForRepo,
-                {
-                  owner,
-                  repo,
-                  state: "open",
-                  per_page: 100
-                }
-              );
+              result.repository.issues.nodes;
 
 
             console.log(
@@ -80,67 +84,47 @@ jobs:
             for (const issue of issues) {
 
               console.log("---------------------------------");
-              console.log(`Issue #${issue.number}`);
-              console.log(`Title: ${issue.title}`);
+              console.log(`#${issue.number}: ${issue.title}`);
               console.log(
-                `Labels: ${
-                  issue.labels
-                    .map(l => l.name)
-                    .join(", ")
+                `Issue Type: ${
+                  issue.issueType?.name ?? "none"
                 }`
-              );
-
-              console.log(
-                `Has body: ${!!issue.body}`
-              );
-
-              console.log(
-                `Is PR: ${!!issue.pull_request}`
               );
 
             }
 
 
             //
-            // STEP 3 - Filter feature issues
+            // Only process Feature issues
             //
-            console.log("");
-            console.log("STEP 3: Filter feature issues");
-
-
             const featureIssues =
               issues.filter(issue =>
-                issue.labels.some(
-                  label =>
-                    label.name.toLowerCase() === "feature"
-                )
+                issue.issueType?.name === "Feature"
               );
 
 
+            console.log("");
             console.log(
               `Feature issues found: ${featureIssues.length}`
             );
 
 
-            //
-            // STEP 4 - Process each issue
-            //
             for (const issue of featureIssues) {
 
               console.log("");
               console.log("===============================");
               console.log(
-                `Processing issue #${issue.number}`
+                `Processing Feature #${issue.number}`
               );
 
 
-              const body = issue.body ?? "";
+              const body =
+                issue.body ?? "";
 
 
-              console.log("Issue body:");
-              console.log(body);
-
-
+              //
+              // Extract Feature Slug
+              //
               const slugMatch =
                 body.match(
                   /### Feature Slug\s*\n\s*([^\n]+)/i
@@ -149,8 +133,9 @@ jobs:
 
               if (!slugMatch) {
 
-                console.log(
-                  "FAILED: Feature Slug not found"
+                await rejectIssue(
+                  issue,
+                  "Feature Slug was not found."
                 );
 
                 continue;
@@ -162,18 +147,15 @@ jobs:
 
 
               console.log(
-                `Feature slug: ${featureSlug}`
+                `Feature Slug: ${featureSlug}`
               );
-
-
-              const slugRegex =
-                /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 
               if (!slugRegex.test(featureSlug)) {
 
-                console.log(
-                  "FAILED: Invalid slug format"
+                await rejectIssue(
+                  issue,
+                  `Invalid Feature Slug '${featureSlug}'. Expected lowercase kebab-case.`
                 );
 
                 continue;
@@ -181,7 +163,7 @@ jobs:
 
 
               console.log(
-                "PASSED: Feature slug validation"
+                "Feature Slug validation passed"
               );
 
 
@@ -195,13 +177,8 @@ jobs:
 
 
               //
-              // STEP 5 - Check branch
+              // Check branch existence
               //
-              console.log(
-                "Checking branch existence..."
-              );
-
-
               let branchExists = true;
 
 
@@ -212,7 +189,6 @@ jobs:
                   repo,
                   branch: branchName
                 });
-
 
               } catch {
 
@@ -227,12 +203,12 @@ jobs:
 
 
               //
-              // STEP 6 - Create branch
+              // Create branch
               //
               if (!branchExists) {
 
                 console.log(
-                  "Getting main branch..."
+                  "Creating branch from main..."
                 );
 
 
@@ -244,11 +220,6 @@ jobs:
                   });
 
 
-                console.log(
-                  `Creating branch from SHA ${main.data.commit.sha}`
-                );
-
-
                 await github.rest.git.createRef({
                   owner,
                   repo,
@@ -258,18 +229,54 @@ jobs:
 
 
                 console.log(
-                  "Branch created successfully"
+                  "Branch created"
                 );
 
               }
 
 
               //
-              // STEP 7 - Update issue
+              // Update issue labels
               //
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issue.number,
+                labels: [
+                  "feature-reserved"
+                ]
+              });
+
+
               console.log(
-                "Adding labels..."
+                "Lifecycle label applied"
               );
+
+
+              //
+              // Update evidence block
+              //
+              await updateEvidence(
+                issue,
+                branchName
+              );
+
+
+              console.log(
+                "Feature reservation complete"
+              );
+
+            }
+
+
+
+            async function rejectIssue(issue, reason) {
+
+              console.log(
+                `Rejecting issue #${issue.number}`
+              );
+
+              console.log(reason);
 
 
               await github.rest.issues.addLabels({
@@ -277,23 +284,91 @@ jobs:
                 repo,
                 issue_number: issue.number,
                 labels: [
-                  "feature-reserved",
-                  `branch:${branchName}`
+                  "rejected-validation-error"
                 ]
               });
 
 
-              console.log(
-                "Labels updated"
-              );
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body:
+            `## Feature rejected
+
+            This Feature issue failed validation.
+
+            Reason:
+            ${reason}
+
+            Create a new Feature issue after correcting the problem.`
+                          });
+
+
+                          await github.rest.issues.update({
+                            owner,
+                            repo,
+                            issue_number: issue.number,
+                            state: "closed"
+                          });
+
+                        }
+
+
+
+            async function updateEvidence(issue, branchName) {
+
+              const markerStart =
+                "<!-- solution-story-managed -->";
+
+              const markerEnd =
+                "<!-- end solution-story-managed -->";
+
+
+              const evidence =
+              `${markerStart}
+
+              Status:
+              Reserved
+
+              Branch:
+              [${branchName}](https://github.com/${owner}/${repo}/tree/${branchName})
+
+              ${markerEnd}`;
+
+
+              const body =
+                issue.body ?? "";
+
+
+              const updated =
+                body.replace(
+                  /<!-- solution-story-managed -->[\s\S]*<!-- end solution-story-managed -->/,
+                  evidence
+                );
+
+
+              if (updated === body) {
+
+                console.log(
+                  "No evidence marker found. Skipping body update."
+                );
+
+                return;
+
+              }
+
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: updated
+              });
 
 
               console.log(
-                "COMPLETE"
+                "Evidence block updated"
               );
 
             }
-
-
-            console.log("");
-            console.log("Workflow complete");
