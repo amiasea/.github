@@ -1,7 +1,6 @@
-name: Feature - 1
+name: Feature
 description: Define a new capability or change
 title: "[Feature]: "
-type: feature
 labels:
   - feature
 
@@ -11,7 +10,7 @@ body:
     attributes:
       label: Feature Slug
       description: >
-        Short machine-friendly identifier used for automation.
+        Machine-friendly identifier used for automation.
         Use lowercase kebab-case only.
         Example: oidc-authentication
       placeholder: oidc-authentication
@@ -39,15 +38,15 @@ body:
     validations:
       required: true
 
-  - type: textarea
-    id: acceptance_criteria
+  - type: markdown
     attributes:
-      label: Acceptance Criteria
-      description: >
-        Define how we know this capability is complete.
-      placeholder: |
-        - Workload identity authentication is supported
-        - Static credentials are no longer required
-        - Documentation is updated
-    validations:
-      required: true
+      value: |
+        ---
+
+        ## Solution Story Evidence
+
+        <!-- solution-story-managed -->
+
+        Pending automation.
+
+        <!-- end solution-story-managed -->

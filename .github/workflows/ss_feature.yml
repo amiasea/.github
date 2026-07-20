@@ -1,0 +1,231 @@
+name: ss_feature_reservation
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  feature-reservation:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Process feature issues
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const slugRegex =
+              /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+
+
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner,
+                repo,
+                state: "open",
+                labels: "feature",
+                per_page: 100
+              }
+            );
+
+
+            for (const issue of issues) {
+
+              if (issue.pull_request) {
+                continue;
+              }
+
+
+              console.log(`Processing issue #${issue.number}`);
+
+
+              const body = issue.body ?? "";
+
+
+              const slugMatch = body.match(
+                /Feature Slug\s*\n\s*([^\n]+)/i
+              );
+
+
+              if (!slugMatch) {
+
+                await rejectIssue(
+                  issue,
+                  "Feature Slug was not found."
+                );
+
+                continue;
+              }
+
+
+              const featureSlug =
+                slugMatch[1].trim();
+
+
+              if (!slugRegex.test(featureSlug)) {
+
+                await rejectIssue(
+                  issue,
+                  `Invalid Feature Slug '${featureSlug}'. Expected lowercase kebab-case.`
+                );
+
+                continue;
+              }
+
+
+              const branchName =
+                `feat-${featureSlug}-${issue.number}`;
+
+
+              let branchExists = true;
+
+
+              try {
+
+                await github.rest.repos.getBranch({
+                  owner,
+                  repo,
+                  branch: branchName
+                });
+
+              } catch {
+
+                branchExists = false;
+
+              }
+
+
+              if (!branchExists) {
+
+                const development =
+                  await github.rest.repos.getBranch({
+                    owner,
+                    repo,
+                    branch: "development"
+                  });
+
+
+                await github.rest.git.createRef({
+                  owner,
+                  repo,
+                  ref: `refs/heads/${branchName}`,
+                  sha: development.data.commit.sha
+                });
+
+              }
+
+
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issue.number,
+                labels: [
+                  "feature-reserved",
+                  `branch:${branchName}`
+                ]
+              });
+
+
+              await updateEvidence(
+                issue,
+                branchName
+              );
+
+            }
+
+
+
+            async function rejectIssue(issue, reason) {
+
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issue.number,
+                labels: [
+                  "rejected-validation-error"
+                ]
+              });
+
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body:
+            `## Feature rejected
+
+            This feature intent could not be reserved.
+
+            Reason:
+            ${reason}
+
+            Please correct the Feature Issue and create a new request.`
+                          });
+
+
+                          await github.rest.issues.update({
+                            owner,
+                            repo,
+                            issue_number: issue.number,
+                            state: "closed"
+                          });
+
+                        }
+
+
+
+            async function updateEvidence(issue, branchName) {
+
+              const markerStart =
+                "<!-- solution-story-managed -->";
+
+              const markerEnd =
+                "<!-- end solution-story-managed -->";
+
+
+              const evidence =
+              `${markerStart}
+
+              Status:
+              Reserved
+
+              Branch:
+              [${branchName}](https://github.com/${owner}/${repo}/tree/${branchName})
+
+              ${markerEnd}`;
+
+
+              const body = issue.body ?? "";
+
+
+              const updated =
+                body.replace(
+                  /<!-- solution-story-managed -->[\s\S]*<!-- end solution-story-managed -->/,
+                  evidence
+                );
+
+
+              if (updated !== body) {
+
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: updated
+                });
+
+              }
+
+            }
