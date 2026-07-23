@@ -15,6 +15,10 @@ jobs:
   bootstrap:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: terraform/test
+
     env:
       ARM_USE_CLI: "false"
       ARM_TENANT_ID: "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
