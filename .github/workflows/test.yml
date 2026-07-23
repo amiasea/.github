@@ -25,6 +25,7 @@ jobs:
     #   ARM_CLIENT_ID: ""
     #   ARM_CLIENT_SECRET: ""
       ARM_ACCESS_TOKEN: ${{ inputs.graph_access_token }}
+      TF_LOG: DEBUG
 
     steps:
       - uses: actions/checkout@v4
