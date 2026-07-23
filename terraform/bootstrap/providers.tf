@@ -24,18 +24,24 @@ terraform {
     }
     tfe = {
       source  = "hashicorp/tfe"
-      version = "~> 0.74.1"
+      version = "~> 0.79.0"
     }
-    neon = {
-      source  = "kislerdm/neon"
-      version = "~> 0.13.0" # Latest stable version
-    }
-
     hcp = {
       source  = "hashicorp/hcp"
       version = "0.112.0"
     }
   }
+}
+
+provider "azurerm" {
+  use_cli = false
+
+  features {
+  }
+}
+
+provider "azuread" {
+  use_cli = false
 }
 
 provider "azurerm" {
@@ -46,7 +52,6 @@ provider "azurerm" {
 
 provider "azuread" {
   use_oidc  = true
-
 }
 
 provider "github" {

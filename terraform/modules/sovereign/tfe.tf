@@ -144,48 +144,50 @@ resource "tfe_variable" "tf_token_versionless_id" {
 #   provider        = tfe.gh_app
 # }
 
-# locals {
-#   discovered_modules = toset([
-#     for path in fileset("${path.module}/../modules", "*/README.md") : basename(dirname(path))
-#   ])
-#   discovered_stacks = toset([
-#     for path in fileset("${path.module}/../stacks", "*/README.md") : basename(dirname(path))
-#   ])
-# }
 
-# resource "tfe_registry_module" "private_modules" {
-#   for_each = local.discovered_modules
 
-#   provider = tfe.gh_app
+resource "tfe_registry_module" "module_catalog_registrar" {
+  organization   = var.organization_name
+  module_provider = "amiasea"
+  registry_name = "private"
 
-#   organization   = var.organization_name
-#   module_provider = "amiasea"
-#   registry_name = "private"
-
-#   name         = "${each.key}"
+  name         = "${each.key}"
   
-#   # Connects the module natively to the VCS provider
-#   vcs_repo {
-#     display_identifier         = "${each.key}"
-#     identifier                 = "amiasea/.github"
-#     github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
-#     source_directory           = "terraform/modules/${each.key}"
-#     tag_prefix                 = "${each.key}-v"
-#     tags                       = true
-#   }
-# }
+  vcs_repo {
+    display_identifier         = "module-catalog-registrar"
+    identifier                 = "amiasea/.github"
+    github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
+    source_directory           = "terraform/modules/registrars/module_catalog_registrar"
+    tags                       = true
+  }
+}
 
-# import {
-#   to = tfe_stack.stacks["vending_machine"]
-#   id = "st-o53cTwA1Z8QsKF2c"
-#   provider        = tfe.gh_app
-# }
+resource "tfe_registry_module" "stack_catalog_registrar" {
+  organization   = var.organization_name
+  module_provider = "amiasea"
+  registry_name = "private"
 
-# import {
-#   to = tfe_stack.stacks["providers"]
-#   id = "st-Jsar3E2fmKbqWcKm" 
-#   provider        = tfe.gh_app
-# }
+  name         = "${each.key}"
+  
+  vcs_repo {
+    display_identifier         = "stack-catalog-registrar"
+    identifier                 = "amiasea/.github"
+    github_app_installation_id = data.tfe_github_app_installation.amiasea_vcs.id
+    source_directory           = "terraform/modules/registrars/stack_catalog_registrar"
+    tags                       = true
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
 
 # resource "tfe_stack" "stacks" {
 #   for_each    = local.discovered_stacks

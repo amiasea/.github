@@ -1,0 +1,32 @@
+name: AzureAD Bootstrap Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      graph_access_token:
+        description: "Microsoft Graph access token"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+
+    env:
+      ARM_USE_CLI: "false"
+      ARM_TENANT_ID: "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
+    #   ARM_CLIENT_ID: ""
+    #   ARM_CLIENT_SECRET: ""
+      ARM_ACCESS_TOKEN: ${{ inputs.graph_access_token }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v4.0.1
+
+      - run: terraform init
+
+      - run: terraform apply -auto-approve
