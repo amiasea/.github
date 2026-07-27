@@ -1,6 +1,6 @@
 component "whisper_genie_gh_private_key" {
-  source  = "app.terraform.io/amiasea/whisper_genie/github"
-  version = ">= 94.0.0"
+  source  = "app.terraform.io/amiasea/whisper-genie/amiasea"
+  version = ">= 1.0.0"
 
   inputs = {
     secret_name = "amiasea-github-private-key"
@@ -16,8 +16,8 @@ component "whisper_genie_gh_private_key" {
 component "whisper_genie_client_tf_token" {
   for_each = var.installations
 
-  source  = "app.terraform.io/amiasea/whisper_genie/github"
-  version = ">= 94.0.0"
+  source  = "app.terraform.io/amiasea/whisper-genie/amiasea"
+  version = ">= 1.0.0"
 
   inputs = {
     secret_name = "${each.value.tfe_organization}-tfe-secret"

@@ -102,9 +102,26 @@ output "github_app_installation" {
 
 # test
 
+# resource "tfe_registry_module" "whisper_genie" {
+#   name = "whisper-genie"
+#   organization   = "amiasea"
+#   module_provider = "amiasea"
+#   registry_name = "private"
+  
+#   vcs_repo {
+#     display_identifier         = "whisper-genie"
+#     identifier                 = "amiasea/.github"
+#     github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
+#     source_directory           = "terraform/modules/whisper_genie"
+#     tags                       = true
+#   }
+# }
+
 data "http" "edm_installation_registry" {
   url    = "https://app.terraform.io/api/v2/stacks"
   method = "POST"
+
+  # depends_on = [ tfe_registry_module.whisper_genie ]
 
   request_headers = {
     Authorization = "Bearer ${var.tfe_org_token}"
