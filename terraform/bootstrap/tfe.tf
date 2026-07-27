@@ -115,7 +115,7 @@ resource "tfe_registry_module" "whisper_genie" {
 
     tags             = true
     source_directory = "terraform/modules/whisper_genie"
-    tag_prefix       = "whisper-genie-v"
+    tag_prefix       = "whisper_genie-v"
   }
 }
 
