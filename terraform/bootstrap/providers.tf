@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.15.3"
+  required_version = ">= 1.15.8"
 
   required_providers {
     azuread = {
@@ -14,10 +14,10 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.13.0"
     }
-    azapi = {
-      source  = "azure/azapi"
-      version = "~> 2.10.0"
-    }
+    # azapi = {
+    #   source  = "azure/azapi"
+    #   version = "~> 2.10.0"
+    # }
     http = {
       source  = "hashicorp/http"
       version = "~> 3.0"
@@ -26,31 +26,17 @@ terraform {
       source  = "hashicorp/tfe"
       version = "~> 0.79.0"
     }
-    hcp = {
-      source  = "hashicorp/hcp"
-      version = "0.112.0"
-    }
   }
-}
-
-provider "azurerm" {
-  use_cli = false
-
-  features {
-  }
-}
-
-provider "azuread" {
-  use_cli = false
 }
 
 provider "azurerm" {
   subscription_id = var.subscription_id
-  features {
-  }
+
+  features {}
 }
 
 provider "azuread" {
+  tenant_id = var.tenant_id
   use_oidc  = true
 }
 
@@ -58,29 +44,12 @@ provider "github" {
   owner = "amiasea"
 }
 
-# provider "github"{
-#   alias = "test"
-#   owner = "amiasea"
-#   app_auth {
-#     id              = "2670685"
-#     installation_id = "105130264"
-#     pem_file = var.amiasea_github_private_key
-#   }
+# provider "azapi" {
+#   subscription_id = var.subscription_id
+#   skip_provider_registration = false
 # }
 
-provider "azapi" {
-  subscription_id = var.subscription_id
-  skip_provider_registration = false
-}
-
-provider "tfe" {
-  hostname = "app.terraform.io"
-}
-
 provider "tfe"{
-  alias = "gh_app"
   hostname = "app.terraform.io"
-  token = var.tfe_pat
+  token = var.tfe_org_token
 }
-
-provider "hcp" {}

@@ -4,133 +4,68 @@ variable "billing_email" {
 
 variable "billing_account_id" {
   type        = string
-  description = "The billing account ID to link the subscription to. This is required for new subscriptions created under an Enterprise Agreement (EA)."
+  description = "Azure billing account scope."
   sensitive   = true
-
-  validation {
-    # Validates the long MCA billing account format
-    condition     = can(regex("^[a-z0-9-]+:[a-z0-9-]+_\\d{4}-\\d{2}-\\d{2}$", var.billing_account_id))
-    error_message = "The billing_account_id must follow the MCA format (e.g., guid:guid_yyyy-mm-dd)."
-  }
 }
 
 variable "billing_profile_id" {
   type        = string
-  description = "The billing profile ID to link the subscription to. This is required for new subscriptions created under an Enterprise Agreement (EA)."
+  description = "Azure billing profile."
   sensitive   = true
-
-  validation {
-    # Validates the 4-part alphanumeric profile ID
-    condition     = can(regex("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{3,4}-[A-Z0-9]{3,4}$", var.billing_profile_id))
-    error_message = "The billing_profile_id must be a 4-part alphanumeric string (e.g., XXXX-XXXX-XXX-XXX)."
-  }
 }
 
 variable "billing_profile_invoice_section_id" {
   type        = string
-  description = "The billing profile invoice section ID to link the subscription to. This is required for new subscriptions created under an Enterprise Agreement (EA)."
+  description = "Azure billing profile invoice section."
   sensitive   = true
-
-  validation {
-    condition     = can(regex("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{3,4}-[A-Z0-9]{3,4}$", var.billing_profile_invoice_section_id))
-    error_message = "The invoice_section_id must be a 4-part alphanumeric string."
-  }
-}
-
-variable "organization_name" {
-  type = string
-  description = "Organization name"
-  default = "amiasea"
-}
-
-variable "key_vault_name" {
-  type        = string
-  description = "Name of the Key Vault to create for the sovereign."
-  default     = "kv-amiasea"
-}
-
-variable "resource_group_name" {
-  type        = string
-  description = "Resource group for all sovereign resources."
-  default     = "rg-amiasea"
-}
-
-variable "location" {
-  type        = string
-  description = "Azure region."
-  default     = "centralus"
 }
 
 variable "tenant_id" {
   type        = string
-  description = "Tenant ID for the Azure subscription."
+  description = "Azure Entra tenant ID."
   sensitive   = true
 }
 
 variable "subscription_id" {
   type        = string
-  description = "Subscription ID."
+  description = "Azure subscription ID used to establish the sovereign platform."
   sensitive   = true
 }
 
-variable "ghcr_pat" {
-  type      = string
-  ephemeral = true
-}
-
-variable "tf_token" {
-  type      = string
-  ephemeral = true
-}
-
-variable "tfe_pat" {
-  type      = string
-  ephemeral = true
-}
-
-variable "amiasea_github_private_key" {
-  type      = string
-  ephemeral = true
-}
-
-variable "neon_org_api_key" {
-  type      = string
-  ephemeral = true
-}
-
-variable "neon_project_id" {
-    type = string
-}
-
-variable "prefix" {
+variable "organization_name" {
   type        = string
-  description = "Prefix"
+  description = "Amiasea organization name."
   default     = "amiasea"
 }
 
-variable "domain" {
+variable "location" {
   type        = string
-  description = "Domain name"
-  default     = "amiasea.com"
+  description = "Azure region for sovereign bootstrap resources."
+  default     = "centralus"
 }
 
-variable "environments" {
-  type = list(string)
-  description = "Environments"
-  default = ["dev", "prod"]
+variable "key_vault_name" {
+  type        = string
+  description = "Name of the sovereign, non-environment Key Vault."
+  default     = "kv-amiasea"
 }
 
-variable "hcp_project_id" {
+variable "resource_group_name" {
   type        = string
-  description = "The unique identifier for the HCP platform project"
+  description = "Resource group containing sovereign bootstrap resources."
+  default     = "rg-amiasea"
 }
 
-variable "hcp_service_principal_name" {
+variable "github_app_private_key" {
   type        = string
-  description = "The precise string name for the automation bot service principal"
+  description = "Private key for the Amiasea GitHub App."
+  sensitive   = true
+  ephemeral   = true
 }
 
-variable "hcp_provider_name" {
+variable "tfe_org_token" {
   type        = string
-  description = "The precise string name for the HCP workload identity provider"
+  description = "HCP Terraform organization token used by the sovereign platform."
+  sensitive   = true
+  ephemeral   = true
 }

@@ -20,6 +20,7 @@ packages/
 .nuget/
 !.nuget/NuGet.Config
 .msbuild.log
+.git/
 
 # Terraform
 .terraform/
