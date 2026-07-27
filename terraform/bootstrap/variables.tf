@@ -67,5 +67,5 @@ variable "tfe_org_token" {
   type        = string
   description = "HCP Terraform organization token used by the sovereign platform."
   sensitive   = true
-  ephemeral   = true
+  # ephemeral   = true
 }

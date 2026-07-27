@@ -14,37 +14,133 @@ output "github_app_installation" {
   }
 }
 
-resource "tfe_stack" "edm_installation_registry" {
-  name       = "edm-installation-registry"
-  project_id = data.tfe_project.amiasea_project.id
+# resource "tfe_stack" "edm_installation_registry" {
+#   name       = "edm-installation-registry"
+#   project_id = data.tfe_project.amiasea_project.id
 
-  vcs_repo {
-    identifier                 = "amiasea/.github"
-    branch                     = "main"
-    github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
+#   vcs_repo {
+#     identifier                 = "amiasea/.github"
+#     branch                     = "main"
+#     github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
+#   }
+
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       curl \
+#         --request PATCH \
+#         --header "Authorization: Bearer ${var.tfe_org_token}" \
+#         --header "Content-Type: application/vnd.api+json" \
+#         --data '{
+#           "data": {
+#             "id": "${self.id}",
+#             "type": "stacks",
+#             "attributes": {
+#               "working-directory": "terraform/stacks/edm_installation_registry",
+#               "trigger-patterns": [
+#                 "terraform/stacks/edm_installation_registry/**/*"
+#               ]
+#             }
+#           }
+#         }' \
+#         https://app.terraform.io/api/v2/stacks/${self.id}
+#     EOT
+#   }
+# }
+
+# resource "tfe_stack" "edm_installation_registry" {
+#   name       = "edm-installation-registry"
+#   project_id = data.tfe_project.amiasea_project.id
+
+#   vcs_repo {
+#     identifier                 = "amiasea/.github"
+#     branch                     = "main"
+#     github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
+#   }
+
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       curl \
+#         --request PATCH \
+#         --header "Authorization: Bearer ${var.tfe_org_token}" \
+#         --header "Content-Type: application/vnd.api+json" \
+#         --data '{
+#           "id": "${self.id}",
+#           "attributes": {
+#             "vcs-repo": {
+#               "display-identifier": "amiasea/.github",
+#               "identifier": "amiasea/.github",
+#               "oauth-token-id": "",
+#               "github-app-installation-id": "${data.tfe_github_app_installation.tfe_cloud_app.id}",
+#               "branch": "main",
+#               "ingress-submodules": false,
+#               "webhook-url": "",
+#               "service-provider": "github_app",
+#               "repository-http-url": "https://github.com/amiasea/.github",
+#               "tags-regex": "",
+#               "trigger-disabled": false
+#             },
+#             "setting-overwrites": {
+#               "execution-mode": true,
+#               "agent-pool": true
+#             },
+#             "name": "edm-installation-registry",
+#             "description": null,
+#             "working-directory": "terraform/stacks/edm_installation_registry",
+#             "execution-mode": "remote",
+#             "speculative-enabled": false,
+#             "debugging-mode": false,
+#             "deleteable": true,
+#             "trigger-patterns": [
+#               "terraform/stacks/edm_installation_registry/**/*"
+#             ]
+#           }
+#         }' \
+#         https://app.terraform.io/api/v2/stacks/${self.id}
+#     EOT
+#   }
+# }
+
+# test
+
+data "http" "edm_installation_registry" {
+  url    = "https://app.terraform.io/api/v2/stacks"
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.tfe_org_token}"
+    Content-Type  = "application/vnd.api+json"
   }
 
-  provisioner "local-exec" {
-    command = <<EOT
-      curl \
-        --request PATCH \
-        --header "Authorization: Bearer ${var.tfe_org_token}" \
-        --header "Content-Type: application/vnd.api+json" \
-        --data '{
-          "data": {
-            "id": "${self.id}",
-            "type": "stacks",
-            "attributes": {
-              "working-directory": "terraform/stacks/edm_installation_registry",
-              "trigger-patterns": [
-                "terraform/stacks/edm_installation_registry/**/*"
-              ]
-            }
+  request_body = jsonencode({
+    data = {
+      type = "stacks"
+
+      attributes = {
+        name = "edm-installation-registry"
+
+        "vcs-repo" = {
+          identifier                   = "amiasea/.github"
+          branch                       = "main"
+          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
+        }
+
+        "working-directory" = "terraform/stacks/edm_installation_registry"
+
+        "trigger-patterns" = [
+          "terraform/stacks/edm_installation_registry/**/*"
+        ]
+      }
+
+      relationships = {
+        project = {
+          data = {
+            type = "projects"
+            id   = data.tfe_project.amiasea_project.id
           }
-        }' \
-        https://app.terraform.io/api/v2/stacks/${self.id}
-    EOT
-  }
+        }
+      }
+    }
+  })
 }
 
 resource "tfe_variable_set" "amiasea_sovereign" {
