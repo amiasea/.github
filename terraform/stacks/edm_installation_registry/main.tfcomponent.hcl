@@ -1,5 +1,5 @@
 component "whisper_genie_gh_private_key" {
-  source  = "app.terraform.io/amiasea/whisper-genie/amiasea"
+  source  = "app.terraform.io/amiasea/whisper_genie/amiasea"
   version = ">= 1.0.0"
 
   inputs = {
@@ -16,7 +16,7 @@ component "whisper_genie_gh_private_key" {
 component "whisper_genie_client_tf_token" {
   for_each = var.installations
 
-  source  = "app.terraform.io/amiasea/whisper-genie/amiasea"
+  source  = "app.terraform.io/amiasea/whisper_genie/amiasea"
   version = ">= 1.0.0"
 
   inputs = {
@@ -54,7 +54,7 @@ component "edm_installation_registry" {
   inputs = {
     client_github_organization = each.value.github_organization
     client_tfe_organization    = each.value.tfe_organization
-    client_tfe_token           = whisper_genie_client_tf_token[each.key].secret_value
+    client_tfe_token           = component.whisper_genie_client_tf_token[each.key].secret_value
   }
 
   providers = {

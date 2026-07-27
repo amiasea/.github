@@ -4,7 +4,7 @@ data "tfe_github_app_installation" "tfe_cloud_app" {
 
 data "tfe_project" "amiasea_project" {
   organization = "amiasea"
-  name = "amiasea"
+  name         = "amiasea"
 }
 
 output "github_app_installation" {
@@ -102,20 +102,22 @@ output "github_app_installation" {
 
 # test
 
-# resource "tfe_registry_module" "whisper_genie" {
-#   name = "whisper-genie"
-#   organization   = "amiasea"
-#   module_provider = "amiasea"
-#   registry_name = "private"
-  
-#   vcs_repo {
-#     display_identifier         = "whisper-genie"
-#     identifier                 = "amiasea/.github"
-#     github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
-#     source_directory           = "terraform/modules/whisper_genie"
-#     tags                       = true
-#   }
-# }
+resource "tfe_registry_module" "whisper_genie" {
+  organization    = "amiasea"
+  name            = "whisper_genie"
+  module_provider = "amiasea"
+  registry_name   = "private"
+
+  vcs_repo {
+    display_identifier         = "amiasea/.github"
+    identifier                 = "amiasea/.github"
+    github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
+
+    tags             = true
+    source_directory = "terraform/modules/whisper_genie"
+    tag_prefix       = "whisper-genie-v"
+  }
+}
 
 data "http" "edm_installation_registry" {
   url    = "https://app.terraform.io/api/v2/stacks"
