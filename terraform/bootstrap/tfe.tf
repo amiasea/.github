@@ -24,49 +24,6 @@ resource "tfe_registry_module" "whisper_genie" {
   }
 }
 
-data "http" "edm_installation_registry" {
-  url    = "https://app.terraform.io/api/v2/stacks"
-  method = "POST"
-
-  # depends_on = [ tfe_registry_module.whisper_genie ]
-
-  request_headers = {
-    Authorization = "Bearer ${var.tfe_org_token}"
-    Content-Type  = "application/vnd.api+json"
-  }
-
-  request_body = jsonencode({
-    data = {
-      type = "stacks"
-
-      attributes = {
-        name = "edm_installation_registry"
-
-        "vcs-repo" = {
-          identifier                   = "amiasea/.github"
-          branch                       = "main"
-          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
-        }
-
-        "working-directory" = "terraform/stacks/edm_installation_registry"
-
-        "trigger-patterns" = [
-          "terraform/stacks/edm_installation_registry/**/*"
-        ]
-      }
-
-      relationships = {
-        project = {
-          data = {
-            type = "projects"
-            id   = data.tfe_project.amiasea_project.id
-          }
-        }
-      }
-    }
-  })
-}
-
 resource "tfe_variable_set" "amiasea_sovereign" {
   name         = "amiasea-sovereign"
   description  = "Azure OIDC coordinates for the Amiasea sovereign stack."
@@ -80,7 +37,7 @@ resource "tfe_project_variable_set" "amiasea_sovereign" {
 }
 
 resource "tfe_variable" "sovereign_azure_client_id" {
-  key             = "AZURE_CLIENT_ID"
+  key             = "sovereign_azure_client_id"
   value           = azuread_application.amiasea_sovereign.client_id
   category        = "env"
   variable_set_id = tfe_variable_set.amiasea_sovereign.id
@@ -88,7 +45,7 @@ resource "tfe_variable" "sovereign_azure_client_id" {
 }
 
 resource "tfe_variable" "sovereign_azure_tenant_id" {
-  key             = "AZURE_TENANT_ID"
+  key             = "sovereign_azure_tenant_id"
   value           = var.tenant_id
   category        = "env"
   variable_set_id = tfe_variable_set.amiasea_sovereign.id
@@ -96,7 +53,7 @@ resource "tfe_variable" "sovereign_azure_tenant_id" {
 }
 
 resource "tfe_variable" "sovereign_azure_subscription_id" {
-  key             = "AZURE_SUBSCRIPTION_ID"
+  key             = "sovereign_azure_subscription_id"
   value           = var.subscription_id
   category        = "env"
   variable_set_id = tfe_variable_set.amiasea_sovereign.id

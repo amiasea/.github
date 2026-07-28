@@ -5,17 +5,17 @@ variable "installations" {
   }))
 }
 
-variable "sovereign_azure_tenant_id" {
+variable "azure_tenant_id" {
   type      = string
   sensitive = true
 }
 
-variable "sovereign_azure_subscription_id" {
+variable "azure_subscription_id" {
   type      = string
   sensitive = true
 }
 
-variable "sovereign_azure_client_id" {
+variable "azure_client_id" {
   type      = string
   sensitive = true
 }
