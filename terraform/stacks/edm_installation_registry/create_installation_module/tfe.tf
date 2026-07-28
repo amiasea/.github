@@ -88,6 +88,7 @@ resource "tfe_stack" "deployment_catalog_registration" {
 
   depends_on = [
     github_repository.engineering_delivery_model_core,
+    github_repository_file.deployment_catalog_registration_deploy
   ]
 }
 
