@@ -1,4 +1,12 @@
 data "http" "edm_installation_registry" {
+  depends_on = [
+    azurerm_federated_identity_credential.edm_installation_registry_plan,
+    azurerm_federated_identity_credential.edm_installation_registry_apply,
+    tfe_variable.stack_oidc_azure_client_id,
+    tfe_variable.stack_oidc_azure_tenant_id,
+    tfe_variable.stack_oidc_azure_subscription_id,
+  ]
+
   url    = "https://app.terraform.io/api/v2/stacks"
   method = "POST"
 
