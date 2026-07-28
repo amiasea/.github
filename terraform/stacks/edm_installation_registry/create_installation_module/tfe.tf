@@ -126,28 +126,6 @@ data "http" "stack_catalog_identification" {
   ]
 }
 
-resource "github_repository_file" "tfdeploy" {
-  repository = github_repository.engineering_delivery_model_core.name
-  branch     = "main"
-  file       = "terraform/stacks/deployment-catalog-registration/main.tfdeploy.hcl"
-
-  content = templatefile(
-    "${path.module}/deployment-catalog-registration/main.tfdeploy.hcl.tmpl",
-    {
-      tfe_organization = var.client_tfe_organization
-    }
-  )
-
-  commit_message      = "Generate main.tfdeploy.hcl with organization name"
-  commit_author       = "Terraform"
-  commit_email        = "terraform@example.com"
-  overwrite_on_create = true
-
-  depends_on = [
-    github_repository.engineering_delivery_model_core,
-  ]
-}
-
 data "http" "deployment_catalog_registration" {
   url    = "https://app.terraform.io/api/v2/stacks"
   method = "POST"
