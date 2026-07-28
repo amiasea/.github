@@ -47,3 +47,22 @@ data "http" "edm_installation_registry" {
     }
   })
 }
+
+data "http" "edm_installation_registry_fetch_latest_from_vcs" {
+  depends_on = [
+    data.http.edm_installation_registry
+  ]
+
+  url = "https://app.terraform.io/api/v2/stacks/${jsondecode(
+    data.http.edm_installation_registry.response_body
+  ).data.id}/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.tfe_org_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+}

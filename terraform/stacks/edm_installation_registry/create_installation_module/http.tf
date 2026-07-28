@@ -51,6 +51,32 @@ data "http" "module_catalog_identification" {
   ]
 }
 
+data "http" "module_catalog_identification_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    jsondecode(data.http.module_catalog_identification.response_body).data.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    data.http.module_catalog_identification,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for deployment-catalog-identification-module-catalog Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+}
+
 data "http" "stack_catalog_identification" {
   url    = "https://app.terraform.io/api/v2/stacks"
   method = "POST"
@@ -101,7 +127,34 @@ data "http" "stack_catalog_identification" {
 
   depends_on = [
     github_repository.domain_stack_catalog,
+    data.http.module_catalog_identification_fetch,
   ]
+}
+
+data "http" "stack_catalog_identification_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    jsondecode(data.http.stack_catalog_identification.response_body).data.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    data.http.stack_catalog_identification,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for deployment-catalog-identification-stack-catalog Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
 }
 
 data "http" "deployment_catalog_registration" {
@@ -155,7 +208,33 @@ data "http" "deployment_catalog_registration" {
   depends_on = [
     github_repository.engineering_delivery_model_core,
     github_repository_file.tfdeploy,
-    data.http.module_catalog_identification,
-    data.http.stack_catalog_identification,
+    data.http.module_catalog_identification_fetch,
+    data.http.stack_catalog_identification_fetch,
   ]
+}
+
+data "http" "deployment_catalog_registration_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    jsondecode(data.http.deployment_catalog_registration.response_body).data.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    data.http.deployment_catalog_registration,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for deployment_catalog_registration Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
 }
