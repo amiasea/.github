@@ -1,13 +1,16 @@
 variable "sovereign_azure_subscription_id" {
   type = string
+  sensitive = true
 }
 
 variable "sovereign_azure_tenant_id" {
   type = string
+  sensitive = true
 }
 
 variable "sovereign_azure_client_id" {
   type = string
+  sensitive = true
 }
 
 variable "azure_oidc_token" {
