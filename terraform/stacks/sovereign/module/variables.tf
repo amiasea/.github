@@ -15,10 +15,12 @@ variable "tfe_org_token" {
 
 variable "azure_tenant_id" {
   type = string
+  ephemeral = true
 }
 
 variable "azure_subscription_id" {
   type = string
+  ephemeral = true
 }
 
 variable "key_vault_name" {
