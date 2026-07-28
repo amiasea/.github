@@ -9,7 +9,12 @@ identity_token "azure" {
 deployment "default" {
   inputs = {
     amiasea_gh_app_id     = "2670685"
-    installations         = {}
+    installations = {
+      "149350951" = {
+        github_organization = "amiasea-client"
+        tfe_organization    = "amiasea-client"
+      }
+    }
     azure_tenant_id       = store.varset.amiasea_stack_oidc.stable.azure_tenant_id
     azure_subscription_id = store.varset.amiasea_stack_oidc.stable.azure_subscription_id
     azure_client_id       = store.varset.amiasea_stack_oidc.stable.azure_client_id
