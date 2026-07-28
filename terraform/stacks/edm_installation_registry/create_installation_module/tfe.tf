@@ -1,4 +1,5 @@
 resource "tfe_project" "amiasea" {
+  organization = var.client_tfe_organization
   name = "Amiasea Engineering Delivery Model"
 }
 
