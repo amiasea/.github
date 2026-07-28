@@ -1,5 +1,5 @@
 resource "tfe_project" "amiasea" {
-  name = "Engineering Delivery Model"
+  name = "Amiasea Engineering Delivery Model"
 }
 
 resource "tfe_variable_set" "amiasea_set" {
@@ -22,7 +22,7 @@ data "tfe_github_app_installation" "tfe_cloud_app" {
 
 resource "tfe_stack" "module_catalog_identification" {
   name       = "deployment-catalog-identification-module-catalog"
-  project_id = tfe_project.engineering_delivery_model.id
+  project_id = tfe_project.amiasea.id
 
   vcs_repo {
     identifier                 = "${var.client_github_organization}/iac-domain-module-catalog"
