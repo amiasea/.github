@@ -7,21 +7,21 @@ resource "github_repository" "engineering_delivery_model_core" {
   }
 }
 
-resource "github_repository" "domain_module_catalog" {
-  name = "domain-module-catalog"
+resource "github_repository" "iac-domain_module_catalog" {
+  name = "iac-domain-module-catalog"
 
   template {
     owner      = "amiasea"
-    repository = "iac-module-catalog-template"
+    repository = "iac-domain-module-catalog-template"
   }
 }
 
-resource "github_repository" "domain_stack_catalog" {
-  name = "domain-stack-catalog"
+resource "github_repository" "iac-domain_stack_catalog" {
+  name = "iac-domain-stack-catalog"
 
   template {
     owner      = "amiasea"
-    repository = "iac-stack-catalog-template"
+    repository = "iac-domain-stack-catalog-template"
   }
 }
 
