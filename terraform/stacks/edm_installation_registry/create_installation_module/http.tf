@@ -24,7 +24,7 @@ data "http" "module_catalog_identification" {
           identifier                   = "${var.client_github_organization}/iac-domain-module-catalog"
           branch                       = "main"
           "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
-          "service-provider"           = "github"
+          "service-provider"           = "github_app"
         }
       }
 
@@ -77,7 +77,7 @@ data "http" "stack_catalog_identification" {
           identifier                   = "${var.client_github_organization}/iac-domain-stack-catalog"
           branch                       = "main"
           "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
-          "service-provider"           = "github"
+          "service-provider"           = "github_app"
         }
       }
 
@@ -130,7 +130,7 @@ data "http" "deployment_catalog_registration" {
           identifier                   = "${var.client_github_organization}/engineering-delivery-model-core"
           branch                       = "main"
           "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
-          "service-provider"           = "github"
+          "service-provider"           = "github_app"
         }
       }
 

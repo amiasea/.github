@@ -26,7 +26,7 @@ data "http" "edm_installation_registry" {
           identifier                   = "amiasea/.github"
           branch                       = "main"
           "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
-          "service-provider"           = "github"
+          "service-provider"           = "github_app"
         }
 
         "working-directory" = "terraform/stacks/edm_installation_registry"
