@@ -1,0 +1,161 @@
+data "http" "module_catalog_identification" {
+  url    = "https://app.terraform.io/api/v2/stacks"
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({
+    data = {
+      type = "stacks"
+
+      attributes = {
+        name = "deployment-catalog-identification-module-catalog"
+
+        "working-directory" = "terraform/deployment-catalog-identification-module-catalog"
+
+        "trigger-patterns" = [
+          "terraform/modules/**/*"
+        ]
+
+        "vcs-repo" = {
+          identifier                   = "${var.client_github_organization}/iac-domain-module-catalog"
+          branch                       = "main"
+          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
+          "service-provider"           = "github"
+        }
+      }
+
+      relationships = {
+        project = {
+          data = {
+            type = "projects"
+            id   = tfe_project.amiasea.id
+          }
+        }
+      }
+    }
+  })
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 201
+      error_message = "Failed to create deployment-catalog-identification-module-catalog Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+
+  depends_on = [
+    github_repository.domain_module_catalog,
+  ]
+}
+
+data "http" "stack_catalog_identification" {
+  url    = "https://app.terraform.io/api/v2/stacks"
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({
+    data = {
+      type = "stacks"
+
+      attributes = {
+        name = "deployment-catalog-identification-stack-catalog"
+
+        "working-directory" = "terraform/deployment-catalog-identification-stack-catalog"
+
+        "trigger-patterns" = [
+          "terraform/stacks/**/*"
+        ]
+
+        "vcs-repo" = {
+          identifier                   = "${var.client_github_organization}/iac-domain-stack-catalog"
+          branch                       = "main"
+          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
+          "service-provider"           = "github"
+        }
+      }
+
+      relationships = {
+        project = {
+          data = {
+            type = "projects"
+            id   = tfe_project.amiasea.id
+          }
+        }
+      }
+    }
+  })
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 201
+      error_message = "Failed to create deployment-catalog-identification-stack-catalog Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+
+  depends_on = [
+    github_repository.domain_stack_catalog,
+  ]
+}
+
+data "http" "deployment_catalog_registration" {
+  url    = "https://app.terraform.io/api/v2/stacks"
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({
+    data = {
+      type = "stacks"
+
+      attributes = {
+        name = "deployment_catalog_registration"
+
+        "working-directory" = "terraform/stacks/deployment-catalog-registration"
+
+        "trigger-patterns" = [
+          "terraform/stacks/deployment-catalog-registration/**/*"
+        ]
+
+        "vcs-repo" = {
+          identifier                   = "${var.client_github_organization}/engineering-delivery-model-core"
+          branch                       = "main"
+          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
+          "service-provider"           = "github"
+        }
+      }
+
+      relationships = {
+        project = {
+          data = {
+            type = "projects"
+            id   = tfe_project.amiasea.id
+          }
+        }
+      }
+    }
+  })
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 201
+      error_message = "Failed to create deployment_catalog_registration Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+
+  depends_on = [
+    github_repository.engineering_delivery_model_core,
+    github_repository_file.tfdeploy,
+    data.http.module_catalog_identification,
+    data.http.stack_catalog_identification,
+  ]
+}
