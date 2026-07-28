@@ -33,7 +33,7 @@ resource "github_repository_file" "deployment_catalog_registration_deploy" {
     "${path.module}/main.tfdeploy.hcl.tmpl",
     {
       tfe_organization = var.client_tfe_organization,
-      tfe_project_name = data.tfe_project.amiasea.name
+      tfe_project_name = tfe_project.amiasea.name
     }
   )
   commit_message      = "Configure deployment catalog registration"
