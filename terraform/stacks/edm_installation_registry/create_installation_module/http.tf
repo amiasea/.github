@@ -47,7 +47,7 @@ data "http" "module_catalog_identification" {
   }
 
   depends_on = [
-    github_repository.domain_module_catalog,
+    github_repository.iac_domain_module_catalog,
   ]
 }
 
@@ -126,7 +126,7 @@ data "http" "stack_catalog_identification" {
   }
 
   depends_on = [
-    github_repository.domain_stack_catalog,
+    github_repository.iac_domain_stack_catalog,
     data.http.module_catalog_identification_fetch,
   ]
 }
