@@ -5,7 +5,7 @@ resource "tfe_project" "amiasea" {
 resource "tfe_variable_set" "amiasea_set" {
   name         = "Amiasea Varset"
   organization = var.client_tfe_organization
-  parent_project_id = data.tfe_project.amiasea.id
+  parent_project_id = tfe_project.amiasea.id
   global       = false
 }
 
