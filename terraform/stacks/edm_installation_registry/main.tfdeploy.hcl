@@ -2,6 +2,7 @@ store "varset" "amiasea_stack_oidc" {
   name     = "amiasea-stack-oidc"
   category = "env"
 }
+
 identity_token "azure" {
   audience = ["api://AzureADTokenExchange"]
 }
