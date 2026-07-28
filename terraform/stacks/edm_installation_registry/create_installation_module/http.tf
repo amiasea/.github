@@ -127,7 +127,6 @@ data "http" "stack_catalog_identification" {
 
   depends_on = [
     github_repository.iac_domain_stack_catalog,
-    data.http.module_catalog_identification_fetch,
   ]
 }
 
@@ -208,8 +207,6 @@ data "http" "deployment_catalog_registration" {
   depends_on = [
     github_repository.engineering_delivery_model_core,
     github_repository_file.tfdeploy,
-    data.http.module_catalog_identification_fetch,
-    data.http.stack_catalog_identification_fetch,
   ]
 }
 
