@@ -28,5 +28,6 @@ component "sovereign" {
   providers = {
     azurerm = provider.azurerm.main
     tfe = provider.tfe.main
+    http = provider.http.main
   }
 }
