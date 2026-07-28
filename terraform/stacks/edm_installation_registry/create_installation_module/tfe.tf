@@ -90,3 +90,81 @@ resource "tfe_stack" "deployment_catalog_registration" {
     github_repository.engineering_delivery_model_core,
   ]
 }
+
+data "http" "module_catalog_identification_vcs_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    tfe_stack.module_catalog_identification.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    tfe_stack.module_catalog_identification,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for deployment-catalog-identification-module-catalog Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+}
+
+data "http" "stack_catalog_identification_vcs_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    tfe_stack.stack_catalog_identification.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    tfe_stack.stack_catalog_identification,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for deployment-catalog-identification-stack-catalog Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+}
+
+data "http" "deployment_catalog_registration_vcs_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    tfe_stack.deployment_catalog_registration.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    tfe_stack.deployment_catalog_registration,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for deployment_catalog_registration Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+}
