@@ -30,7 +30,7 @@ resource "github_repository_file" "deployment_catalog_registration_deploy" {
   branch              = "main"
   file                = "terraform/stacks/deployment-catalog-registration/main.tfdeploy.hcl"
   content             = templatefile(
-    "${path.module}/templates/deployment-catalog-registration/main.tfdeploy.hcl.tmpl",
+    "${path.module}/main.tfdeploy.hcl.tmpl",
     {
       tfe_organization = var.client_tfe_organization
     }
