@@ -7,7 +7,7 @@ resource "github_repository" "engineering_delivery_model_core" {
   }
 }
 
-resource "github_repository" "iac-domain_module_catalog" {
+resource "github_repository" "iac_domain_module_catalog" {
   name = "iac-domain-module-catalog"
 
   template {
@@ -16,7 +16,7 @@ resource "github_repository" "iac-domain_module_catalog" {
   }
 }
 
-resource "github_repository" "iac-domain_stack_catalog" {
+resource "github_repository" "iac_domain_stack_catalog" {
   name = "iac-domain-stack-catalog"
 
   template {
