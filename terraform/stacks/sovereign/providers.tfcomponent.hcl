@@ -8,6 +8,11 @@ required_providers {
     source  = "hashicorp/http"
     version = "~> 3.0"
   }
+
+  tfe = {
+    source = "hashicorp/tfe"
+    version = "~> 0.79.0"
+  }
 }
 
 provider "azurerm" "main" {
@@ -19,6 +24,13 @@ provider "azurerm" "main" {
     oidc_token      = var.azure_oidc_token
 
     features {}
+  }
+}
+
+provider "tfe" "main" {
+  config {
+    hostname = "app.terraform.io"
+    token    = component.whisper_genie_client_tf_token.secret_value
   }
 }
 
