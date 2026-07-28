@@ -35,6 +35,7 @@ resource "tfe_stack" "module_catalog_identification" {
   working_directory = "terraform/deployment-catalog-identification-module-catalog"
 
   trigger_patterns = [
+    "terraform/deployment-catalog-identification-module-catalog",
     "terraform/modules/**/*"
   ]
 
@@ -56,6 +57,7 @@ resource "tfe_stack" "stack_catalog_identification" {
   working_directory = "terraform/deployment-catalog-identification-stack-catalog"
 
   trigger_patterns = [
+    "terraform/deployment-catalog-identification-stack-catalog",
     "terraform/stacks/**/*"
   ]
 
