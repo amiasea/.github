@@ -1,16 +1,13 @@
 variable "sovereign_azure_subscription_id" {
   type = string
-  ephemeral = true
 }
 
 variable "sovereign_azure_tenant_id" {
   type = string
-  ephemeral = true
 }
 
 variable "sovereign_azure_client_id" {
   type = string
-  ephemeral = true
 }
 
 variable "azure_oidc_token" {
