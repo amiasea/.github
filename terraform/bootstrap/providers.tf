@@ -49,7 +49,9 @@ provider "github" {
 #   skip_provider_registration = false
 # }
 
-provider "tfe"{
+provider "tfe" {
   hostname = "app.terraform.io"
   token = var.tfe_org_token
 }
+
+provider "http" {}

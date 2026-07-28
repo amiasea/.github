@@ -64,3 +64,29 @@ resource "tfe_stack" "edm_installation_registry" {
     github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
   }
 }
+
+data "http" "edm_installation_registry_stack_vcs_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    tfe_stack.edm_installation_registry.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.tfe_org_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    tfe_stack.edm_installation_registry,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for edm_installation_registry Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+}

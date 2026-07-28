@@ -76,3 +76,29 @@ resource "tfe_stack" "sovereign_stack" {
     github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
   }
 }
+
+data "http" "sovereign_stack_vcs_fetch" {
+  url = "https://app.terraform.io/api/v2/stacks/${
+    tfe_stack.sovereign_stack.id
+  }/fetch-latest-from-vcs"
+
+  method = "POST"
+
+  request_headers = {
+    Authorization = "Bearer ${var.tfe_org_token}"
+    Content-Type  = "application/vnd.api+json"
+  }
+
+  request_body = jsonencode({})
+
+  depends_on = [
+    tfe_stack.sovereign_stack,
+  ]
+
+  lifecycle {
+    postcondition {
+      condition     = self.status_code == 200
+      error_message = "Failed to fetch latest configuration for sovereign Stack. HTTP status: ${self.status_code}. Response: ${self.response_body}"
+    }
+  }
+}

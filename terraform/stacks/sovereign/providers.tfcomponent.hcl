@@ -3,12 +3,10 @@ required_providers {
     source  = "hashicorp/azurerm"
     version = "~> 4.0"
   }
-
   http = {
     source  = "hashicorp/http"
     version = "~> 3.0"
   }
-
   tfe = {
     source = "hashicorp/tfe"
     version = "~> 0.79.0"
@@ -33,3 +31,5 @@ provider "tfe" "main" {
     token    = component.whisper_genie_client_tf_token.secret_value
   }
 }
+
+provider "http" "main" {}
