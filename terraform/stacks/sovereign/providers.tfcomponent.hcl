@@ -33,5 +33,3 @@ provider "tfe" "main" {
     token    = component.whisper_genie_client_tf_token.secret_value
   }
 }
-
-provider "http" "main" {}

@@ -39,3 +39,28 @@ resource "tfe_variable" "stack_oidc_azure_subscription_id" {
   category        = "env"
   variable_set_id = tfe_variable_set.amiasea_stack_oidc.id
 }
+
+resource "tfe_stack" "edm_installation_registry" {
+  depends_on = [
+    azurerm_federated_identity_credential.edm_installation_registry_plan,
+    azurerm_federated_identity_credential.edm_installation_registry_apply,
+    tfe_variable.stack_oidc_azure_client_id,
+    tfe_variable.stack_oidc_azure_tenant_id,
+    tfe_variable.stack_oidc_azure_subscription_id,
+  ]
+
+  name       = "edm_installation_registry"
+  project_id = data.tfe_project.amiasea_project.id
+
+  working_directory = "terraform/stacks/edm_installation_registry"
+
+  trigger_patterns = [
+    "terraform/stacks/edm_installation_registry/**/*"
+  ]
+
+  vcs_repo {
+    identifier                 = "amiasea/.github"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
+  }
+}

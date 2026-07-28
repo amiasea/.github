@@ -59,3 +59,20 @@ resource "tfe_variable" "sovereign_azure_subscription_id" {
   variable_set_id = tfe_variable_set.amiasea_sovereign.id
   sensitive       = false
 }
+
+resource "tfe_stack" "sovereign_stack" {
+  name       = "sovereign"
+  project_id = data.tfe_project.amiasea_project.id
+
+  working_directory = "terraform/stacks/sovereign"
+
+  trigger_patterns = [
+    "terraform/stacks/sovereign/**/*"
+  ]
+
+  vcs_repo {
+    identifier                 = "amiasea/.github"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
+  }
+}
