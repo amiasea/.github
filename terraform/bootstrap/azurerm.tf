@@ -5,8 +5,10 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
-resource "azuread_service_principal" "amiasea_sovereign_sp" {
-  client_id = azuread_application.amiasea_sovereign.client_id
+resource "azurerm_role_assignment" "sovereign_stack_key_vault_reader" {
+  scope                = azurerm_key_vault.sovereign_vault.id
+  role_definition_name = "Reader"
+  principal_id         = azuread_service_principal.amiasea_sovereign_sp.object_id
 }
 
 resource "azurerm_role_assignment" "sovereign_stack_key_vault_secrets_user" {
