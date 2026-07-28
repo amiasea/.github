@@ -135,7 +135,7 @@ data "http" "edm_installation_registry" {
       type = "stacks"
 
       attributes = {
-        name = "edm-installation-registry"
+        name = "edm_installation_registry"
 
         "vcs-repo" = {
           identifier                   = "amiasea/.github"
