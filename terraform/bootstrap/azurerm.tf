@@ -5,6 +5,12 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
+resource "azurerm_role_assignment" "sovereign_stack_rbac_admin" {
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Role Based Access Control Administrator"
+  principal_id         = azuread_service_principal.amiasea_sovereign_sp.object_id
+}
+
 resource "azurerm_role_assignment" "sovereign_stack_key_vault_reader" {
   scope                = azurerm_key_vault.sovereign_vault.id
   role_definition_name = "Reader"
@@ -14,5 +20,11 @@ resource "azurerm_role_assignment" "sovereign_stack_key_vault_reader" {
 resource "azurerm_role_assignment" "sovereign_stack_key_vault_secrets_user" {
   scope                = azurerm_key_vault.sovereign_vault.id
   role_definition_name = "Key Vault Secrets User"
+  principal_id         = azuread_service_principal.amiasea_sovereign_sp.object_id
+}
+
+resource "azurerm_role_assignment" "sovereign_managed_identity_contributor" {
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Managed Identity Contributor"
   principal_id         = azuread_service_principal.amiasea_sovereign_sp.object_id
 }
