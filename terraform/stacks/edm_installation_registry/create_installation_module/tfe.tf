@@ -16,7 +16,7 @@ resource "tfe_variable" "tfe_token" {
   variable_set_id = tfe_variable_set.amiasea_set.id
 }
 
-data "tfe_github_app_installation" "gha_installation" {
+data "tfe_github_app_installation" "tfe_cloud_app" {
   name = var.client_github_organization
 }
 
@@ -27,38 +27,48 @@ resource "tfe_stack" "module_catalog_identification" {
   vcs_repo {
     identifier                 = "${var.client_github_organization}/iac-domain-module-catalog"
     branch                     = "main"
-    github_app_installation_id = data.tfe_github_app_installation.gha_installation.installation_id
+    github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
   }
 
   depends_on = [
     github_repository.domain_module_catalog,
   ]
+}
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      curl \
-        --request PATCH \
-        --header "Authorization: Bearer ${var.client_tfe_token}" \
-        --header "Content-Type: application/vnd.api+json" \
-        --data '{
-          "data": {
-            "id": "${self.id}",
-            "type": "stacks",
-            "attributes": {
-              "vcs-repo": {
-                "identifier": "${var.client_github_organization}/iac-domain-module-catalog",
-                "github-app-installation-id": "${data.tfe_github_app_installation.gha_installation.installation_id}",
-                "working-directory": "terraform/deployment-catalog-identification-module-catalog",
-                "trigger-patterns": [
-                  "terraform/modules/**/*"
-                ]
-              }
-            }
-          }
-        }' \
-        https://app.terraform.io/api/v2/stacks/${self.id}
-    EOT
+data "http" "module_catalog_identification_config" {
+  depends_on = [
+    tfe_stack.module_catalog_identification
+  ]
+
+  url    = "https://app.terraform.io/api/v2/stacks/${tfe_stack.module_catalog_identification.id}"
+  method = "PATCH"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
   }
+
+  request_body = jsonencode({
+    data = {
+      id   = tfe_stack.module_catalog_identification.id
+      type = "stacks"
+
+      attributes = {
+        "vcs-repo" = {
+          identifier                   = "${var.client_github_organization}/iac-domain-module-catalog"
+          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
+          branch                       = "main"
+          "service-provider"           = "github_app"
+        }
+
+        "working-directory" = "terraform/deployment-catalog-identification-module-catalog"
+
+        "trigger-patterns" = [
+          "terraform/modules/**/*"
+        ]
+      }
+    }
+  })
 }
 
 resource "tfe_stack" "stack_catalog_identification" {
@@ -68,38 +78,48 @@ resource "tfe_stack" "stack_catalog_identification" {
   vcs_repo {
     identifier                 = "${var.client_github_organization}/iac-domain-stack-catalog"
     branch                     = "main"
-    github_app_installation_id = data.tfe_github_app_installation.gha_installation.installation_id
+    github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
   }
 
   depends_on = [
     github_repository.domain_stack_catalog,
   ]
+}
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      curl \
-        --request PATCH \
-        --header "Authorization: Bearer ${var.client_tfe_token}" \
-        --header "Content-Type: application/vnd.api+json" \
-        --data '{
-          "data": {
-            "id": "${self.id}",
-            "type": "stacks",
-            "attributes": {
-              "vcs-repo": {
-                "identifier": "${var.client_github_organization}/iac-domain-stack-catalog",
-                "github-app-installation-id": "${data.tfe_github_app_installation.gha_installation.installation_id}",
-                "working-directory": "terraform/deployment-catalog-identification-stack-catalog",
-                "trigger-patterns": [
-                  "terraform/stacks/**/*"
-                ]
-              }
-            }
-          }
-        }' \
-        https://app.terraform.io/api/v2/stacks/${self.id}
-    EOT
+data "http" "stack_catalog_identification_config" {
+  depends_on = [
+    tfe_stack.stack_catalog_identification
+  ]
+
+  url    = "https://app.terraform.io/api/v2/stacks/${tfe_stack.stack_catalog_identification.id}"
+  method = "PATCH"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
   }
+
+  request_body = jsonencode({
+    data = {
+      id   = tfe_stack.stack_catalog_identification.id
+      type = "stacks"
+
+      attributes = {
+        "vcs-repo" = {
+          identifier                   = "${var.client_github_organization}/iac-domain-stack-catalog"
+          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
+          branch                       = "main"
+          "service-provider"           = "github_app"
+        }
+
+        "working-directory" = "terraform/deployment-catalog-identification-stack-catalog"
+
+        "trigger-patterns" = [
+          "terraform/stacks/**/*"
+        ]
+      }
+    }
+  })
 }
 
 resource "github_repository_file" "tfdeploy" {
@@ -121,12 +141,13 @@ resource "github_repository_file" "tfdeploy" {
 }
 
 resource "tfe_stack" "deployment_catalog_registration" {
-  name       = "deployment-catalog-registration"
+  name       = "deployment_catalog_registration"
   project_id = tfe_project.engineering_delivery_model.id
 
   vcs_repo {
     identifier = "${var.client_github_organization}/engineering-delivery-model-core"
     branch     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.tfe_cloud_app.id
   }
 
   depends_on = [
@@ -158,7 +179,7 @@ data "http" "deployment_catalog_registration_config" {
       attributes = {
         "vcs-repo" = {
           identifier                 = "${var.client_github_organization}/engineering-delivery-model-core"
-          "github-app-installation-id" = data.tfe_github_app_installation.gha_installation.installation_id
+          "github-app-installation-id" = data.tfe_github_app_installation.tfe_cloud_app.id
           branch                     = "main"
           "service-provider"         = "github_app"
         }
