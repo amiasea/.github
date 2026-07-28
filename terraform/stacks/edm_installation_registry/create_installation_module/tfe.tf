@@ -135,30 +135,40 @@ resource "tfe_stack" "deployment_catalog_registration" {
     tfe_stack.module_catalog_identification,
     tfe_stack.stack_catalog_identification,
   ]
+}
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      curl \
-        --request PATCH \
-        --header "Authorization: Bearer ${var.client_tfe_token}" \
-        --header "Content-Type: application/vnd.api+json" \
-        --data '{
-          "data": {
-            "id": "${self.id}",
-            "type": "stacks",
-            "attributes": {
-              "vcs-repo": {
-                "identifier": "${var.client_github_organization}/engineering-delivery-model-core",
-                "github-app-installation-id": "${data.tfe_github_app_installation.gha_installation.installation_id}",
-                "working-directory": "terraform/stacks/deployment-catalog-registration",
-                "trigger-patterns": [
-                  "terraform/stacks/deployment-catalog-registration/**/*"
-                ]
-              }
-            }
-          }
-        }' \
-        https://app.terraform.io/api/v2/stacks/${self.id}
-    EOT
+data "http" "deployment_catalog_registration_config" {
+  depends_on = [
+    tfe_stack.deployment_catalog_registration
+  ]
+
+  url    = "https://app.terraform.io/api/v2/stacks/${tfe_stack.deployment_catalog_registration.id}"
+  method = "PATCH"
+
+  request_headers = {
+    Authorization = "Bearer ${var.client_tfe_token}"
+    Content-Type  = "application/vnd.api+json"
   }
+
+  request_body = jsonencode({
+    data = {
+      id   = tfe_stack.deployment_catalog_registration.id
+      type = "stacks"
+
+      attributes = {
+        "vcs-repo" = {
+          identifier                 = "${var.client_github_organization}/engineering-delivery-model-core"
+          "github-app-installation-id" = data.tfe_github_app_installation.gha_installation.installation_id
+          branch                     = "main"
+          "service-provider"         = "github_app"
+        }
+
+        "working-directory" = "terraform/stacks/deployment-catalog-registration"
+
+        "trigger-patterns" = [
+          "terraform/stacks/deployment-catalog-registration/**/*"
+        ]
+      }
+    }
+  })
 }
