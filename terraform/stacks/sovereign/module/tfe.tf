@@ -29,6 +29,7 @@ resource "tfe_variable" "stack_oidc_azure_client_id" {
 resource "tfe_variable" "stack_oidc_azure_tenant_id" {
   key             = "azure_tenant_id"
   value           = var.azure_tenant_id
+  value_wo        = var.azure_tenant_id
   category        = "env"
   variable_set_id = tfe_variable_set.amiasea_stack_oidc.id
 }
@@ -36,6 +37,7 @@ resource "tfe_variable" "stack_oidc_azure_tenant_id" {
 resource "tfe_variable" "stack_oidc_azure_subscription_id" {
   key             = "azure_subscription_id"
   value           = var.azure_subscription_id
+  value_wo        = var.azure_subscription_id
   category        = "env"
   variable_set_id = tfe_variable_set.amiasea_stack_oidc.id
 }
