@@ -3,6 +3,11 @@ required_providers {
     source  = "hashicorp/azurerm"
     version = "~> 4.0"
   }
+
+  http = {
+    source  = "hashicorp/http"
+    version = "~> 3.0"
+  }
 }
 
 provider "azurerm" "main" {
@@ -16,3 +21,5 @@ provider "azurerm" "main" {
     features {}
   }
 }
+
+provider "http" "main" {}
