@@ -60,6 +60,7 @@ component "edm_installation_registry" {
   providers = {
     github = provider.github.client[each.key]
     tfe    = provider.tfe.client[each.key]
+    http   = provider.http.main
   }
 
   depends_on = [
