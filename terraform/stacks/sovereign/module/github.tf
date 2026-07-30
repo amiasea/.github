@@ -306,7 +306,7 @@ resource "azapi_resource" "iac_module_catalog_federated_identity" {
     properties = {
       issuer = "https://token.actions.githubusercontent.com"
 
-      audience = [
+      audiences = [
         "api://AzureADTokenExchange"
       ]
 
