@@ -6,13 +6,6 @@ variable "location" {
   type = string
 }
 
-variable "tfe_org_token" {
-  type        = string
-  description = "HCP Terraform organization token used by the sovereign platform."
-  sensitive   = true
-  # ephemeral   = true
-}
-
 variable "azure_tenant_id" {
   type = string
 }
