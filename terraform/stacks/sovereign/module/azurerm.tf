@@ -21,20 +21,11 @@ resource "azurerm_role_assignment" "stack_oidc_key_vault_secrets_user" {
   principal_id         = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.principal_id
 }
 
-resource "azurerm_federated_identity_credential" "edm_installation_registry_plan" {
+resource "azurerm_federated_identity_credential" "amiasea_stacks" {
   name                      = "edm-installation-registry-plan"
   user_assigned_identity_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
 
   issuer   = "https://app.terraform.io"
-  subject  = "organization:amiasea:project:amiasea:stack:edm_installation_registry:deployment:default:operation:plan"
-  audience = ["api://AzureADTokenExchange"]
-}
-
-resource "azurerm_federated_identity_credential" "edm_installation_registry_apply" {
-  name                      = "edm-installation-registry-apply"
-  user_assigned_identity_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
-
-  issuer   = "https://app.terraform.io"
-  subject  = "organization:amiasea:project:amiasea:stack:edm_installation_registry:deployment:default:operation:apply"
+  subject  = "organization:amiasea:project:amiasea:stack:*:deployment:*:operation:*"
   audience = ["api://AzureADTokenExchange"]
 }
