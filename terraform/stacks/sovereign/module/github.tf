@@ -312,7 +312,7 @@ resource "azapi_resource" "iac_module_catalog_federated_identity" {
 
       claimsMatchingExpression = {
         languageVersion = 1
-        value           = "claims['sub'] matches 'repo:amiasea/iac-module-catalog:workflow:.github/workflows/module_registration.yml'"
+        value           = "claims['sub'] matches 'organization:amiasea:project:amiasea:stack:sovereign:deployment:default:operation:*'"
       }
     }
   }
