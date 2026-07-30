@@ -282,42 +282,40 @@ resource "github_repository_file" "iac_module_catalog_workflow" {
 #   include_claim_keys = ["repository_id", "workflow"]
 # }
 
-# resource "azurerm_federated_identity_credential" "iac_module_catalog" {
-#   name                      = "github-iac-module-catalog-registration"
-#   user_assigned_identity_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
+resource "azurerm_federated_identity_credential" "iac_module_catalog" {
+  name                      = "github-iac-module-catalog-registration"
+  user_assigned_identity_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
 
-#   issuer = "https://token.actions.githubusercontent.com"
-
-#   subject = "repository_id:${github_repository.iac_module_catalog.repo_id}:workflow:module_registration.yml"
-
-#   audience = ["api://AzureADTokenExchange"]
-
-#   depends_on = [
-#     github_actions_repository_oidc_subject_claim_customization_template.iac_module_catalog
-#   ]
-# }
-
-resource "azapi_resource" "iac_module_catalog_federated_identity" {
-  type      = "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2025-05-31-preview"
-  name      = "github-iac-module-catalog-registration"
-  parent_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
-
-  body = {
-    properties = {
-      issuer = "https://token.actions.githubusercontent.com"
-
-      audiences = [
-        "api://AzureADTokenExchange"
-      ]
-
-      claimsMatchingExpression = {
-        languageVersion = 1
-        value           = "claims['sub'] matches 'organization:amiasea:project:amiasea:stack:sovereign:deployment:default:operation:*'"
-      }
-    }
-  }
+  issuer   = "https://token.actions.githubusercontent.com"
+  subject  = "repo:amiasea@254765293/iac-module-catalog@1317465381:ref:refs/heads/main"
+  audience = ["api://AzureADTokenExchange"]
 
   depends_on = [
     github_repository.iac_module_catalog
   ]
 }
+
+# resource "azapi_resource" "iac_module_catalog_federated_identity" {
+#   type      = "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2025-05-31-preview"
+#   name      = "github-iac-module-catalog-registration"
+#   parent_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
+
+#   body = {
+#     properties = {
+#       issuer = "https://token.actions.githubusercontent.com"
+
+#       audiences = [
+#         "api://AzureADTokenExchange"
+#       ]
+
+#       claimsMatchingExpression = {
+#         languageVersion = 1
+#         value           = "claims['sub'] matches 'organization:amiasea:project:amiasea:stack:sovereign:deployment:default:operation:*'"
+#       }
+#     }
+#   }
+
+#   depends_on = [
+#     github_repository.iac_module_catalog
+#   ]
+# }
