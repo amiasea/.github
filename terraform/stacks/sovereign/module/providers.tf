@@ -16,5 +16,9 @@ terraform {
       source  = "azure/azapi"
       version = "~> 2.11.0"
     }
+    github = {
+      source = "integrations/github"
+      version = "~> 6.13.0"
+    }
   }
 }

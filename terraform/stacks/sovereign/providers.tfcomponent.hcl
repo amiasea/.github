@@ -15,6 +15,22 @@ required_providers {
     source  = "azure/azapi"
     version = "~> 2.11.0"
   }
+  github = {
+    source = "integrations/github"
+    version = "~> 6.13.0"
+  }
+}
+
+provider "github" "main" {
+  config {
+    owner = "amiasea"
+
+    app_auth {
+      id              = "2670685"
+      installation_id = "105130264"
+      pem_file        = component.whisper_genie_gh_app_private_key.secret_value
+    }
+  }
 }
 
 provider "azurerm" "main" {
@@ -42,7 +58,7 @@ provider "azapi" "main" {
 provider "tfe" "main" {
   config {
     hostname = "app.terraform.io"
-    token    = component.whisper_genie_client_tf_token.secret_value
+    token    = component.whisper_genie_amiasea_tf_token.secret_value
   }
 }
 
