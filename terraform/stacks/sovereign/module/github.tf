@@ -306,13 +306,13 @@ resource "azapi_resource" "iac_module_catalog_federated_identity" {
     properties = {
       issuer = "https://token.actions.githubusercontent.com"
 
-      audiences = [
+      audience = [
         "api://AzureADTokenExchange"
       ]
 
       claimsMatchingExpression = {
         languageVersion = 1
-        value           = "claims['sub'] == 'repo:amiasea/iac-module-catalog:workflow:.github/workflows/module_registration.yml'"
+        value           = "claims['sub'] matches 'repo:amiasea/iac-module-catalog:workflow:.github/workflows/module_registration.yml'"
       }
     }
   }
