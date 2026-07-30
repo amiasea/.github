@@ -8,6 +8,7 @@
 
 resource "github_repository" "iac_module_catalog" {
     name = "iac-module-catalog"
+    auto_init = true
 }
 
 resource "github_repository_file" "iac_module_catalog_workflow" {
@@ -16,6 +17,7 @@ resource "github_repository_file" "iac_module_catalog_workflow" {
   repository = github_repository.iac_module_catalog.name
   file       = ".github/workflows/module_registration.yml"
   branch     = "main"
+  overwrite_on_create = true
 
   content = <<-YAML
     name: Register Terraform Modules
