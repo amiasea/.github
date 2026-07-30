@@ -5,7 +5,7 @@ terraform {
       version = "~> 4.0"
     }
     tfe = {
-      source = "hashicorp/tfe"
+      source  = "hashicorp/tfe"
       version = "~> 0.79.0"
     }
     http = {
@@ -13,8 +13,8 @@ terraform {
       version = "~> 3.0"
     }
     azapi = {
-        source = "azure/azapi"
-        version = "~> 2.11.0"
+      source  = "azure/azapi"
+      version = "~> 2.11.0"
     }
   }
 }

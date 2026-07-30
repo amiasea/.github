@@ -11,6 +11,10 @@ required_providers {
     source = "hashicorp/tfe"
     version = "~> 0.79.0"
   }
+  azapi = {
+    source  = "azure/azapi"
+    version = "~> 2.11.0"
+  }
 }
 
 provider "azurerm" "main" {
