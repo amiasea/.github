@@ -21,11 +21,24 @@ resource "azurerm_role_assignment" "stack_oidc_key_vault_secrets_user" {
   principal_id         = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.principal_id
 }
 
-resource "azurerm_federated_identity_credential" "amiasea_stacks" {
-  name                      = "edm-installation-registry-plan"
+# resource "azurerm_federated_identity_credential" "amiasea_stacks" {
+#   name                      = "edm-installation-registry-plan"
+#   user_assigned_identity_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
+
+#   issuer   = "https://app.terraform.io"
+#   subject  = "organization:amiasea:project:amiasea:stack:*:deployment:*:operation:*"
+#   audience = ["api://AzureADTokenExchange"]
+# }
+
+resource "azurerm_federated_identity_credential" "iac_module_catalog" {
+  name                      = "github-iac-module-catalog-registration"
   user_assigned_identity_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
 
-  issuer   = "https://app.terraform.io"
-  subject  = "organization:amiasea:project:amiasea:stack:*:deployment:*:operation:*"
+  issuer   = "https://token.actions.githubusercontent.com"
+  subject  = "repo:amiasea@254765293/iac-module-catalog@1317465381:ref:refs/heads/main"
   audience = ["api://AzureADTokenExchange"]
+
+  depends_on = [
+    github_repository.iac_module_catalog
+  ]
 }

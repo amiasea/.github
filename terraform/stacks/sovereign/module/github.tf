@@ -1,22 +1,26 @@
-# resource "github_repository" "solution_ontologies" {
-#     name = "solution-ontologies"
-# }
+resource "github_repository" "enterprise_strata" {
+  name = "enterprise-strata"
+}
 
-# resource "github_repository" "tactical_delivery_packages" {
-#     name = "tactical-delivery-packages"
-# }
+resource "github_repository" "organizational_assembly_run" {
+  name = "solution-ontologies"
+}
+
+resource "github_repository" "tactical_delivery_packages" {
+  name = "tactical-delivery-packages"
+}
 
 resource "github_repository" "iac_module_catalog" {
-    name = "iac-module-catalog"
-    auto_init = true
+  name      = "iac-module-catalog"
+  auto_init = true
 }
 
 resource "github_repository_file" "iac_module_catalog_workflow" {
   depends_on = [github_repository.iac_module_catalog]
 
-  repository = github_repository.iac_module_catalog.name
-  file       = ".github/workflows/module_registration.yml"
-  branch     = "main"
+  repository          = github_repository.iac_module_catalog.name
+  file                = ".github/workflows/module_registration.yml"
+  branch              = "main"
   overwrite_on_create = true
 
   content = <<-YAML
@@ -270,50 +274,6 @@ resource "github_repository_file" "iac_module_catalog_workflow" {
 #   repository    = github_repository.iac_module_catalog.name
 #   variable_name = "installation_id"
 #   value         = data.tfe_github_app_installation.tfe_cloud_app.id
-
-#   depends_on = [
-#     github_repository.iac_module_catalog
-#   ]
-# }
-
-# resource "github_actions_repository_oidc_subject_claim_customization_template" "iac_module_catalog" {
-#   repository         = github_repository.iac_module_catalog.name
-#   use_default        = false
-#   include_claim_keys = ["repository_id", "workflow"]
-# }
-
-resource "azurerm_federated_identity_credential" "iac_module_catalog" {
-  name                      = "github-iac-module-catalog-registration"
-  user_assigned_identity_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
-
-  issuer   = "https://token.actions.githubusercontent.com"
-  subject  = "repo:amiasea@254765293/iac-module-catalog@1317465381:ref:refs/heads/main"
-  audience = ["api://AzureADTokenExchange"]
-
-  depends_on = [
-    github_repository.iac_module_catalog
-  ]
-}
-
-# resource "azapi_resource" "iac_module_catalog_federated_identity" {
-#   type      = "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2025-05-31-preview"
-#   name      = "github-iac-module-catalog-registration"
-#   parent_id = azurerm_user_assigned_identity.uami_amiasea_stack_oidc.id
-
-#   body = {
-#     properties = {
-#       issuer = "https://token.actions.githubusercontent.com"
-
-#       audiences = [
-#         "api://AzureADTokenExchange"
-#       ]
-
-#       claimsMatchingExpression = {
-#         languageVersion = 1
-#         value           = "claims['sub'] matches 'organization:amiasea:project:amiasea:stack:sovereign:deployment:default:operation:*'"
-#       }
-#     }
-#   }
 
 #   depends_on = [
 #     github_repository.iac_module_catalog
