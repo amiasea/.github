@@ -1,72 +1,87 @@
-# Phase 1 — Trust Foundation Bootstrap
+# Phase 1 — Amiasea Sovereign Establishment (Manual)
 
-This phase establishes the minimum vendor and platform trust foundation required before normal Terraform Stack execution.
+This phase establishes the initial Amiasea sovereign control boundary.
 
-This is the final human-operated bootstrap boundary.
+These activities create the identities, integrations, repositories, secrets, and trust relationships required for the Sovereign Stack to execute and establish delegated automation capabilities.
 
-Execution context:
+This phase is a manual establishment ceremony. It creates the minimum privileged foundation required for subsequent Terraform-managed execution through HCP Terraform Stacks.
 
-Human operators authenticated through vendor and platform CLIs:
+## GitHub Control Plane
 
-* Azure CLI.
-* AWS CLI.
-* Google Cloud CLI.
-* GitHub CLI (where required).
-* HCP Terraform CLI (where required).
+Create:
 
-The purpose of this phase is to create the trust anchors that allow later automation.
+* Amiasea `.github` repository.
+* Amiasea GitHub App.
 
-## Vendor Trust Foundation
+Install:
 
-Vendor-specific trust resources are created where required.
+* Amiasea GitHub App into the Amiasea organization.
+* HCP Terraform GitHub App into the Amiasea organization.
 
-Examples:
+Establish:
 
-### Azure
+* GitHub repository ownership and access boundaries required by the Engineering Delivery Model.
 
-```text
-Azure Trust Foundation
+## HCP Terraform Control Plane
 
-├── Sovereign Subscription Access
-├── Sovereign Resource Group
-├── Prime Key Vault
-├── Azure App Registration
-├── Federated Credentials
-└── Initial bootstrap secrets/materials
+Create:
 
-Equivalent trust foundations are established for AWS and Google Cloud where required.
+* Amiasea HCP Terraform organization.
+* Amiasea HCP Terraform project.
 
-These resources establish the identities and permissions required for automated execution.
+Register:
 
-HCP Terraform Foundation
+* Create Sovereign TFE Project
+* Sovereign Stack.
 
-Creates the initial HCP Terraform execution boundary:
+Configure:
 
-Primary HCP Terraform project.
-Sovereign Stack registration.
-Initial Stack execution configuration.
+* Sovereign Stack VCS integration.
+* Sovereign Stack deployment configuration.
 
-The Sovereign Stack is registered during this phase because registration establishes the first automated execution boundary.
+The Sovereign Stack is the first managed control-plane workload. Its registration is completed during this manual ceremony because it establishes the authority boundary used by subsequent automated execution.
 
-The Sovereign Stack itself executes later.
+## Sovereign Vault Establishment
 
-Prime Secret Store
+Create:
 
-The Prime Key Vault becomes the transition point between manual ceremony and automated operations.
+* Amiasea Sovereign Vault.
 
-It stores bootstrap materials such as:
+The Sovereign Vault is the initial Prime Secret Store for control-plane credentials.
 
-GitHub App private key.
-HCP Terraform organization token.
-Initial federation-related secrets and configuration.
+Store:
 
-After this phase:
+* Amiasea GitHub App private key.
+* HCP Terraform organization token.
 
-Vendor trust exists.
-Federated authentication exists.
-The Sovereign Stack is registered.
-HCP Terraform has the initial execution boundary required for Stack-based operations.
+These credentials are manually established because they are bootstrap credentials required for Sovereign Stack operation and cannot be injected through Stack variable inputs.
 
-This phase creates the ability to automate.
+The Sovereign Stack consumes the Sovereign Vault as an existing control-plane dependency and does not create the vault itself.
 
-It does not deliver the operational platform.
+## Cloud Trust Establishment
+
+Create required cloud vendor trust relationships that cannot be established through OIDC-driven Terraform execution.
+
+Establish:
+
+* Root cloud identities.
+* Initial workload federation required by the Sovereign Stack.
+* HCP Terraform Stack OIDC trust relationship.
+* Initial cloud provider authentication boundaries.
+
+These identities provide the minimum authority required for Sovereign Stack execution.
+
+The Sovereign Stack uses these foundations to create delegated identities and lower-privilege workload federations consumed by downstream delivery capabilities.
+
+## Output
+
+At the completion of Phase 1:
+
+* Amiasea has an established GitHub-based control plane.
+* HCP Terraform is configured for Sovereign Stack execution.
+* Sovereign Stack registration exists.
+* The Sovereign Vault exists.
+* Bootstrap credentials required by the Sovereign Stack are available.
+* Root cloud trust relationships exist.
+
+This phase establishes the authority boundary required for the Sovereign Stack to initialize delegated Engineering Delivery Model capabilities.

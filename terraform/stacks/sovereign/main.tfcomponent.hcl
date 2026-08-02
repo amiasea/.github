@@ -38,6 +38,7 @@ component "sovereign" {
     location              = var.location
     azure_tenant_id       = var.sovereign_azure_tenant_id
     azure_subscription_id = var.sovereign_azure_subscription_id
+    tfe_org_token         = whisper_genie_amiasea_tf_token.secret_value
   }
 
   providers = {

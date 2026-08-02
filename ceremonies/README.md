@@ -1,125 +1,94 @@
-# Bootstrap Ceremonies
+# Amiasea Bootstrap Ceremonies
 
-The Amiasea operating model is established through a sequence of bootstrap ceremonies.
+The Amiasea Bootstrap Ceremonies establish the engineering control plane required for the Amiasea Engineering Delivery Model (EDM).
 
-These ceremonies intentionally separate:
+They describe the one-time establishment activities required to transition from enterprise ownership into an operational, self-managing engineering platform.
 
-* Human-owned enterprise establishment.
-* Privileged trust foundation creation.
-* Control plane establishment.
-* Terraform Stack-based engineering bootstrap.
-* Enterprise capability delivery.
-* Operational platform provisioning.
-
-The goal is to minimize privileged bootstrap operations and transition as quickly as possible into normal Terraform Stack execution.
+The ceremonies intentionally distinguish between activities that must be performed manually and those that can be delegated to Terraform Stacks.
 
 ---
 
-# Phase Summary
+## Bootstrap Philosophy
 
-<table>
-<thead>
-<tr>
-<th width="260">Phase</th>
-<th width="220">Intent</th>
-<th>Ceremonies</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
+Amiasea does not attempt to automate platform establishment where platform providers do not provide a safe or complete self-actualization path.
 
-[0 — Enterprise Establishment](./phase-0.md)
+Instead, bootstrap is divided into explicit ceremonial boundaries.
 
-</td>
-<td>
-Enterprise establishment
-</td>
-<td>
-Azure account and subscription, AWS account, Google Cloud organization/project/billing, HCP Terraform organization, GitHub Enterprise and Organization
-</td>
-</tr>
+Each ceremony establishes the prerequisites consumed by the next phase.
 
-<tr>
-<td>
-
-[1 — Trust Foundation Bootstrap](./phase-1.md)
-
-</td>
-<td>
-Trust foundation bootstrap
-</td>
-<td>
-Vendor trust roots, Azure App Registration, federated credentials, Sovereign Resource Group, Prime Key Vault, HCP Terraform project, Sovereign Stack registration
-</td>
-</tr>
-
-<tr>
-<td>
-
-[2 — Amiasea Control Plane Establishment](./phase-2.md)
-
-</td>
-<td>
-Amiasea control plane establishment
-</td>
-<td>
-Amiasea `.github` repository, Amiasea GitHub App, GitHub App installation, HCP Terraform GitHub App installation, credential generation
-</td>
-</tr>
-
-<tr>
-<td>
-
-[3 — Engineering Delivery Model Bootstrap](./phase-3.md)
-
-</td>
-<td>
-Engineering delivery model bootstrap
-</td>
-<td>
-Terraform projects, Private Registry structure, engineering repositories, `enterprise_strata`, `organizational_assembly_run`, `tactical_deployment_packages`, `iac_module_catalog`
-</td>
-</tr>
-
-<tr>
-<td>
-
-[4 — Strata Delivery](./phase-4.md)
-
-</td>
-<td>
-Strata delivery
-</td>
-<td>
-Vendor Base Stacks, Pillars, Strata capability modules, Strata Kubernetes Modules, Private Registry publication
-</td>
-</tr>
-
-<tr>
-<td>
-
-[5 — Sovereign Provisioning](./phase-5.md)
-
-</td>
-<td>
-Sovereign provisioning
-</td>
-<td>
-Operational identities, UAMIs, operational RBAC, shared operational resources, day-to-day execution environment
-</td>
-</tr>
-</tbody>
-</table>
+After the bootstrap completes, ongoing engineering and platform evolution occur through normal Terraform Stack execution.
 
 ---
 
-# Operating Principle
+# Bootstrap Phases
 
-The bootstrap lifecycle follows one rule:
+## [Phase 0 — Enterprise Establishment](phase-0.md)
 
-> Establish trust manually once, then operate through Terraform Stacks.
+Establishes ownership of external platforms.
 
-Privileged ceremonies create the conditions for automation.
+Examples include:
 
-Terraform Stacks provide the ongoing execution model.
+- Cloud provider accounts and subscriptions.
+- GitHub Enterprise.
+- HCP Terraform organization.
+- Administrative ownership boundaries.
+
+These resources exist outside the Engineering Delivery Model and are not managed by Terraform.
+
+---
+
+## [Phase 1 — Amiasea Sovereign Establishment](phase-1.md)
+
+Establishes the initial sovereign control boundary.
+
+Creates the bootstrap capabilities consumed by the Sovereign Stack, including:
+
+- GitHub control plane.
+- Sovereign HCP Terraform project.
+- Sovereign Stack registration.
+- Sovereign Vault.
+- Bootstrap credentials.
+- Initial cloud workload federation.
+- Root cloud trust relationships.
+
+This is the final manual bootstrap ceremony.
+
+After this phase, HCP Terraform is capable of executing the Sovereign Stack.
+
+---
+
+## [Phase 2 — Sovereign and Engineering Delivery Model Bootstrap](phase-2.md)
+
+Executes the Sovereign Stack through HCP Terraform.
+
+The Sovereign Stack establishes the operational control plane by creating delegated identities, operational trust relationships, engineering repositories, registry foundations, and Enterprise Portfolio registration.
+
+It also bootstraps the Engineering Delivery Model by establishing repositories and structures such as:
+
+- Enterprise Strata
+- Organizational Assembly Run
+- Tactical Deployment Packages
+- Infrastructure Module Catalog
+
+After this phase, enterprise engineering proceeds through normal Terraform Stack execution.
+
+---
+
+# After Bootstrap
+
+Bootstrap is complete after Phase 2.
+
+From this point forward, the Engineering Delivery Model operates continuously through parallel engineering workstreams rather than additional bootstrap ceremonies.
+
+Examples include:
+
+- Enterprise Portfolio
+- Enterprise Strata
+- Organizational Assembly Run
+- Tactical Deployment Packages
+
+These workstreams evolve independently while composing together through the Engineering Delivery Model.
+
+Bootstrap is therefore a one-time establishment process.
+
+Everything that follows is normal engineering.
