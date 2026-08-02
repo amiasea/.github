@@ -29,7 +29,7 @@ The goal is to minimize privileged bootstrap operations and transition as quickl
 <tr>
 <td>
 
-[Phase 0 — Enterprise Establishment](./phase-0.md)
+[0 — Enterprise Establishment](./phase-0.md)
 
 </td>
 <td>
@@ -43,7 +43,7 @@ Azure account and subscription, AWS account, Google Cloud organization/project/b
 <tr>
 <td>
 
-[Phase 1 — Trust Foundation Bootstrap](./phase-1.md)
+[1 — Trust Foundation Bootstrap](./phase-1.md)
 
 </td>
 <td>
@@ -57,7 +57,7 @@ Vendor trust roots, Azure App Registration, federated credentials, Sovereign Res
 <tr>
 <td>
 
-[Phase 2 — Amiasea Control Plane Establishment](./phase-2.md)
+[2 — Amiasea Control Plane Establishment](./phase-2.md)
 
 </td>
 <td>
@@ -71,7 +71,7 @@ Amiasea `.github` repository, Amiasea GitHub App, GitHub App installation, HCP T
 <tr>
 <td>
 
-[Phase 3 — Engineering Delivery Model Bootstrap](./phase-3.md)
+[3 — Engineering Delivery Model Bootstrap](./phase-3.md)
 
 </td>
 <td>
@@ -85,7 +85,7 @@ Terraform projects, Private Registry structure, engineering repositories, `enter
 <tr>
 <td>
 
-[Phase 4 — Strata Delivery](./phase-4.md)
+[4 — Strata Delivery](./phase-4.md)
 
 </td>
 <td>
@@ -99,7 +99,7 @@ Vendor Base Stacks, Pillars, Strata capability modules, Strata Kubernetes Module
 <tr>
 <td>
 
-[Phase 5 — Sovereign Provisioning](./phase-5.md)
+[5 — Sovereign Provisioning](./phase-5.md)
 
 </td>
 <td>
