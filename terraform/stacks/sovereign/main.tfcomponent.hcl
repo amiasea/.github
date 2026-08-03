@@ -31,7 +31,7 @@ component "whisper_genie_gh_app_private_key" {
 }
 
 component "sovereign" {
-  source = "./module"
+  source = "./amiasea"
 
   inputs = {
     resource_group_name   = var.resource_group_name
