@@ -1,5 +1,10 @@
 # Azure
 
+data "tfe_project" "amiasea_project" {
+  organization = "amiasea"
+  name         = "amiasea"
+}
+
 resource "tfe_variable_set" "amiasea_execution_context" {
   name        = "amiasea-execution-context"
   description = "Shared execution coordinates for Amiasea Terraform workspaces."

@@ -1,48 +1,39 @@
-data "tfe_organization" "amiasea_tfe_org" {
-  name = "amiasea"
-}
+# data "tfe_github_app_installation" "gha_installation" {
+#   name = "amiasea"
+# }
 
-data "tfe_project" "amiasea_project" {
-  organization = "amiasea"
-  name         = "amiasea"
-}
+# data "tfe_workspace" "accession_workspace" {
+#   name         = "accession"
+#   organization = data.tfe_organization.amiasea_tfe_org.name
+# }
 
-data "tfe_github_app_installation" "gha_installation" {
-  name = "amiasea"
-}
+# resource "tfe_workspace" "amiasea_workspace" {
+#   name         = "engineering_foundation"
+#   organization = "amiasea"
+#   project_id   = data.tfe_project.amiasea_project.id
 
-data "tfe_workspace" "accession_workspace" {
-  name         = "accession"
-  organization = data.tfe_organization.amiasea_tfe_org.name
-}
+#   working_directory = "terraform/engineering_foundation"
+#   trigger_patterns  = ["terraform/engineering_foundation/**/*"]
 
-resource "tfe_workspace" "amiasea_workspace" {
-  name         = "engineering_foundation"
-  organization = "amiasea"
-  project_id   = data.tfe_project.amiasea_project.id
+#   auto_apply_run_trigger = true
 
-  working_directory = "terraform/engineering_foundation"
-  trigger_patterns  = ["terraform/engineering_foundation/**/*"]
+#   vcs_repo {
+#     identifier                 = "amiasea/.github"
+#     branch                     = "main"
+#     github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
+#   }
+# }
 
-  auto_apply_run_trigger = true
+# resource "tfe_workspace_settings" "amiasea_workspace_settings" {
+#   workspace_id   = tfe_workspace.amiasea_workspace.id
+#   execution_mode = "remote"
+#   auto_apply     = true
+# }
 
-  vcs_repo {
-    identifier                 = "amiasea/.github"
-    branch                     = "main"
-    github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
-  }
-}
-
-resource "tfe_workspace_settings" "amiasea_workspace_settings" {
-  workspace_id   = tfe_workspace.amiasea_workspace.id
-  execution_mode = "remote"
-  auto_apply     = true
-}
-
-resource "tfe_run_trigger" "run_trigger" {
-  workspace_id  = tfe_workspace.amiasea_workspace.id
-  sourceable_id = data.tfe_workspace.accession_workspace.id
-}
+# resource "tfe_run_trigger" "run_trigger" {
+#   workspace_id  = tfe_workspace.amiasea_workspace.id
+#   sourceable_id = data.tfe_workspace.accession_workspace.id
+# }
 
 ephemeral "azurerm_key_vault_secret" "amiasea_tfe_org_token" {
   name         = "amiasea-tfe-org-token"
