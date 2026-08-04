@@ -7,13 +7,13 @@ data "tfe_workspace" "accession_workspace" {
   organization = data.tfe_organization.amiasea_tfe_org.name
 }
 
-data "tfe_workspace" "accession_workspace" {
-  name         = "accession"
+data "tfe_workspace" "engineering_foundation" {
+  name         = "engineering_foundation"
   organization = data.tfe_organization.amiasea_tfe_org.name
 }
 
 resource "tfe_run_trigger" "run_trigger" {
-  workspace_id  = tfe_workspace.amiasea_workspace.id
+  workspace_id  = tfe_workspace.engineering_foundation.id
   sourceable_id = data.tfe_workspace.accession_workspace.id
 }
 
