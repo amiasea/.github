@@ -4,7 +4,8 @@ terraform {
     organization = "amiasea"
 
     workspaces {
-      name = "authority"
+      name = "accession"
+      project = "amiasea"
     }
   }
 }

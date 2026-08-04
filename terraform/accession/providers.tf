@@ -14,20 +14,15 @@ terraform {
       source  = "hashicorp/tfe"
       version = "~> 0.79.0"
     }
-    http = {
-      source  = "hashicorp/http"
-      version = "~> 3.6.0"
-    }
   }
 }
 
 provider "azuread" {
-  tenant_id = var.tenant_id
+  tenant_id = var.authority_azure_tenant_id
 }
 
 provider "azurerm" {
-  tenant_id       = var.tenant_id
-  subscription_id = var.subscription_id
+  tenant_id       = var.authority_azure_tenant_id
 
   features {}
 }
@@ -35,5 +30,4 @@ provider "azurerm" {
 provider "tfe" {
   hostname     = "app.terraform.io"
   organization = "amiasea"
-  token        = var.amiasea_tfe_org_token
 }
