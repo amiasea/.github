@@ -43,6 +43,13 @@ resource "tfe_variable" "sovereign_azure_key_vault_id" {
   variable_set_id = tfe_variable_set.authority.id
 }
 
+resource "tfe_variable" "sovereign_azure_resource_group_name" {
+  key             = "sovereign_azure_resource_group_name"
+  value           = azurerm_resource_group.amiasea_sovereign_rg.name
+  category        = "terraform"
+  variable_set_id = tfe_variable_set.authority.id
+}
+
 # AWS
 
 # GCP

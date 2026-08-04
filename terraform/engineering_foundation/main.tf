@@ -24,6 +24,8 @@ resource "tfe_workspace" "amiasea_workspace" {
   working_directory = "terraform/engineering_foundation"
   trigger_patterns  = ["terraform/engineering_foundation/**/*"]
 
+  auto_apply_run_trigger = true
+
   vcs_repo {
     identifier                 = "amiasea/.github"
     branch                     = "main"
@@ -34,6 +36,7 @@ resource "tfe_workspace" "amiasea_workspace" {
 resource "tfe_workspace_settings" "amiasea_workspace_settings" {
   workspace_id   = tfe_workspace.amiasea_workspace.id
   execution_mode = "remote"
+  auto_apply     = true
 }
 
 resource "tfe_run_trigger" "run_trigger" {
