@@ -13,7 +13,7 @@ data "tfe_workspace" "engineering_foundation" {
 }
 
 resource "tfe_run_trigger" "run_trigger" {
-  workspace_id  = tfe_workspace.engineering_foundation.id
+  workspace_id  = data.tfe_workspace.engineering_foundation.id
   sourceable_id = data.tfe_workspace.accession_workspace.id
 }
 
