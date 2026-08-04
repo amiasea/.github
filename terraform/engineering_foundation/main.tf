@@ -16,7 +16,7 @@ data "tfe_workspace" "accession_workspace" {
   organization = data.tfe_organization.amiasea_tfe_org.name
 }
 
-resource "tfe_workspace" "self" {
+resource "tfe_workspace" "amiasea_workspace" {
   name         = "engineering_foundation"
   organization = "amiasea"
   project_id   = data.tfe_project.amiasea_project.id
@@ -31,8 +31,13 @@ resource "tfe_workspace" "self" {
   }
 }
 
+resource "tfe_workspace_settings" "amiasea_workspace_settings" {
+  workspace_id   = tfe_workspace.amiasea_workspace.id
+  execution_mode = "remote"
+}
+
 resource "tfe_run_trigger" "run_trigger" {
-  workspace_id  = tfe_workspace.self.id
+  workspace_id  = tfe_workspace.amiasea_workspace.id
   sourceable_id = data.tfe_workspace.accession_workspace.id
 }
 
