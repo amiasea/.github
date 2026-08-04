@@ -19,7 +19,6 @@ terraform {
 
 provider "azurerm" {
   tenant_id       = var.authority_azure_tenant_id
-  # client_id       = var.authority_azure_client_id
   subscription_id = var.sovereign_azure_subscription_id
 
   use_cli  = false

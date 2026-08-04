@@ -5,6 +5,11 @@ data "tfe_project" "amiasea_project" {
   name         = "amiasea"
 }
 
+resource "tfe_project_settings" "amiasea_project_settings" {
+  project_id             = data.tfe_project.amiasea_project.id
+  default_execution_mode = "remote"
+}
+
 resource "tfe_variable_set" "authority" {
   name        = "authority"
   description = "Authority context for amiasea execution contexts."
