@@ -3,6 +3,11 @@ resource "github_repository" "enterprise_strata" {
   auto_init = true
 }
 
+resource "github_repository" "enterprise_portfolio" {
+  name = "enterprise-portfolio"
+  auto_init = true
+}
+
 resource "github_repository" "organizational_assembly_run" {
   name = "organizational_assembly_run"
   auto_init = true
