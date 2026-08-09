@@ -4,8 +4,7 @@ terraform {
     organization = "amiasea"
 
     workspaces {
-      name = "engineering_model"
-      project = "amiasea"
+      name = "_bootstrap"
     }
   }
 }

@@ -1,3 +1,9 @@
+# resource "azurerm_subscription" "amiasea_sovereign_rg" {
+#   alias             = "amiasea-sovereign-alias"
+#   subscription_name = "amiasea-sovereign"
+#   subscription_id = "da348b35-29b6-4906-85ec-4a097aa5fe04"
+# }
+
 resource "azurerm_resource_group" "amiasea_sovereign_rg" {
   name     = var.sovereign_azure_resource_group_name
   location = var.location

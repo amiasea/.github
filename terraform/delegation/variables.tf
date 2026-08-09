@@ -1,5 +1,16 @@
 # Azure
 
+ephemeral "tfe_outputs" "accession" {
+  organization = var.organization_name
+  workspace    = "accession"
+}
+
+variable "organization_name" {
+  description = "The name of the organization."
+  type        = string
+  default     = "amiasea"
+}
+
 variable "location" {
   description = "Azure region where the Key Vault will be deployed."
   type        = string
@@ -23,8 +34,8 @@ variable "sovereign_azure_resource_group_name" {
   type        = string
 }
 
-variable "sovereign_azure_key_vault_id" {
-  description = "ID of the Sovereign Azure Key Vault."
+variable "sovereign_azure_key_vault_name" {
+  description = "Name of the Sovereign Azure Key Vault."
   type        = string
 }
 

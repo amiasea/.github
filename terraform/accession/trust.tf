@@ -1,17 +1,31 @@
 # Azure
 
-resource "azuread_application_flexible_federated_identity_credential" "amiasea_sovereign_tfc_oidc" {
+resource "azuread_application_flexible_federated_identity_credential" "amiasea_delegation_tfc_oidc" {
   application_id = azuread_application.amiasea_authority.id
 
-  display_name = "amiasea-sovereign-tfc-oidc"
+  display_name = "amiasea-delegation-tfc-oidc"
 
-  description = "Flexible OIDC federation for Amiasea Sovereign TFC Terraform."
+  description = "Flexible OIDC federation for Amiasea Delegation TFC Terraform."
 
   issuer = "https://app.terraform.io"
 
   audience = "api://AzureADTokenExchange"
 
-  claims_matching_expression = "claims['sub'] matches 'organization:amiasea:project:amiasea:workspace:engineering_model:run_phase:*'"
+  claims_matching_expression = "claims['sub'] matches 'organization:amiasea:project:amiasea:workspace:delegation:run_phase:*'"
+}
+
+resource "azuread_application_flexible_federated_identity_credential" "amiasea_strata_tfc_oidc" {
+  application_id = azuread_application.amiasea_authority.id
+
+  display_name = "amiasea-strata-tfc-oidc"
+
+  description = "Flexible OIDC federation for Amiasea Strata TFC Terraform."
+
+  issuer = "https://app.terraform.io"
+
+  audience = "api://AzureADTokenExchange"
+
+  claims_matching_expression = "claims['sub'] matches 'organization:amiasea:project:amiasea:workspace:strata:run_phase:*'"
 }
 
 # AWS
