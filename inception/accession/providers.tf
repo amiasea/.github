@@ -1,0 +1,28 @@
+terraform {
+  required_version = ">= 1.15.8"
+
+  required_providers {
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 3.9.0"
+    }
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.63.0"
+    }
+    tfe = {
+      source  = "hashicorp/tfe"
+      version = "~> 0.79.0"
+    }
+  }
+}
+
+provider "azuread" {}
+
+provider "azurerm" {
+  features {}
+}
+
+provider "tfe" {
+  organization = "amiasea"
+}
