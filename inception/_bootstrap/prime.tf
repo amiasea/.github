@@ -34,6 +34,16 @@ resource "tfe_workspace" "environment" {
   description  = "Workspace for managing the Environment repository"
   organization = var.organization_name
   project_id   = tfe_project.amiasea.id
+
+  working_directory     = "inception/environment"
+  file_triggers_enabled = true
+  speculative_enabled   = false
+
+  vcs_repo {
+    identifier                 = "${var.organization_name}/.github"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
+  }
 }
 
 resource "tfe_workspace_settings" "environment" {
@@ -52,7 +62,7 @@ resource "tfe_workspace" "delegation" {
   organization = var.organization_name
   project_id   = tfe_project.amiasea.id
 
-  working_directory     = "terraform/delegation"
+  working_directory     = "inception/delegation"
   file_triggers_enabled = true
   speculative_enabled   = false
 
@@ -79,7 +89,7 @@ resource "tfe_workspace" "strata" {
   organization = var.organization_name
   project_id   = tfe_project.amiasea.id
 
-  working_directory     = "terraform/strata"
+  working_directory     = "inception/strata"
   file_triggers_enabled = true
   speculative_enabled   = false
 
@@ -106,7 +116,7 @@ resource "tfe_workspace" "kitting" {
   organization = var.organization_name
   project_id   = tfe_project.amiasea.id
 
-  working_directory     = "terraform/kitting"
+  working_directory     = "inception/kitting"
   file_triggers_enabled = true
   speculative_enabled   = false
 
@@ -133,7 +143,7 @@ resource "tfe_workspace" "portfolio" {
   organization = var.organization_name
   project_id   = tfe_project.amiasea.id
 
-  working_directory     = "terraform/portfolio"
+  working_directory     = "inception/portfolio"
   file_triggers_enabled = true
   speculative_enabled   = false
 
