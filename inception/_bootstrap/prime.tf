@@ -38,6 +38,10 @@ resource "tfe_workspace" "environment" {
   working_directory     = "inception/environment"
   file_triggers_enabled = true
   speculative_enabled   = false
+  auto_apply_run_trigger = true
+  trigger_patterns = [
+    "inception/environment/**/*",
+  ]
 
   vcs_repo {
     identifier                 = "${var.organization_name}/.github"
@@ -184,12 +188,12 @@ resource "tfe_run_trigger" "accession_to_environment" {
 #   workspace_id  = tfe_workspace.kitting.id
 # }
 
-resource "github_repository" "enterprise_strata" {
-  name      = "enterprise-strata"
-  auto_init = true
-}
+# resource "github_repository" "enterprise_strata" {
+#   name      = "enterprise-strata"
+#   auto_init = true
+# }
 
-resource "github_repository" "enterprise_kitting" {
-  name      = "enterprise-kitting"
-  auto_init = true
-}
+# resource "github_repository" "enterprise_kitting" {
+#   name      = "enterprise-kitting"
+#   auto_init = true
+# }
