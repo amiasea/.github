@@ -2,11 +2,6 @@
 
 ## Alias is a subscription creation request identification
 
-import {
-  to = azurerm_subscription.sovereign
-  id = "/providers/Microsoft.Subscription/aliases/amiasea-sovereign-alias"
-}
-
 resource "azurerm_subscription" "sovereign" {
   subscription_name = "amiasea-sovereign"
   billing_scope_id  = data.azurerm_billing_mca_account_scope.amiasea.id
