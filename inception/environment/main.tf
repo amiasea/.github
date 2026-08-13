@@ -11,4 +11,6 @@ resource "azurerm_resource_group" "amiasea_sovereign" {
   provider = azurerm.amiasea-sovereign
   name     = "rg-amiasea-sovereign"
   location = "Central US"
+
+  depends_on = [ azurerm_subscription.sovereign ]
 }
