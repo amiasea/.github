@@ -7,10 +7,19 @@ resource "azurerm_subscription" "sovereign" {
   billing_scope_id  = data.azurerm_billing_mca_account_scope.amiasea.id
 }
 
-resource "azurerm_resource_group" "amiasea_sovereign" {
-  provider = azurerm.amiasea-sovereign
-  name     = "rg-amiasea-sovereign"
-  location = "Central US"
+resource "azapi_resource" "amiasea_sovereign" {
+  type      = "Microsoft.Resources/resourceGroups@2025-04-01"
+  name      = "rg-amiasea-sovereign"
+  location  = "Central US"
+  parent_id = "/subscriptions/${azurerm_subscription.sovereign.subscription_id}"
 
-  depends_on = [ azurerm_subscription.sovereign ]
+  body = {
+    properties = {}
+  }
 }
+
+# resource "azurerm_resource_group" "amiasea_sovereign" {
+#   provider = azurerm.amiasea-sovereign
+#   name     = "rg-amiasea-sovereign"
+#   location = "Central US"
+# }
