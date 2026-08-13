@@ -17,6 +17,20 @@ resource "tfe_workspace" "accession" {
   description  = "Workspace for managing the Accession repository"
   organization = var.organization_name
   project_id   = tfe_project.amiasea.id
+
+  working_directory     = "inception/accession"
+  file_triggers_enabled = true
+  speculative_enabled   = false
+  auto_apply_run_trigger = true
+  trigger_patterns = [
+    "inception/accession/**/*",
+  ]
+
+  vcs_repo {
+    identifier                 = "${var.organization_name}/.github"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
+  }
 }
 
 resource "tfe_workspace_settings" "accession" {
