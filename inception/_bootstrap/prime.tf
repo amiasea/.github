@@ -60,32 +60,32 @@ resource "tfe_workspace_settings" "environment" {
   ]
 }
 
-# resource "tfe_workspace" "delegation" {
-#   name         = "delegation"
-#   description  = "Workspace for managing the Delegation repository"
-#   organization = var.organization_name
-#   project_id   = tfe_project.amiasea.id
+resource "tfe_workspace" "delegation" {
+  name         = "delegation"
+  description  = "Workspace for managing the Delegation repository"
+  organization = var.organization_name
+  project_id   = tfe_project.amiasea.id
 
-#   working_directory     = "inception/delegation"
-#   file_triggers_enabled = true
-#   speculative_enabled   = false
+  working_directory     = "inception/delegation"
+  file_triggers_enabled = true
+  speculative_enabled   = false
 
-#   vcs_repo {
-#     identifier                 = "${var.organization_name}/.github"
-#     branch                     = "main"
-#     github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
-#   }
-# }
+  vcs_repo {
+    identifier                 = "${var.organization_name}/.github"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
+  }
+}
 
-# resource "tfe_workspace_settings" "delegation" {
-#   workspace_id   = tfe_workspace.delegation.id
-#   execution_mode = "remote"
-#   auto_apply     = true
+resource "tfe_workspace_settings" "delegation" {
+  workspace_id   = tfe_workspace.delegation.id
+  execution_mode = "remote"
+  auto_apply     = true
 
-#   depends_on = [
-#     tfe_workspace.delegation
-#   ]
-# }
+  depends_on = [
+    tfe_workspace.delegation
+  ]
+}
 
 # resource "tfe_workspace" "strata" {
 #   name         = "strata"

@@ -2,18 +2,6 @@
 
 ## Alias is a subscription creation request identification
 
-data "tfe_variable_set" "authority" {
-  name         = "authority"
-  organization = var.organization_name
-}
-
-check "environment_prerequisites" {
-  assert {
-    condition     = data.tfe_variable_set.authority.id != ""
-    error_message = "Environment cannot run until Accession has created the Azure OIDC variable set."
-  }
-}
-
 import {
   to = azurerm_subscription.sovereign
   id = "/providers/Microsoft.Subscription/aliases/amiasea-sovereign-alias"

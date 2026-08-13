@@ -22,12 +22,18 @@ data "tfe_workspace" "delegation" {
   name         = "delegation"
 }
 
+data "tfe_workspace" "environment" {
+  organization = "amiasea"
+  name         = "environment"
+}
+
 resource "tfe_variable_set" "authority" {
   name        = "authority"
   description = "Authority context for amiasea execution contexts."
   workspace_ids = [
     data.tfe_workspace.accession.id,
-    data.tfe_workspace.delegation.id
+    data.tfe_workspace.delegation.id,
+    data.tfe_workspace.environment.id
   ]
 }
 
