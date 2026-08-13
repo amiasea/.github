@@ -35,7 +35,7 @@ resource "tfe_workspace" "accession" {
 
 resource "tfe_workspace_settings" "accession" {
   workspace_id   = tfe_workspace.accession.id
-  execution_mode = "local"
+  execution_mode = "remote"
   auto_apply     = true
 
   depends_on = [
