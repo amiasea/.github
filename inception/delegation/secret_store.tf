@@ -22,7 +22,7 @@ resource "azurerm_key_vault" "sovereign_kv" {
   rbac_authorization_enabled = true
   # Prevent accidental destruction
   purge_protection_enabled   = false
-  soft_delete_retention_days = 90
+  soft_delete_retention_days = 7
 
   # Network posture
   public_network_access_enabled = true

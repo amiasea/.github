@@ -4,8 +4,28 @@ data "azurerm_billing_mca_account_scope" "amiasea" {
   invoice_section_name = "V4EB-6NK3-PJA-PGB"
 }
 
-resource "azurerm_role_assignment" "authority_billing_contributor" {
-  scope                = data.azurerm_billing_mca_account_scope.amiasea.id
-  role_definition_name = "Contributor"
-  principal_id         = azuread_service_principal.amiasea_authority_sp.object_id
+resource "azapi_resource_action" "authority_subscription_creator" {
+  type        = "Microsoft.Billing/billingAccounts/billingProfiles/invoiceSections@2024-04-01"
+  resource_id = data.azurerm_billing_mca_account_scope.amiasea.id
+  action      = "createBillingRoleAssignment"
+  method      = "POST"
+
+  body = {
+    principalId       = azuread_service_principal.amiasea_authority_sp.object_id
+    principalTenantId = data.azurerm_client_config.current.tenant_id
+    roleDefinitionId  = "${data.azurerm_billing_mca_account_scope.amiasea.id}/billingRoleDefinitions/30000000-aaaa-bbbb-cccc-100000000006"
+  }
+  response_export_values = ["id"]
+}
+
+resource "azapi_resource_action" "delete_billing_role" {
+  # This resource type points directly to the billing assignments endpoint
+  type        = "Microsoft.Billing/billingAccounts/billingProfiles/invoiceSections/billingRoleAssignments@2024-04-01"
+  
+  # Dynamically pull the assignment ID exported from the previous resource block
+  resource_id = azapi_resource_action.authority_subscription_creator.output.id
+  method      = "DELETE"
+
+  # Tells Terraform to completely ignore this on apply, and only trigger it on destroy
+  when = "destroy"
 }
