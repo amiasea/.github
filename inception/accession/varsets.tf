@@ -64,14 +64,6 @@ resource "tfe_variable" "arm_tenant_id" {
   variable_set_id = tfe_variable_set.authority.id
 }
 
-resource "tfe_variable" "arm_subscription_id" {
-  sensitive       = true
-  key             = "ARM_SUBSCRIPTION_ID"
-  value           = data.azurerm_client_config.current.subscription_id
-  category        = "env"
-  variable_set_id = tfe_variable_set.authority.id
-}
-
 resource "tfe_variable" "tfc_azure_run_client_id" {
   sensitive       = true
   key             = "TFC_AZURE_RUN_CLIENT_ID"
