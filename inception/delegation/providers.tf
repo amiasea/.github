@@ -21,7 +21,7 @@ provider "tfe" {
   hostname     = "app.terraform.io"
   organization = "amiasea"
 
-  token = ephemeral.azurerm_key_vault_secret.amiasea_tfe_org_token.value
+  token = ephemeral.azurerm_key_vault_secret.e_amiasea_tfe_org_token.value
 }
 
 provider "github" {

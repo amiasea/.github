@@ -44,7 +44,7 @@ resource "azurerm_key_vault_secret" "amiasea_tfe_org_token" {
   key_vault_id = azurerm_key_vault.sovereign_kv.id
 }
 
-ephemeral "azurerm_key_vault_secret" "amiasea_tfe_org_token" {
+ephemeral "azurerm_key_vault_secret" "e_amiasea_tfe_org_token" {
   name         = "amiasea-tfe-org-token"
   key_vault_id = data.azurerm_key_vault.sovereign_kv.id
 
