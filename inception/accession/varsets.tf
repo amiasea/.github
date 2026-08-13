@@ -92,7 +92,10 @@ resource "tfe_workspace_run" "environment" {
   workspace_id = data.tfe_workspace.environment.id
 
   depends_on = [
-    tfe_variable_set.authority
+    tfe_variable.arm_tenant_id,
+    tfe_variable.tfc_azure_run_client_id,
+    tfe_variable.tfc_azure_workload_identity_audience,
+    tfe_variable.tfc_azure_provider_auth,
   ]
 
   apply {
