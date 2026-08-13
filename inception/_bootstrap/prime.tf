@@ -62,6 +62,10 @@ resource "tfe_workspace" "environment" {
     branch                     = "main"
     github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
   }
+
+  depends_on = [
+    tfe_workspace.accession
+  ]
 }
 
 resource "tfe_workspace_settings" "environment" {
@@ -70,7 +74,7 @@ resource "tfe_workspace_settings" "environment" {
   auto_apply     = true
 
   depends_on = [
-    tfe_workspace.environment
+    tfe_workspace.environment,
   ]
 }
 
@@ -83,12 +87,20 @@ resource "tfe_workspace" "delegation" {
   working_directory     = "inception/delegation"
   file_triggers_enabled = true
   speculative_enabled   = false
+  auto_apply_run_trigger = true
+  trigger_patterns = [
+    "inception/delegation/**/*",
+  ]
 
   vcs_repo {
     identifier                 = "${var.organization_name}/.github"
     branch                     = "main"
     github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
   }
+
+  depends_on = [
+    tfe_workspace.environment
+  ]
 }
 
 resource "tfe_workspace_settings" "delegation" {
