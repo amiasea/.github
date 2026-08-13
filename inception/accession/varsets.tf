@@ -96,6 +96,19 @@ resource "tfe_variable" "amiasea_github_app_installation_id" {
   variable_set_id = tfe_variable_set.authority.id
 }
 
+resource "tfe_workspace_run" "environment" {
+  workspace_id = data.tfe_workspace.environment.id
+
+  depends_on = [
+    tfe_variable_set.authority
+  ]
+
+  apply {
+    manual_confirm = false
+    wait_for_run   = false
+  }
+}
+
 # AWS
 
 # GCP

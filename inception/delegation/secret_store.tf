@@ -48,7 +48,7 @@ ephemeral "azurerm_key_vault_secret" "e_amiasea_tfe_org_token" {
   name         = "amiasea-tfe-org-token"
   key_vault_id = data.azurerm_key_vault.sovereign_kv.id
 
-  depends_on = [ azurerm_key_vault_secret.amiasea_tfe_org_token]
+  depends_on = [ azurerm_key_vault_secret.amiasea_tfe_org_token ]
 }
 
 resource "azurerm_key_vault_secret" "amiasea_github_app_private_key" {

@@ -22,6 +22,10 @@ resource "tfe_workspace" "accession" {
   file_triggers_enabled  = true
   speculative_enabled    = false
   auto_apply_run_trigger = true
+
+  depends_on = [
+    tfe_workspace.environment
+  ]
 }
 
 resource "tfe_workspace_settings" "accession" {
@@ -53,10 +57,6 @@ resource "tfe_workspace" "environment" {
     branch                     = "main"
     github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
   }
-
-  depends_on = [
-    tfe_workspace.accession
-  ]
 }
 
 resource "tfe_workspace_settings" "environment" {
@@ -185,10 +185,10 @@ resource "tfe_workspace_settings" "delegation" {
 #   ]
 # }
 
-resource "tfe_run_trigger" "accession_to_environment" {
-  sourceable_id = tfe_workspace.accession.id
-  workspace_id  = tfe_workspace.environment.id
-}
+# # # resource "tfe_run_trigger" "accession_to_environment" {
+# # #   sourceable_id = tfe_workspace.accession.id
+# # #   workspace_id  = tfe_workspace.environment.id
+# # # }
 
 # resource "tfe_run_trigger" "environment_to_delegation" {
 #   sourceable_id = tfe_workspace.environment.id
