@@ -1,0 +1,257 @@
+name: Strata Speculative Create
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Strata repository
+        required: true
+        type: string
+      ref:
+        description: Git revision to realize
+        required: true
+        type: string
+      workspace_name:
+        description: HCP Terraform workspace name
+        required: true
+        type: string
+      hosting_environment_id:
+        description: Assigned Hosting environment ID
+        required: true
+        type: string
+      collective_environment_id:
+        description: Assigned Collective environment ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  create-speculative-workspace:
+    name: Create speculative HCP Terraform workspace
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Amiasea GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AMIASEA_GITHUB_APP_ID }}
+          private-key: ${{ secrets.AMIASEA_GITHUB_APP_PRIVATE_KEY }}
+          owner: amiasea
+          repositories: ${{ inputs.repository }}
+
+      - name: Checkout Strata repository
+        uses: actions/checkout@v7
+        with:
+          repository: amiasea/${{ inputs.repository }}
+          ref: ${{ inputs.ref }}
+          token: ${{ steps.app-token.outputs.token }}
+          path: strata
+
+      - name: Checkout delivery machinery
+        uses: actions/checkout@v7
+        with:
+          repository: amiasea/.github
+          path: delivery
+
+      - name: Assemble speculative configuration
+        run: |
+          mkdir -p workspace/terraform
+
+          cp delivery/terraform/delivery/strata/speculative/providers.tf \
+            workspace/terraform/providers.tf
+
+          cp delivery/terraform/delivery/strata/speculative/variables.tf \
+            workspace/terraform/variables.tf
+
+          cp delivery/terraform/delivery/strata/speculative/main.tf \
+            workspace/terraform/main.tf
+
+          cp -R strata/terraform/hosting \
+            workspace/terraform/hosting
+
+          cp -R strata/terraform/collective \
+            workspace/terraform/collective
+
+      - name: Authenticate to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Read TFE token from Sovereign Key Vault
+        id: secrets
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            token=$(az keyvault secret show \
+              --vault-name "kv-amiasea-sovereign" \
+              --name "amiasea-tfe-org-token" \
+              --query value \
+              --output tsv)
+
+            echo "::add-mask::$token"
+            echo "TFE_TOKEN=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Create HCP Terraform workspace
+        env:
+          TFE_TOKEN: ${{ steps.secrets.outputs.TFE_TOKEN }}
+          TFE_ORGANIZATION: amiasea
+          WORKSPACE_NAME: ${{ inputs.workspace_name }}
+        run: |
+          jq -n \
+            --arg name "$WORKSPACE_NAME" \
+            '{
+              data: {
+                type: "workspaces",
+                attributes: {
+                  name: $name,
+                  "execution-mode": "remote",
+                  "working-directory": "terraform"
+                }
+              }
+            }' > workspace.json
+
+          response=$(curl \
+            --fail \
+            --silent \
+            --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${TFE_TOKEN}" \
+            --header "Content-Type: application/vnd.api+json" \
+            --data @workspace.json \
+            "https://app.terraform.io/api/v2/organizations/${TFE_ORGANIZATION}/workspaces")
+
+          echo "workspace_id=$(echo "$response" | jq -r '.data.id')" >> "$GITHUB_OUTPUT"
+
+      - name: Create workspace variables
+        env:
+          TFE_TOKEN: ${{ steps.secrets.outputs.TFE_TOKEN }}
+          TFE_ORGANIZATION: amiasea
+          WORKSPACE_NAME: ${{ inputs.workspace_name }}
+          HOSTING_ENVIRONMENT_ID: ${{ inputs.hosting_environment_id }}
+          COLLECTIVE_ENVIRONMENT_ID: ${{ inputs.collective_environment_id }}
+        run: |
+          create_variable() {
+            local key="$1"
+            local value="$2"
+
+            jq -n \
+              --arg key "$key" \
+              --arg value "$value" \
+              '{
+                data: {
+                  type: "vars",
+                  attributes: {
+                    key: $key,
+                    value: $value,
+                    category: "terraform",
+                    hcl: false,
+                    sensitive: false
+                  }
+                }
+              }' > variable.json
+
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --request POST \
+              --header "Authorization: Bearer ${TFE_TOKEN}" \
+              --header "Content-Type: application/vnd.api+json" \
+              --data @variable.json \
+              "https://app.terraform.io/api/v2/organizations/${TFE_ORGANIZATION}/workspaces/${WORKSPACE_NAME}/vars"
+          }
+
+          create_variable \
+            "hosting_environment_id" \
+            "$HOSTING_ENVIRONMENT_ID"
+
+          create_variable \
+            "collective_environment_id" \
+            "$COLLECTIVE_ENVIRONMENT_ID"
+
+      - name: Create configuration version
+        id: configuration
+        env:
+          TFE_TOKEN: ${{ steps.secrets.outputs.TFE_TOKEN }}
+          TFE_ORGANIZATION: amiasea
+          WORKSPACE_NAME: ${{ inputs.workspace_name }}
+        run: |
+          response=$(curl \
+            --fail \
+            --silent \
+            --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${TFE_TOKEN}" \
+            --header "Content-Type: application/vnd.api+json" \
+            --data '{
+              "data": {
+                "type": "configuration-versions",
+                "attributes": {
+                  "auto-queue-runs": false
+                }
+              }
+            }' \
+            "https://app.terraform.io/api/v2/organizations/${TFE_ORGANIZATION}/workspaces/${WORKSPACE_NAME}/configuration-versions")
+
+          echo "upload_url=$(echo "$response" | jq -r '.data.attributes."upload-url"')" >> "$GITHUB_OUTPUT"
+
+      - name: Package Terraform configuration
+        run: |
+          tar \
+            --exclude='.terraform' \
+            --exclude='.git' \
+            -czf configuration.tar.gz \
+            -C workspace/terraform .
+
+      - name: Upload configuration
+        env:
+          UPLOAD_URL: ${{ steps.configuration.outputs.upload_url }}
+        run: |
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --request PUT \
+            --header "Content-Type: application/octet-stream" \
+            --data-binary @configuration.tar.gz \
+            "$UPLOAD_URL"
+
+      - name: Start speculative run
+        env:
+          TFE_TOKEN: ${{ steps.secrets.outputs.TFE_TOKEN }}
+          WORKSPACE_ID: ${{ steps.workspace.outputs.workspace_id }}
+        run: |
+          jq -n \
+            --arg workspace_id "$WORKSPACE_ID" \
+            '{
+              data: {
+                type: "runs",
+                attributes: {
+                  "message": "Strata speculative realization"
+                },
+                relationships: {
+                  workspace: {
+                    data: {
+                      type: "workspaces",
+                      id: $workspace_id
+                    }
+                  }
+                }
+              }
+            }' > run.json
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${TFE_TOKEN}" \
+            --header "Content-Type: application/vnd.api+json" \
+            --data @run.json \
+            "https://app.terraform.io/api/v2/runs"

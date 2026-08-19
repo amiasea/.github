@@ -1,24 +1,38 @@
 # Strata Ontology
 
-The Strata ontology defines the semantic concepts that describe the hosting domain established by Strata.
+The Strata ontology defines the semantic concepts describing the hosting domain established by Strata.
 
-It provides a vocabulary for describing what Strata recognizes, establishes, and makes available to consumers without reproducing the implementation details used to realize those concepts.
+Strata establishes the hosting model through which applications are hosted and the Collective capabilities that serve those applications.
+
+Strata has jurisdiction over the hosting boundaries it establishes, including promotional stages, Hosting environments, logical cluster domains, and Collective responsibilities.
+
+Strata is delivered through three promotional stages:
+
+```text
+Speculative
+    ↓
+Prospective
+    ↓
+Operative
+```
+
+The stages share a semantic lifecycle but have distinct responsibilities and realization mechanics.
+
+Detailed stage semantics are documented separately:
+
+* [Speculative Promotion](promotion/stages/speculative.md)
+* [Prospective Promotion](promotion/stages/prospective.md)
+* Operative Promotion
 
 # Resources
 
 A Strata resource is a semantic object recognized by the Strata Resource Model.
 
-The Resource Model provides the vocabulary used by the Strata catalog, resource graph, and hosting model. It describes resources by their meaning within Strata rather than by the technology used to implement them.
-
-> **A Strata resource is a recognized hosting-domain concept, not a Terraform or vendor resource.**
+> **A Strata resource is a recognized hosting-domain concept, not a Terraform or provider resource.**
 
 ## Resource Classes
 
-A **resource class** is a named semantic category recognized by the Resource Model. It answers:
-
-> **What kind of thing is this in the Strata domain?**
-
-The model is intentionally minimal. It establishes semantic identity without reproducing provider schemas, configuration properties, or implementation details.
+A resource class identifies a kind of thing in the Strata domain.
 
 Examples include:
 
@@ -28,13 +42,7 @@ Examples include:
 * Key Management
 * Kubernetes
 
-Resource classes must represent meaningful Strata concepts rather than broad infrastructure categories. For example, `Storage` is too broad because different storage implementations may have different purposes, consumers, lifecycles, and jurisdictions.
-
-Resource classes are therefore **opinionated by design**.
-
-## Resource Instances
-
-A resource class describes a kind of resource. A **resource instance** represents an occurrence of that class in a Strata instance.
+A resource class describes the semantic kind of resource. A resource instance represents an occurrence of that class.
 
 ```text
 Resource Class
@@ -45,242 +53,430 @@ Resource Instances
     production-network
 ```
 
-The resource graph describes the identity, attributes, and relationships of instances. The Resource Model describes what those instances mean.
-
-> **The Resource Model defines the semantic class; the graph describes its instances.**
+The resource graph establishes instance identity, attributes, and relationships.
 
 ## Vendor Independence
 
-The Resource Model is independent of vendor-specific resource naming and configuration.
+The Resource Model is independent of provider-specific resource naming and configuration.
 
-Native provider resources may differ substantially while establishing the same Strata resource class:
-
-```mermaid
-flowchart LR
-    A[Azure Resource]
-    B[AWS Resource]
-    C[GCP Resource]
-    R[Strata Resource Class]
-
-    A --> R
-    B --> R
-    C --> R
+```text
+Azure resource ──┐
+AWS resource ────┼──→ Strata resource class
+GCP resource ────┘
 ```
 
-Provider-specific mappings determine which native resources establish a Strata resource class without importing provider schemas into the Resource Model.
+Different provider resources may realize the same Strata resource class.
 
-Terraform and native provider APIs remain implementation mechanisms. They do not need to correspond one-to-one with Strata resources.
+> **Infrastructure establishes the resource; the Resource Model establishes its Strata meaning.**
 
-> **The implementation establishes infrastructure; the Resource Model establishes its Strata meaning.**
+# Jurisdiction
 
-## Jurisdiction
+Jurisdiction establishes the semantic boundary within which a responsibility is realized and governed.
 
-The Resource Model defines what Strata can recognize. Jurisdiction determines whether a particular instance belongs to Strata.
+Strata has jurisdiction over the hosting domain it establishes, including:
 
-Recognition as a resource class does not mean every instance of that class belongs to Strata. Jurisdiction depends on the resource's purpose, capability, consumers, lifecycle, and relationship to the hosting model.
+* promotional stages;
+* Hosting environments;
+* logical cluster domains; and
+* Collective responsibilities.
 
-> **The Resource Model defines what a thing means. Jurisdiction determines whether Strata owns the concern.**
+Jurisdiction concerns purpose, responsibility, lifecycle, and semantic boundaries rather than provider resource types.
 
-## Scope
+A provider construct may realize a jurisdictional boundary without defining its meaning.
 
-The Resource Model has an intentionally bounded scope. It is not a universal infrastructure ontology or a catalog of every provider resource.
+For example, a cloud subscription may provide the infrastructure boundary within which a promotional stage is realized, while a resource group may realize an environment boundary within that stage.
 
-It contains the meaningful concepts necessary to describe the supported Strata hosting domain while excluding provider-specific constructs, arbitrary low-level infrastructure objects, implementation details without independent Strata meaning, and concerns belonging to other domains.
+Neither provider construct defines the Strata concept by itself.
 
-The same resource classes should be usable across providers. An Azure and AWS Strata graph should use the same semantic classes whenever their infrastructure establishes the same Strata concept.
+> **Strata defines hosting boundaries; infrastructure realizes them.**
 
-> **Strata models the hosting concepts it has chosen to establish, not every infrastructure shape that can exist.**
+# Landing-Zone Boundary
 
-# Substrate
+Cloud-vendor preparation is outside the Strata delivery lifecycle.
 
-Strata substrate is the foundational infrastructure upon which its hosting and centralized capabilities are established.
+A landing zone establishes the vendor-specific infrastructure context that a delivery platform is permitted to consume. This may include:
 
-It provides the structural conditions required by those capabilities but is not itself a workload hosting model.
+* cloud accounts or subscriptions;
+* billing relationships;
+* provider-level organizational structure;
+* privileged identities;
+* service principals or equivalent principals;
+* federation and trust prerequisites;
+* baseline permissions;
+* regional or organizational constraints; and
+* other vendor-specific preparation required before delivery can operate.
 
-> **Substrate establishes the foundation on which Strata capabilities operate.**
+Landing zones may be established manually, through Terraform, through provider-native tooling, or through a combination of mechanisms.
 
-## What Constitutes Substrate
+The landing-zone lifecycle does not become part of Strata merely because Strata consumes its results.
 
-Substrate represents foundational resources required to establish the supported hosting model.
+The landing zone publishes a contract describing the resources and access context available to the delivery platform. The contract is standardized at the conceptual level rather than requiring identical vendor-specific names.
 
-Examples include:
-
-* networks;
-* subnets;
-* foundational connectivity;
-* foundational routing; and
-* other infrastructure establishing the hosting foundation.
-
-The specific provider resources used to establish substrate are implementation details, not the semantic definition of substrate.
-
-## Substrate Is Not Infrastructure in General
-
-Strata operates on an established infrastructure platform that provides the physical and virtualization machinery required to provision resources.
-
-That machinery is outside the Strata model.
-
-Strata does not manage:
-
-* physical servers;
-* physical disks;
-* physical routers and switches;
-* hypervisors;
-* data-center infrastructure; or
-* equivalent provider-managed infrastructure.
-
-A **Network** or **Subnet**, for example, may be a Strata resource even though the physical and virtualization infrastructure that realizes it is not.
-
-> **Strata governs the foundational resources it establishes on the infrastructure platform, not the machinery that makes those resources possible.**
-
-## Substrate and Other Capabilities
-
-Substrate establishes conditions upon which other Strata capabilities depend.
-
-```mermaid
-flowchart TD
-    S[Substrate]
-    C[Centralized Services]
-    K[Kubernetes Hosting]
-    D[Consumer Workload]
-
-    S --> C
-    S --> K
-    C --> K
-    K --> D
+```text
+Cloud Vendor
+    ↓
+Landing Zone
+    ↓
+published vendor-specific contract
+    ↓
+Delivery
+    ↓
+Strata
 ```
 
-Centralized services and Kubernetes hosting contexts may depend upon substrate resources without those resources becoming part of their semantic definitions.
+A landing-zone contract may expose identifiers, accounts, subscriptions, regions, principals, or other vendor-specific values required by delivery.
 
-## Scope
+The contract does not need to expose the implementation details of the landing zone or its private state.
 
-Substrate is limited to foundational capabilities that are part of the supported Strata hosting model.
+Likewise, the contract does not inherently constitute a trust relationship. Trust may be established by the landing zone while the corresponding delivery configuration merely consumes the published contract.
 
-> **Strata substrate establishes the foundation of the hosting model, not every foundational resource that happens to exist.**
+Different cloud vendors may therefore have different landing-zone realizations and contract shapes while satisfying the same conceptual delivery requirements.
+
+The landing-zone model is documented separately in `_documentation/landing-zones.md`.
+
+> **Landing zones prepare the cloud; Delivery consumes the prepared cloud.**
+
+# Hosting and Collective
+
+Each promotional stage contains two scopes:
+
+```text
+Promotional Stage
+├── Hosting
+└── Collective
+```
+
+Hosting establishes bounded contexts in which applications may be realized.
+
+Collective establishes capabilities and services whose responsibility transcends an individual Hosting environment or has its own meaningful segmentation model.
+
+Collective is a scope within a promotional stage, not a fourth promotional stage.
+
+Each stage has one Collective scope.
+
+Hosting and Collective are separate work streams. Their implementations, source repositories, speculative lifecycles, and promotion decisions may therefore remain independent.
+
+Prospective provides the point at which independently promoted Hosting and Collective artifacts may be explicitly correlated into a component graph.
+
+# Environments
+
+An environment is a bounded hosting context within a Strata Hosting scope.
+
+The current infrastructure realization of an environment is a cloud-provider resource group.
+
+```text
+Promotional Stage
+    ↓
+landing-zone provider boundary
+    ↓
+Hosting environment
+    ↓
+resource group
+    ↓
+logical cluster domains
+```
+
+The provider boundary is supplied by the landing zone. Strata consumes that boundary but does not establish the subscription, account, or equivalent vendor container as part of its own lifecycle.
+
+The resource group is an infrastructure realization of the environment boundary; it is not the definition of the Strata concept.
+
+An environment may contain:
+
+* logical cluster domains;
+* networking;
+* identity integration;
+* environment-scoped services;
+* policy;
+* configuration; and
+* other capabilities required by hosted applications.
+
+The number of environments is determined by the requirements of the promotional stage and its delivery model.
+
+An environment is distinct from an application deployment. Applications consume environments; they do not establish the environment boundary.
+
+# Logical Cluster Domains
+
+A logical cluster domain is a Strata-defined hosting boundary for a particular class of workloads.
+
+A Kubernetes cluster or another provider construct may realize the domain, but the provider construct does not define its semantic meaning.
+
+```text
+Strata Environment
+├── Logical Cluster Domain A
+│   └── provider realization
+└── Logical Cluster Domain B
+    └── provider realization
+```
+
+The existence, separation, and purpose of logical cluster domains are therefore part of Strata's jurisdiction.
+
+Application delivery may target an established logical cluster domain but does not establish its Strata meaning.
+
+Logical cluster domains may also exist within Collective when a shared service requires a distinct hosting boundary.
+
+> **Strata defines the logical hosting domain; infrastructure realizes it.**
+
+# Collective
+
+Collective represents shared or cross-environment responsibility within a promotional stage.
+
+It does not constitute a separate jurisdiction and does not require a separate Strata promotional stage.
+
+Collective may contain:
+
+* cloud-provider services;
+* managed services;
+* shared platform capabilities;
+* networking or identity services;
+* observability services; and
+* in-house services whose responsibility transcends individual environments.
+
+A Collective scope may contain logical cluster domains when shared services require their own hosting boundary.
+
+The distinction is responsibility:
+
+```text
+Hosting
+    → responsibility bounded to an environment
+
+Collective
+    → responsibility shared across environments
+      or independently segmented
+```
+
+The same infrastructure technology may therefore appear in both scopes while having different semantic responsibilities.
+
+# Promotional Stages
+
+## Speculative
+
+Speculative is the Strata stage for independently realizing and evaluating candidate changes before they become Prospective artifacts.
+
+Hosting and Collective have independent Speculative lifecycles:
+
+```text
+Speculative
+├── strata-hosting
+└── strata-collective
+```
+
+Each work stream may produce its own promoted artifact.
+
+Speculative provides candidate realization and validation appropriate to the individual work stream. It does not establish the composition of Hosting and Collective.
+
+Speculative capacity and candidate lifecycle are delivery concerns documented under:
+
+* `promotion/orchestration/capacity.md`
+* `promotion/orchestration/events.md`
+* `promotion/orchestration/roles.md`
+* `promotion/orchestration/workflows.md`
+
+The detailed promotional semantics are defined in [Speculative Promotion](promotion/stages/speculative.md).
+
+Strata may use an accepted Kitting release as a representative consumer workload when validating a proposed hosting change. The Kitting release remains part of Kitting's own promotional lifecycle.
+
+> **Speculative validates independent Strata work streams; it does not compose them.**
+
+## Prospective
+
+Prospective correlates independently promoted Hosting and Collective artifacts into a Strata component graph.
+
+```text
+Hosting artifact ─────┐
+                      ├──→ Prospective component graph
+Collective artifact ──┘
+```
+
+The selected artifacts are explicit inputs to the composition.
+
+Prospective validates behavior that crosses the independent lifecycle boundaries, including compatibility, shared contracts, topology assumptions, and representative workload behavior.
+
+The detailed promotional semantics are defined in [Prospective Promotion](promotion/stages/prospective.md).
+
+> **Speculative proves the parts; Prospective proves the composition.**
+
+## Operative
+
+Operative is the Strata stage for establishing the accepted operating realization.
+
+Operative is not defined as a pool of speculative candidate environments.
+
+Its Hosting and Collective realization mechanics, including any internal promotion, replication, traffic management, or live-state transitions, are specific to Operative.
+
+The detailed Operative model remains to be defined.
 
 # Capabilities
 
-A Strata capability is a meaningful outcome established by one or more Strata resources and made available to consumers of the hosting model.
+A Strata capability is a meaningful outcome established by one or more Strata resources and made available to consumers.
 
 > **Resources establish capabilities; capabilities are what consumers rely upon.**
 
-## Capability Identity
+A capability describes what Strata makes possible rather than how it is implemented.
 
-A capability describes **what Strata makes possible**, rather than how it is implemented.
-
-For example, Kubernetes resources may establish a capability to host workloads according to the supported Kubernetes model.
-
-Capabilities should be expressible without provider-specific resource names or implementation schemas.
-
-## Resources and Capabilities
-
-A resource answers:
-
-> **What Strata resource exists?**
-
-A capability answers:
-
-> **What does it establish for its consumers?**
-
-A capability may depend upon multiple resources, and a resource may contribute to multiple capabilities.
-
-```mermaid
-flowchart LR
-    R1[Resource]
-    R2[Resource]
-    R3[Resource]
-    C[Capability]
-
-    R1 --> C
-    R2 --> C
-    R3 --> C
-```
-
-Capabilities may also compose other capabilities. A hosting capability, for example, may depend upon network, identity, and observability capabilities without absorbing them into a single concept.
-
-## Capability Scope
-
-A capability belongs within Strata when it establishes a concern of the supported hosting model.
+A capability may depend on multiple resources, and a resource may contribute to multiple capabilities.
 
 Examples include:
 
-* networking required for hosting;
+* networking;
 * workload identity;
 * API management;
 * runtime hosting;
 * deployment;
 * observability; and
-* centralized platform services.
+* shared platform services.
 
-A capability is not within Strata merely because it is shared or technically useful. It must represent a concern Strata intentionally establishes as part of its hosting model.
-
-## Consumer Perspective
-
-Capabilities exist in relation to their consumers. Consumers should be able to reason about a capability without understanding the resources that implement it.
-
-How a capability is exposed, secured, observed, versioned, and retired belongs to its implementation and lifecycle rather than its semantic identity.
-
-## Scope of the Model
-
-The capability model is not a catalog of provider services. A provider service may have no Strata representation, while a Strata capability may require multiple provider services to establish.
-
-> **Strata defines the capabilities it chooses to establish, not every capability that infrastructure can provide.**
+A capability may be realized in Hosting or Collective according to its scope of responsibility.
 
 # Centralized Services
 
-A Strata centralized service is a service that Strata intentionally establishes, configures, and governs as a shared service for multiple consumers.
+A Strata centralized service is a service intentionally established, configured, and governed by Strata as a shared capability.
 
-A centralized service may provide one or more capabilities, but the service and its capabilities remain distinct concepts.
+A service and the capabilities it provides are distinct concepts.
 
-> **A centralized service is a governed shared service; its capabilities are what consumers consume.**
+Centralized services may be implemented through cloud-provider services, managed services, Kubernetes workloads, or combinations of resources.
 
-## What Constitutes a Centralized Service
-
-A service is appropriate for centralization when one appropriately governed instance can serve multiple consumers and Strata should own its establishment, lifecycle, configuration, or access.
-
-Examples may include:
+Examples include:
 
 * API Management;
 * identity and authentication;
 * observability;
 * policy and integration services;
-* text-to-speech;
-* translation;
-* image recognition;
-* AI query or inference; and
+* AI services; and
 * document processing.
 
-The category is not defined by technology. The determining question is whether Strata is establishing and governing the shared service as part of its hosting model.
+Consumer-specific configuration does not transfer ownership of the centralized service to the consumer.
 
-## Consumer Integration
+Applications consume Collective capabilities through the hosting model while the services remain subject to Strata's delivery lifecycle.
 
-A centralized service may require consumer-specific configuration, such as:
+# Hosting and Application Delivery
 
-* credentials or API keys;
-* authorization grants;
-* service or webhook registrations;
-* endpoints or subscriptions; and
-* access policies.
+Strata establishes the hosting model. Application delivery uses that model to deliver workloads.
 
-This does not transfer ownership of the service to the consumer.
+```text
+Strata
+├── Hosting
+│   └── environments
+│       └── logical cluster domains
+│           └── application workloads
+└── Collective
+    └── shared and cross-environment capabilities
+```
 
-> **Consumer-specific configuration does not make a shared service consumer-owned.**
+Application delivery may have its own Speculative, Prospective, and Operative lifecycle.
 
-## Provider Services
+Those stages do not become additional Strata stages.
 
-A provider service consumed by Strata is not necessarily a Strata centralized service.
+The lifecycles are related through consumption and compatibility rather than shared promotional state.
 
-If Strata merely permits consumers to use a provider-managed service, the service remains outside Strata's jurisdiction.
+A Kitting promotion does not automatically promote Strata.
 
-If Strata establishes, configures, governs, and exposes a shared service to multiple consumers, it may constitute a Strata centralized service.
+A Strata promotion does not automatically promote Kitting.
 
-> **Consumption does not imply jurisdiction. Establishment and governance do.**
+An application deployment targets a hosting boundary already established by Strata.
 
-## Scope
+> **Strata establishes the hosting domain; application delivery independently promotes workloads within that domain.**
 
-Centralization is an architectural and governance decision, not merely a decision to share infrastructure.
+# Delivery Boundary
 
-A service should not be centralized merely because it is convenient to share, difficult to configure, or technically provisionable by Strata.
+Delivery establishes and operates the infrastructure required to realize the Strata ontology within cloud boundaries supplied by landing zones.
 
-Product functionality, product data, and product-specific services remain outside Strata even when shared by multiple products.
+The implementation mechanisms are deliberately separate from the semantic model.
 
-> **Centralization is justified by shared service governance, not shared consumption alone.**
+Conceptually:
+
+```text
+Strata ontology
+    ↓
+semantic boundaries and responsibilities
+    ↓
+Delivery
+    ↓
+provider infrastructure within landing-zone boundaries
+    ↓
+operational delivery machinery
+```
+
+Delivery may establish resource groups, environments, logical cluster domains, and baseline capabilities.
+
+It consumes cloud subscriptions, accounts, identities, permissions, and other vendor-specific prerequisites from landing-zone contracts rather than establishing those prerequisites as part of the Strata lifecycle.
+
+The Amiasea API, GitHub workflows, HCP Terraform, and other delivery mechanisms may subsequently operate the established resources.
+
+Those mechanisms do not become Strata resources merely because they participate in Strata delivery.
+
+The orchestration model is documented separately under `promotion/orchestration/`.
+
+> **Landing zones establish cloud context; Delivery establishes the Strata realization within that context.**
+
+# Institutive
+
+Institutive is a separate jurisdiction concerned with establishing the engineering model and its delivery machinery.
+
+Institutive infrastructure may provide capabilities or authority consumed by Strata without becoming part of Strata.
+
+For example, an institutive subscription may contain engineering control-plane infrastructure, credentials, or other machinery used by delivery.
+
+Strata's dependence upon Institutive does not transfer Institutive infrastructure into the Strata hosting jurisdiction.
+
+Cloud-vendor preparation is likewise distinct from Institutive and Strata semantics. A landing zone may establish vendor resources consumed by the Institutive or Strata delivery domains without becoming part of either ontology.
+
+# Ontology Boundary
+
+The Strata ontology separates:
+
+* semantic resources from provider resources;
+* resources from capabilities;
+* capabilities from implementations;
+* jurisdictional boundaries from provider boundaries;
+* landing-zone boundaries from Strata boundaries;
+* promotional stages from environments;
+* environments from logical cluster domains;
+* logical cluster domains from workloads;
+* Hosting from Collective;
+* Strata promotion from application promotion;
+* independent Hosting and Collective lifecycles from their later composition;
+* consumer workloads from the promotional lifecycle that tests them;
+* cloud preparation from delivery; and
+* infrastructure establishment from infrastructure operation.
+
+The fundamental structure is:
+
+```text
+Cloud Vendor
+│
+└── Landing Zone
+    │
+    └── published provider contract
+        │
+        └── Strata
+            │
+            ├── Speculative
+            │   ├── Hosting
+            │   │   └── candidate environments
+            │   │       └── logical cluster domains
+            │   └── Collective
+            │       └── candidate realization
+            │
+            ├── Prospective
+            │   └── component graph
+            │       ├── Hosting artifact
+            │       └── Collective artifact
+            │
+            └── Operative
+                ├── Hosting
+                │   └── accepted operating realization
+                └── Collective
+                    └── shared capabilities
+```
+
+Hosting and Collective remain distinct work streams even when Prospective correlates their artifacts.
+
+Logical cluster domains remain part of Strata's jurisdiction regardless of their provider realization.
+
+Application workloads consume Strata capabilities without becoming part of Strata's hosting ontology.
+
+Landing zones establish vendor-specific prerequisites and publish the context consumed by delivery.
+
+Terraform and the delivery machinery establish and operate the Strata infrastructure without defining the semantic concepts themselves.
+
+> **Landing zones prepare the cloud; Strata defines the hosting domain; Delivery establishes and operates its infrastructure realization.**
