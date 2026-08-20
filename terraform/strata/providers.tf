@@ -6,10 +6,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 5.1.0"
     }
-    azapi = {
-      source  = "Azure/azapi"
-      version = "~> 2.12"
-    }
     github = {
       source  = "integrations/github"
       version = "~> 6.13.0"
@@ -18,16 +14,22 @@ terraform {
 }
 
 provider "azurerm" {
+  alias = "institutive"
+  tenant_id = var.azure_environment.context
+  client_id = var.azure_environment.authority_principal.institutive
+  subscription_id = var.azure_environment.landing_zones.institutive
+
   features {}
 }
 
 provider "azurerm" {
   alias = "speculative"
-  features {}
-  subscription_id = var.azure_speculative_subscription_id
-}
+  tenant_id = var.azure_environment.context
+  client_id = var.azure_environment.authority_principal.speculative
+  subscription_id = var.azure_environment.landing_zones.speculative
 
-provider "azapi" {}
+  features {}
+}
 
 provider "github" {
   owner = var.organization_name

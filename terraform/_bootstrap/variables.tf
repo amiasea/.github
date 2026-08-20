@@ -1,4 +1,4 @@
 variable "organization_name" {
-  type = string
+  type    = string
   default = "amiasea"
 }

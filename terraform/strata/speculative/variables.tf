@@ -14,7 +14,3 @@ variable "environment_capacity" {
     error_message = "Hosting and Collective environments capacity must be zero or greater."
   }
 }
-
-variable "azure_speculative_subscription_id" {
-  type    = string
-}
