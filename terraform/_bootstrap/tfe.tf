@@ -45,25 +45,29 @@ resource "tfe_variable" "amiasea_github_app_installation_id" {
 
 # AZURE
 
+# TFE Provider has a bug
 resource "tfe_variable" "azure_environment" {
-  key             = "azure_environment"
-  value           = <<-EOT
-    {
-      context = "bf451fd9-d382-4da8-9c1a-179a96a4d2f3"
-      landing_zones {
-        institutive = "da348b35-29b6-4906-85ec-4a097aa5fe04"
-        speculative = "bd0f2cca-0676-49e6-a8c2-cae21ea7216b"
-        prospective = "a1a3e3e6-6a34-455d-b220-f6df7790f905"
-        operative   = "d9cd6518-e401-4072-a410-a6a67e9b15f6"
-      }
-      authority_principal {
-        institutive = "55a110cd-185b-4d34-a0c5-e28e59167a31"
-        speculative = "55a110cd-185b-4d34-a0c5-e28e59167a31"
-        prospective = "55a110cd-185b-4d34-a0c5-e28e59167a31"
-        operative   = "55a110cd-185b-4d34-a0c5-e28e59167a31"
-      }
-    }
-  EOT
+  key = "azure_environment"
+
+  value = join("\n", [
+    "{",
+    "  context = \"bf451fd9-d382-4da8-9c1a-179a96a4d2f3\"",
+    "  landing_zones = {",
+    "    institutive = \"da348b35-29b6-4906-85ec-4a097aa5fe04\"",
+    "    speculative = \"bd0f2cca-0676-49e6-a8c2-cae21ea7216b\"",
+    "    prospective = \"a1a3e3e6-6a34-455d-b220-f6df7790f905\"",
+    "    operative   = \"d9cd6518-e401-4072-a410-a6a67e9b15f6\"",
+    "  }",
+    "  authority_principal = {",
+    "    institutive = \"55a110cd-185b-4d34-a0c5-e28e59167a31\"",
+    "    speculative = \"55a110cd-185b-4d34-a0c5-e28e59167a31\"",
+    "    prospective = \"55a110cd-185b-4d34-a0c5-e28e59167a31\"",
+    "    operative   = \"55a110cd-185b-4d34-a0c5-e28e59167a31\"",
+    "  }",
+    "}",
+    "",
+  ])
+
   category        = "terraform"
   hcl             = true
   variable_set_id = tfe_variable_set.environment.id

@@ -18,6 +18,7 @@ provider "azurerm" {
   tenant_id = var.azure_environment.context
   client_id = var.azure_environment.authority_principal.institutive
   subscription_id = var.azure_environment.landing_zones.institutive
+  use_oidc = true
 
   features {}
 }
@@ -27,6 +28,7 @@ provider "azurerm" {
   tenant_id = var.azure_environment.context
   client_id = var.azure_environment.authority_principal.speculative
   subscription_id = var.azure_environment.landing_zones.speculative
+  use_oidc = true
 
   features {}
 }
