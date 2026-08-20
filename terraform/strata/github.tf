@@ -57,10 +57,7 @@ resource "github_branch_protection_v3" "development_branch_protection" {
     strict = true
 
     checks = [
-      {
-        context = "Speculative promotion"
-        app_id  = null
-      }
+      "ci/speculative-tests"
     ]
   }
 
