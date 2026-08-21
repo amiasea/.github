@@ -18,52 +18,76 @@ resource "github_branch_default" "default" {
   branch     = data.github_branch.strata_main.branch
 }
 
-resource "github_branch_protection_v3" "main_branch_protection" {
-  repository     = data.github_repository.strata.name
-  branch         = data.github_branch.strata_main.branch
+resource "github_repository_ruleset" "main" {
+  name        = "main"
+  repository  = data.github_repository.strata.name
+  target      = "branch"
+  enforcement = "active"
 
-  required_pull_request_reviews {
-    required_approving_review_count = 1
+  conditions {
+    ref_name {
+      include = ["refs/heads/main"]
+      exclude = []
+    }
   }
 
-  enforce_admins = true
+  rules {
+    # Nobody pushes directly to main.
+    update = true
 
-  required_status_checks {
-    strict = false
-    checks = [
-    ]
-  }
+    # Require all changes to arrive through a pull request.
+    pull_request {
+      dismiss_stale_reviews_on_push     = true
+      require_code_owner_review          = false
+      require_last_push_approval         = false
+      required_approving_review_count    = 1
+      required_review_thread_resolution  = true
+    }
 
-  restrictions {
-    users = []
-    teams = []
-    apps  = []
+    # Prevent merge commits.
+    required_linear_history = true
+
+    # Require signed commits.
+    required_signatures = true
   }
 }
 
-resource "github_branch_protection_v3" "development_branch_protection" {
-  repository = data.github_repository.strata.name
-  branch     = github_branch.strata_development.branch
+resource "github_repository_ruleset" "development" {
+  name        = "development"
+  repository  = data.github_repository.strata.name
+  target      = "branch"
+  enforcement = "active"
 
-  required_pull_request_reviews {
-    required_approving_review_count = 1
-
-    dismiss_stale_reviews = true
+  conditions {
+    ref_name {
+      include = ["refs/heads/development"]
+      exclude = []
+    }
   }
 
-  enforce_admins = true
+  rules {
+    # Nobody pushes directly to development.
+    update = true
 
-  required_status_checks {
-    strict = true
+    # Changes must arrive through a PR.
+    pull_request {
+      dismiss_stale_reviews_on_push     = true
+      require_code_owner_review          = false
+      require_last_push_approval         = false
+      required_approving_review_count    = 1
+      required_review_thread_resolution  = true
+    }
 
-    checks = [
-      "ci/speculative-tests"
-    ]
-  }
+    # PR must be tested against the latest development.
+    required_linear_history = true
 
-  restrictions {
-    users = []
-    teams = []
-    apps  = []
+    # Require the speculative validation check.
+    required_status_checks {
+      strict_required_status_checks_policy = true
+
+      required_check {
+        context = "ci/speculative-tests"
+      }
+    }
   }
 }

@@ -2,9 +2,9 @@ data "tfe_github_app_installation" "gha_installation" {
   name = var.organization_name
 }
 
-resource "tfe_project" "foundation" {
+resource "tfe_project" "institutive" {
   organization = var.organization_name
-  name         = "foundation"
+  name         = "institutive"
 }
 
 resource "tfe_project" "promotion" {
@@ -19,7 +19,7 @@ resource "tfe_variable_set" "environment" {
 
 resource "tfe_project_variable_set" "environment_to_foundation" {
   variable_set_id = tfe_variable_set.environment.id
-  project_id      = tfe_project.foundation.id
+  project_id      = tfe_project.institutive.id
 }
 
 resource "tfe_project_variable_set" "environment_to_promotion" {
@@ -54,14 +54,14 @@ resource "tfe_variable" "tfc_azure_provider_auth_institutive" {
 
 resource "tfe_variable" "tfc_azure_run_client_id_institutive" {
   key             = "TFC_AZURE_RUN_CLIENT_ID_INSTITUTIVE"
-  value           = "true"
+  value           = "55a110cd-185b-4d34-a0c5-e28e59167a31"
   category        = "env"
   variable_set_id = tfe_variable_set.environment.id
 }
 
 resource "tfe_variable" "tfc_azure_provider_auth_speculative" {
   key             = "TFC_AZURE_PROVIDER_AUTH_SPECULATIVE"
-  value           = "55a110cd-185b-4d34-a0c5-e28e59167a31"
+  value           = "true"
   category        = "env"
   variable_set_id = tfe_variable_set.environment.id
 }
@@ -112,7 +112,7 @@ resource "tfe_workspace" "strata" {
   name         = "strata"
   description  = "Workspace for managing the Strata delivery mechanics"
   organization = var.organization_name
-  project_id   = tfe_project.foundation.id
+  project_id   = tfe_project.institutive.id
 
   working_directory     = "terraform/strata"
   file_triggers_enabled = true
