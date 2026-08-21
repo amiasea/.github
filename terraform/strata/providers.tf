@@ -15,16 +15,26 @@ terraform {
 
 provider "azurerm" {
   alias = "institutive"
-  tenant_id = var.azure_environment.context
+
+  tenant_id       = var.azure_environment.context
   subscription_id = var.azure_environment.landing_zones.institutive
+
+  use_oidc              = true
+  client_id_file_path   = var.tfc_azure_dynamic_credentials.aliases["INSTITUTIVE"].client_id_file_path
+  oidc_token_file_path  = var.tfc_azure_dynamic_credentials.aliases["INSTITUTIVE"].oidc_token_file_path
 
   features {}
 }
 
 provider "azurerm" {
   alias = "speculative"
-  tenant_id = var.azure_environment.context
+
+  tenant_id       = var.azure_environment.context
   subscription_id = var.azure_environment.landing_zones.speculative
+
+  use_oidc              = true
+  client_id_file_path   = var.tfc_azure_dynamic_credentials.aliases["SPECULATIVE"].client_id_file_path
+  oidc_token_file_path  = var.tfc_azure_dynamic_credentials.aliases["SPECULATIVE"].oidc_token_file_path
 
   features {}
 }
