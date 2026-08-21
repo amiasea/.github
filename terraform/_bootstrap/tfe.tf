@@ -45,7 +45,36 @@ resource "tfe_variable" "amiasea_github_app_installation_id" {
 
 # AZURE
 
+resource "tfe_variable" "tfc_azure_provider_auth_institutive" {
+  key             = "TFC_AZURE_PROVIDER_AUTH_INSTITUTIVE"
+  value           = "true"
+  category        = "env"
+  variable_set_id = tfe_variable_set.environment.id
+}
+
+resource "tfe_variable" "tfc_azure_run_client_id_institutive" {
+  key             = "TFC_AZURE_RUN_CLIENT_ID_INSTITUTIVE"
+  value           = "true"
+  category        = "env"
+  variable_set_id = tfe_variable_set.environment.id
+}
+
+resource "tfe_variable" "tfc_azure_provider_auth_speculative" {
+  key             = "TFC_AZURE_PROVIDER_AUTH_SPECULATIVE"
+  value           = "55a110cd-185b-4d34-a0c5-e28e59167a31"
+  category        = "env"
+  variable_set_id = tfe_variable_set.environment.id
+}
+
+resource "tfe_variable" "tfc_azure_run_client_id_speculative" {
+  key             = "TFC_AZURE_RUN_CLIENT_ID_SPECULATIVE"
+  value           = "55a110cd-185b-4d34-a0c5-e28e59167a31"
+  category        = "env"
+  variable_set_id = tfe_variable_set.environment.id
+}
+
 # TFE Provider has a bug
+
 resource "tfe_variable" "azure_environment" {
   key = "azure_environment"
 
