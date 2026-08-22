@@ -3,11 +3,6 @@ variable "organization_name" {
   default = "amiasea"
 }
 
-variable "location" {
-  type    = string
-  default = "centralus"
-}
-
 variable "azure_environment" {
   type = object({
     context = string

@@ -10,7 +10,6 @@ ephemeral "azurerm_key_vault_secret" "amiasea_github_app_private_key" {
 
 data "azurerm_resource_group" "sovereign" {
   name = "rg-amiasea-sovereign"
-  location = var.location
 }
 
 resource "azurerm_container_app_environment" "api" {
