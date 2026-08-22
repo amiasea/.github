@@ -1,3 +1,8 @@
+variable "organization_name" {
+  type    = string
+  default = "amiasea"
+}
+
 variable "location" {
   type    = string
   default = "centralus"
