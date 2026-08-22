@@ -1,10 +1,10 @@
-resource "github_organization_webhook" "org_global_hook" {
+resource "github_organization_webhook" "amiasea_global_hook" {
   active = true
 
   configuration {
-    url          = "https://devtunnels.ms"
+    url          = "https://71v2xw9x-5045.use.devtunnels.ms/webhooks/github"
     content_type = "json"
-    secret       = "your-org-level-hmac-secret"
+    secret       = "amiasea"
     insecure_ssl = false
   }
 

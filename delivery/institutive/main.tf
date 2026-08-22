@@ -8,7 +8,7 @@ ephemeral "azurerm_key_vault_secret" "amiasea_github_app_private_key" {
   key_vault_id = data.azurerm_key_vault.sovereign_kv.id
 }
 
-resource "azurerm_resource_group" "sovereign" {
+data "azurerm_resource_group" "sovereign" {
   name = "rg-amiasea-sovereign"
   location = var.location
 }
