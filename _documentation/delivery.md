@@ -1,12 +1,18 @@
 # Delivery
 
-Delivery is the workspace chain through which the infrastructure, hosting architecture, access relationships, and delivery machinery required by the engineering model are established.
+Delivery is an aspect of the Amiasea engineering model through which engineering work is established, promoted, and operated.
 
-Delivery does not represent the entire engineering model. It establishes the infrastructure and mechanisms through which selected engineering work can be developed, promoted, and operated.
+Delivery establishes the infrastructure, hosting architecture, access relationships, execution mechanisms, and delivery machinery required to realize selected engineering work.
+
+Delivery does not represent the entire engineering model.
+
+The engineering model is the higher-order ontology within which concepts such as delivery, Institutive, Strata, and Kitting are understood.
+
+> **The engineering model defines what is being engineered; Delivery establishes and operates mechanisms through which selected engineering work is realized.**
 
 ## Engineering Model
 
-The engineering model defines the concepts through which infrastructure is understood, established, and governed.
+The engineering model defines the concepts through which engineering work, infrastructure, delivery, and operational responsibility are understood and governed.
 
 Infrastructure constructs are realizations of those concepts rather than definitions of them.
 
@@ -14,38 +20,73 @@ A subscription, account, resource group, Terraform workspace, Terraform stack, r
 
 > **Infrastructure realizes the engineering model; infrastructure constructs do not define its ontology.**
 
+Delivery is therefore an important aspect of the engineering model, but it is not synonymous with the engineering model itself.
+
 ## Work Streams
 
-The engineering model contains distinct work streams:
+The engineering model contains distinct work streams.
+
+The current delivery-oriented work streams are:
 
 ```text
 Institutive
     │
-    ├── delivery machinery
+    ├── establishes institutional delivery machinery
+    │
     ├── Strata
+    │
     └── Kitting
 ```
 
-Institutive establishes the machinery through which engineering work can be delivered.
+Institutive establishes the institutional machinery through which engineering work can be delivered.
 
 Strata establishes the hosting model.
 
-Kitting delivers applications and domain workloads into that hosting model.
+Kitting delivers applications and domain workloads into the hosting model established by Strata.
+
+These are semantic work streams rather than infrastructure or repository boundaries.
 
 A delivery mechanism does not become part of the work it delivers merely because it is implemented alongside that work.
 
-## Delivery Workspace Chain
+An Institutive artifact may therefore exist in a bootstrap configuration, a delivery workspace, an application repository, a Strata repository, a GitHub workflow, an API, or another implementation mechanism.
 
-The `delivery/` directory contains Terraform workspaces establishing the delivery architecture:
+Likewise, the existence of a `delivery/institutive` directory does not imply that it contains all Institutive work.
+
+## Delivery Workspace Structure
+
+The `delivery/` directory contains Terraform workspaces and supporting configuration used to establish selected parts of the delivery architecture.
+
+The current structure includes:
 
 ```text
 delivery/
+
+├── _bootstrap
+├── institutive
 ├── strata
-├── kitting
-└── access
+└── kitting
 ```
 
-These are distinct architectural concerns participating in an ordered establishment ceremony:
+These directories are implementation boundaries within the delivery architecture. They are not complete semantic representations of the work streams.
+
+In particular:
+
+* `_bootstrap` establishes foundational delivery control structures;
+* `institutive` establishes selected institutional infrastructure for the delivery model;
+* `strata` establishes durable infrastructure for the Strata hosting model; and
+* `kitting` establishes infrastructure required by the Kitting delivery model.
+
+Other Institutive artifacts may exist outside these directories.
+
+For example, a GitHub workflow in the `amiasea/strata` repository may be Institutive work when its responsibility is to establish or operate delivery machinery rather than Strata hosting infrastructure.
+
+> **A filesystem location identifies where delivery machinery is implemented; it does not determine the semantic work stream to which that machinery belongs.**
+
+## Delivery Establishment
+
+The initial delivery architecture is established through a sequence of dependent concerns.
+
+The current establishment sequence is:
 
 ```text
 strata
@@ -57,7 +98,11 @@ access
 
 The ordering describes architectural establishment rather than requiring every resource to become operational immediately.
 
-After establishment, workspaces may be updated independently. Their dependencies remain connected and may require downstream reconciliation when upstream boundaries, identifiers, credentials, or infrastructure change.
+After establishment, workspaces and other delivery mechanisms may be updated independently.
+
+Their dependencies remain connected and may require downstream reconciliation when upstream boundaries, identifiers, credentials, or infrastructure change.
+
+`_bootstrap` participates in establishing the delivery control plane and its foundational Terraform execution structures. It is not itself a promotional stage.
 
 > **Delivery establishes an ordered architecture and maintains it as a connected system.**
 
@@ -87,7 +132,7 @@ Operative
 
 The stages have distinct topologies and delivery mechanics.
 
-The delivery workspace establishes their infrastructure but does not itself operate their runtime promotion state.
+The delivery workspace establishes their infrastructure but does not itself operate their runtime promotional state.
 
 ### Provider Boundaries
 
@@ -157,6 +202,7 @@ Each Strata promotional stage contains two primary scopes:
 
 ```text
 Promotional Stage
+
 ├── Hosting
 └── Collective
 ```
@@ -204,8 +250,10 @@ The capacity contract may define the minimum and maximum number of environments 
 
 ```text
 Speculative Capacity
+
 ├── Hosting
 │   └── min / max environments
+│
 └── Collective
     └── min / max environments
 ```
@@ -246,11 +294,13 @@ Kitting has its own promotional lifecycle:
 
 ```text
 Strata
+
 ├── Speculative
 ├── Prospective
 └── Operative
 
 Kitting
+
 ├── Speculative
 ├── Prospective
 └── Operative
@@ -261,6 +311,8 @@ These stages are independent.
 Kitting does not pass through Strata promotion, and Strata promotion does not advance Kitting.
 
 Kitting consumes Strata hosting capabilities while maintaining its own delivery state.
+
+The shared terminology of Speculative, Prospective, and Operative therefore does not imply synchronization between the two work streams.
 
 ## Kitting as a Strata Workload
 
@@ -311,9 +363,11 @@ principals and trust
 permissions
 ```
 
+Access establishes relationships between the delivery architecture and its expected execution subjects. It does not itself define the semantic identity of those subjects.
+
 ## Amiasea API
 
-The Amiasea API is delivery machinery established by Institutive.
+The Amiasea API is Institutive work and is part of the delivery machinery established by the engineering model.
 
 Its initial operational capability is orchestration of Strata promotion.
 
@@ -359,7 +413,11 @@ They may execute Terraform, interact with HCP Terraform through the Terraform CL
 
 A workflow does not become a Strata resource because it executes Strata Terraform.
 
-The workflow surface is defined by the lifecycle of each Strata repository and stage rather than by a single universal workflow set.
+Conversely, a workflow may constitute Institutive work when its purpose is to establish or operate delivery machinery.
+
+For example, a workflow in the `amiasea/strata` repository that creates or manages a Terraform workspace may be an Institutive artifact even though it is physically located within a Strata repository.
+
+The workflow surface is therefore defined by the responsibility of each workflow rather than solely by its repository location.
 
 ```text
 Amiasea API
@@ -392,6 +450,8 @@ speculative report
 The workspace and its Terraform state are execution artifacts.
 
 They do not define the semantic identity of the candidate or promotional stage.
+
+HCP Terraform is itself part of the broader engineering delivery machinery rather than being synonymous with any particular work stream.
 
 ## Sovereign Variable Set
 
@@ -453,11 +513,56 @@ The architecture remains connected even when its individual workspaces evolve in
 
 ## Institutive
 
-Institutive establishes the delivery model and its machinery.
+Institutive is the work stream concerned with the **institutional aspects of establishing and operating the delivery model**.
 
-Infrastructure in the `amiasea-institutive` subscription, such as the sovereign key vault, is not part of Strata merely because Strata depends upon capabilities or authority established by Institutive.
+Institutive is not synonymous with the `delivery/institutive` directory.
 
-The API, capacity-management role, GitHub workflows, Terraform delivery workspaces, and related control-plane mechanisms are therefore delivery machinery even when they operate on behalf of Strata.
+The `delivery/institutive` directory contains selected Institutive infrastructure, including infrastructure for the Amiasea application surface and associated institutional capabilities such as the sovereign Key Vault.
+
+Other Institutive artifacts may be realized elsewhere.
+
+Examples include:
+
+* `_bootstrap` configuration that establishes the delivery control plane;
+* GitHub workflows that establish or operate delivery mechanisms;
+* HCP Terraform configuration that establishes delivery execution;
+* the Amiasea API and UI;
+* webhook integration;
+* identity and trust configuration;
+* promotion orchestration; and
+* other machinery required to establish and operate the delivery model.
+
+An artifact belongs to Institutive according to the engineering responsibility it realizes, not according to the repository or directory in which it is stored.
+
+Infrastructure in the `amiasea-institutive` subscription is therefore not part of Strata merely because Strata depends upon capabilities or authority established by Institutive.
+
+Similarly, an Institutive workflow may exist within the Strata repository without becoming Strata work.
+
+The Amiasea API, capacity-management role, GitHub workflows, Terraform delivery workspaces, and related control-plane mechanisms are delivery machinery even when they operate on behalf of Strata.
+
+> **Institutive is a semantic work stream; `delivery/institutive` is only one implementation location for that work.**
+
+## Delivery as an Aspect of the Engineering Model
+
+Delivery should not be interpreted as the complete Amiasea engineering model.
+
+The engineering model is the higher-order ontology.
+
+Delivery is the aspect concerned with establishing, promoting, operating, and connecting engineering work through infrastructure and delivery machinery.
+
+This distinction permits the engineering model to describe concepts that are broader than any particular delivery implementation.
+
+```text
+Amiasea Engineering Model
+        │
+        └── Delivery
+             │
+             ├── Institutive
+             ├── Strata
+             └── Kitting
+```
+
+The work streams remain semantic even when their implementations cross repository, workspace, subscription, provider, or service boundaries.
 
 ## Boundary Principle
 
@@ -477,4 +582,6 @@ A workspace, workflow, API role, or Terraform construct belongs in Delivery when
 
 The repository structure, Terraform workspace structure, HCP Terraform organization, API structure, and provider boundaries do not need identical semantic boundaries.
 
-> **The engineering model defines what exists. Delivery establishes and operates the infrastructure and machinery required to realize it.**
+The `delivery/` directory therefore represents an implementation surface, not the ontology of Delivery itself.
+
+> **The engineering model defines what exists. Delivery establishes and operates the infrastructure and machinery required to realize selected engineering work.**

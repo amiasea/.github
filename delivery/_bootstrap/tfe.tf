@@ -2,9 +2,9 @@ data "tfe_github_app_installation" "gha_installation" {
   name = var.organization_name
 }
 
-resource "tfe_project" "institutive" {
+resource "tfe_project" "delivery" {
   organization = var.organization_name
-  name         = "institutive"
+  name         = "delivery"
 }
 
 resource "tfe_project" "promotion" {
@@ -19,7 +19,7 @@ resource "tfe_variable_set" "environment" {
 
 resource "tfe_project_variable_set" "environment_to_foundation" {
   variable_set_id = tfe_variable_set.environment.id
-  project_id      = tfe_project.institutive.id
+  project_id      = tfe_project.delivery.id
 }
 
 resource "tfe_project_variable_set" "environment_to_promotion" {
@@ -54,7 +54,7 @@ resource "tfe_variable" "tfc_azure_provider_auth_institutive" {
 
 resource "tfe_variable" "tfc_azure_run_client_id_institutive" {
   key             = "TFC_AZURE_RUN_CLIENT_ID_INSTITUTIVE"
-  value           = "55a110cd-185b-4d34-a0c5-e28e59167a31"
+  value           = "241cd7c9-cc16-416e-91c0-df11b35846fa"
   category        = "env"
   variable_set_id = tfe_variable_set.environment.id
 }
@@ -68,7 +68,7 @@ resource "tfe_variable" "tfc_azure_provider_auth_speculative" {
 
 resource "tfe_variable" "tfc_azure_run_client_id_speculative" {
   key             = "TFC_AZURE_RUN_CLIENT_ID_SPECULATIVE"
-  value           = "55a110cd-185b-4d34-a0c5-e28e59167a31"
+  value           = "241cd7c9-cc16-416e-91c0-df11b35846fa"
   category        = "env"
   variable_set_id = tfe_variable_set.environment.id
 }
@@ -108,13 +108,40 @@ resource "tfe_variable" "azure_environment" {
 
 # WORKSPACES
 
+resource "tfe_workspace" "institutive" {
+  name         = "institutive"
+  description  = "Workspace for managing the Institutive delivery mechanics"
+  organization = var.organization_name
+  project_id   = tfe_project.delivery.id
+
+  working_directory     = "delivery/institutive"
+  file_triggers_enabled = true
+  speculative_enabled   = false
+
+  vcs_repo {
+    identifier                 = "${var.organization_name}/.github"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
+  }
+}
+
+resource "tfe_workspace_settings" "institutive" {
+  workspace_id   = tfe_workspace.institutive.id
+  auto_apply     = true
+  execution_mode = "remote"
+
+  depends_on = [
+    tfe_workspace.institutive
+  ]
+}
+
 resource "tfe_workspace" "strata" {
   name         = "strata"
   description  = "Workspace for managing the Strata delivery mechanics"
   organization = var.organization_name
-  project_id   = tfe_project.institutive.id
+  project_id   = tfe_project.delivery.id
 
-  working_directory     = "terraform/strata"
+  working_directory     = "delivery/strata"
   file_triggers_enabled = true
   speculative_enabled   = false
 
@@ -139,9 +166,9 @@ resource "tfe_workspace_settings" "strata" {
 #   name         = "kitting"
 #   description  = "Workspace for managing the Kitting repository"
 #   organization = var.organization_name
-#   project_id   = tfe_project.foundation.id
+#   project_id   = tfe_project.delivery.id
 
-#   working_directory     = "terraform/kitting"
+#   working_directory     = "delivery/kitting"
 #   file_triggers_enabled = true
 #   speculative_enabled   = false
 

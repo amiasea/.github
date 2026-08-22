@@ -1,5 +1,6 @@
-resource "aurerm_resource_group" "sovereign" {
+resource "azurerm_resource_group" "sovereign" {
   name = "rg-amiasea-sovereign"
+  location = var.location
 }
 
 resource "azurerm_container_app_environment" "api" {
@@ -8,14 +9,14 @@ resource "azurerm_container_app_environment" "api" {
   resource_group_name = azurerm_resource_group.sovereign.name
 }
 
-data "azurerm_user_assigned_identity" "amiasea_authority" {
-  name                = "Amiasea-Authority"
+data "azurerm_user_assigned_identity" "amiasea_workload" {
+  name                = "amiasea-workload"
   resource_group_name = azurerm_resource_group.sovereign.name
 }
 
-data "azuread_service_principal" "amiasea_authority" {
-  display_name = "Amiasea-Authority"
-}
+# data "azuread_application" "amiasea_app" {
+#   display_name = "amiasea-app"
+# }
 
 resource "azurerm_container_app" "api" {
   name                         = "amiasea-api"
@@ -25,7 +26,7 @@ resource "azurerm_container_app" "api" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [data.azuread_service_principal.amiasea_authority.id]
+    identity_ids = [data.azurerm_user_assigned_identity.amiasea_workload.id]
   }
 
   template {
