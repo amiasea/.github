@@ -1,3 +1,11 @@
+# module "institutive" {
+#   source = "./institutive"
+
+#   providers = {
+#     azurerm = azurerm.institutive
+#   }
+# }
+
 module "speculative" {
   source = "./speculative"
 

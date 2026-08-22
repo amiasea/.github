@@ -2,280 +2,232 @@
 
 The Amiasea API is a platform primitive established by Institutive.
 
-It provides the common control-plane boundary through which Amiasea receives events, maintains platform state, coordinates platform activity, and exposes capabilities to automation and future Amiasea user interfaces.
+It provides the common control-plane boundary through which Amiasea receives events, coordinates platform activity, maintains platform coordination state, and exposes capabilities to automation and future Amiasea user interfaces.
 
-The API is not itself a Strata component. Strata promotion is one capability currently implemented through the API.
-
-Other capabilities may exist independently of Strata, including future capabilities such as SSO.
+The API is not itself a Strata component. Strata Promotion is the initial capability implemented through the API.
 
 > **The Amiasea API is the common platform boundary; its capabilities provide distinct responsibilities within that boundary.**
 
 # Platform Boundary
 
-The API connects external event sources, platform capabilities, execution mechanisms, and user interfaces.
+The API connects external systems, platform capabilities, execution mechanisms, and user interfaces.
 
 ```text
-GitHub ──────────────┐
-                     │
-HCP Terraform ───────┤
-                     ▼
+GitHub ───────────────┐
+                      │
+HCP Terraform ────────┤
+                      ▼
                 Amiasea API
-                 │    │
-                 │    └── Amiasea UI
+                 │       │
+                 │       └── Amiasea UI
                  │
                  └── platform capabilities
-                         │
-                         ▼
-                  external systems
 ```
 
 The API does not replace the systems with which it integrates.
 
 GitHub remains responsible for source control, repository governance, workflow execution, and GitHub-originated events.
 
-HCP Terraform remains responsible for Terraform workspace execution, configuration versions, runs, and state.
+HCP Terraform remains responsible for Terraform workspaces, configuration versions, runs, and state.
 
-The API provides the common platform boundary through which Amiasea coordinates those systems.
+Azure remains responsible for infrastructure resources.
+
+The API provides the boundary through which Amiasea coordinates these systems.
+
+The integrations form a **mesh**, rather than a one-way pipeline. Systems may both emit events to the API and receive commands from it where required.
 
 # Platform Capabilities
 
 A platform capability is a distinct responsibility provided through the Amiasea API.
 
-Capabilities are independent at the semantic level even when they share implementation infrastructure.
-
 The initial capability is:
 
 ```text
 Amiasea API
+
 └── Strata Promotion
 ```
 
-The platform may subsequently contain capabilities such as:
-
-```text
-Amiasea API
-├── Strata Promotion
-├── SSO
-├── ...
-└── ...
-```
-
-The existence of one capability does not establish a hierarchy over the others.
+Future capabilities may exist independently, including capabilities such as SSO.
 
 Each capability may have its own domain concepts, state, events, authorization requirements, and external integrations.
 
-# Strata Promotion Capability
+# Strata Promotion
 
-Strata Promotion is the initial operational capability of the Amiasea API.
+Strata Promotion provides the orchestration machinery required to coordinate Strata promotional activity.
 
-It provides the orchestration machinery required to coordinate Strata promotional activity.
+Its initial responsibility is the **Speculative Capacity Manager**.
 
 ```text
 Amiasea API
+
 └── Strata Promotion
-    ├── orchestration
-    ├── capacity
-    ├── assignment
-    └── execution dispatch
+
+    └── Speculative Capacity Manager
 ```
 
 The API does not define the Strata ontology.
 
-Strata defines the semantic hosting domain and its promotional lifecycle. The API provides machinery through which that lifecycle is coordinated.
+Strata defines Hosting, Collective, environments, resources, and promotional stages. The API provides machinery through which those semantics are coordinated.
 
-The Strata promotion roles are documented in:
+The Strata promotion model is documented in:
 
-`strata/promotion/orchestration/roles.md`
+`strata/promotion/orchestration/`
 
-# Speculative Capacity Manager
+# Speculative Capacity
 
-The Speculative Capacity Manager is a responsibility within Strata Promotion.
+Speculative capacity is established independently by the delivery infrastructure.
 
-It coordinates the allocation of paired Speculative capacity to pull requests.
-
-Speculative capacity is established independently by the delivery infrastructure. Each capacity slot consists of a Hosting environment and a Collective environment of the same size.
-
-```text
-amiasea-speculative
-├── Speculative slot 01
-│   ├── Hosting environment
-│   └── Collective environment
-├── Speculative slot 02
-│   ├── Hosting environment
-│   └── Collective environment
-└── ...
-```
-
-The paired environments may be identified by a shared slot number and corresponding resource-group tags.
-
-Conceptually:
+Capacity consists of paired Hosting and Collective environments that exist as a reusable pool.
 
 ```text
 Speculative slot
-    │
-    ├── Hosting
-    └── Collective
+
+├── Hosting environment
+└── Collective environment
 ```
 
-A pull request is assigned a single available slot. The assignment therefore establishes both environment identities for the speculative realization.
+A pull request is assigned a single available slot.
+
+The API governs the relationship between the pull request and the assigned capacity. It does not own the infrastructure that establishes the capacity.
+
+The Speculative Capacity Manager reasons about semantic capacity such as:
 
 ```text
-pull request
-    │
-    ▼
-Speculative Capacity Manager
-    │
-    └── slot 03
-         ├── hosting_environment_id
-         └── collective_environment_id
+slot available
+slot assigned
+environment occupied
+environment released
 ```
 
-The SCM does not need to understand the Terraform configuration, Azure resource-group implementation, or provider-specific machinery used to establish that capacity.
+rather than provider-specific implementation details.
 
-Those mechanisms are platform infrastructure.
+# Speculative Environment Reservation
 
-The SCM provides the orchestration boundary over them.
+Speculative environments are pooled capacity. They exist independently of pull requests and may be reused after a candidate releases them.
 
-The capacity model is documented in:
+The Speculative Capacity Manager considers an environment **reserved** when an active speculative workspace has successfully realized against that environment.
 
-`strata/promotion/orchestration/capacity.md`
+The relationship is:
+
+```text
+Speculative workspace
+        │
+        │ successful realization
+        ▼
+Speculative environment
+        │
+        └── reserved by workspace
+```
+
+The workspace is the logical identity of the reservation.
+
+The API does not maintain a separate allocation record solely to represent this relationship. Instead, the reservation is represented through existing platform identities and lifecycle events.
+
+The physical implementation of a Speculative environment may carry metadata identifying the workspace that currently occupies it:
+
+```text
+amiasea:workspace-id = <workspace-id>
+```
+
+This metadata is a projection of the reservation. It is not the system of record for the reservation.
+
+When the API observes successful realization of a speculative workspace, it establishes the corresponding environment association.
+
+When the API observes destruction or release of that workspace, it removes the association.
+
+```text
+successful realization
+        │
+        ▼
+environment reserved
+        │
+        │
+workspace destroyed
+        │
+        ▼
+environment released
+```
+
+An environment that has no active workspace association is available for assignment.
+
+The Speculative Capacity Manager therefore reasons in terms of:
+
+```text
+available environment
+reserved environment
+released environment
+```
+
+rather than the provider-specific resources used to implement those environments.
+
+The underlying infrastructure establishes the pool of environments. The API governs the relationship between speculative candidates and that capacity.
 
 # Event-Driven Operation
 
-The API is event-driven and does not poll participating systems.
+The API is event-driven and does not poll participating systems to discover activity.
 
 GitHub delivers repository, pull request, review, and workflow events through webhooks.
 
-HCP Terraform may deliver workspace and Terraform execution events through its notification mechanisms.
-
-Platform infrastructure and other delivery machinery may provide additional observations required by a capability.
+HCP Terraform delivers workspace and execution observations through its notification mechanisms.
 
 ```text
 GitHub ───────────────┐
                       │
 HCP Terraform ────────┤
-                      │
-platform machinery ───┤
                       ▼
-                 Amiasea API
+                Amiasea API
 ```
 
-The API interprets external events and may derive logical events used by a platform capability.
+The API interprets external events and may issue bounded commands in response.
 
-The API does not periodically query systems to discover whether something happened.
+A query against an integrated system is permitted when required to complete a specific operation, but polling is not the mechanism by which the API discovers state.
 
-> **The API reacts to observations emitted by participating systems rather than discovering state through polling.**
-
-The event model for Strata promotion is documented in:
-
-`strata/promotion/orchestration/events.md`
+> **The API reacts to observations emitted by participating systems rather than periodically discovering activity through polling.**
 
 # Platform State
 
-The API may maintain state required by its platform capabilities.
+The API may maintain coordination state required by its capabilities.
 
-For Strata Promotion, this may include:
+For Strata Promotion this may include:
 
 * pull requests;
 * revisions;
 * eligibility;
 * capacity assignments;
-* speculative workspace identities;
-* configuration-version identities;
-* observed execution state; and
+* speculative workspace identities; and
 * promotional state.
 
-This state is coordination state, not infrastructure state.
+This is **coordination state**, not infrastructure state.
 
 ```text
 Terraform state
     → infrastructure realization
 
 HCP Terraform
-    → workspace, configuration-version, run, and execution state
+    → workspace and execution state
 
-API state
+Amiasea API
     → platform coordination
 ```
 
+The API should prefer existing authoritative systems and their events over creating custom persistence for relationships already represented elsewhere.
+
 The API does not become a second Terraform state system.
-
-The API may reference infrastructure identities and execution resources without becoming their system of record.
-
-Other platform capabilities may maintain entirely different forms of state.
-
-# Strata Promotion Roles
-
-Roles are responsibilities performed within a capability.
-
-They are not necessarily separate services or deployments.
-
-Within Strata Promotion, the initial role is the **Speculative Capacity Manager**.
-
-```text
-Amiasea API
-└── Strata Promotion
-    └── Speculative Capacity Manager
-```
-
-The SCM is responsible for the orchestration of Speculative capacity and promotional activity.
-
-Its responsibility may include:
-
-* receiving repository and pull-request events;
-* determining whether a pull request is eligible for Speculative realization;
-* observing available capacity;
-* assigning a paired Speculative slot;
-* maintaining coordination state;
-* dispatching bounded delivery operations;
-* advancing the speculative workspace lifecycle; and
-* interpreting resulting events.
-
-The SCM does not necessarily own the infrastructure, workflows, Terraform configuration, or provider resources through which those operations are performed.
-
-This distinction allows the API to govern the platform without coupling the role to implementation details.
-
-The distinction is important:
-
-```text
-Platform capability
-    ↓
-responsibility
-    ↓
-role
-    ↓
-platform primitives
-```
-
-The platform primitives are the mechanisms through which the role acts.
-
-A role does not become a new platform capability merely because the implementation gives it a distinct module or component.
 
 # Speculative Realization
 
-Speculative realization is the first promotional execution of a Strata pull request.
+A speculative workspace represents the Terraform execution context for a pull request.
 
-The speculative workspace is not VCS-connected.
-
-The API reacts to the pull request and coordinates creation or reuse of a dedicated HCP Terraform workspace representing the pull request's speculative lifecycle.
-
-The workspace receives Terraform configuration assembled from:
+The workspace is dynamically created and identified by the pull request:
 
 ```text
-Strata pull-request revision
-        +
-Strata speculative delivery template
-        +
-assigned environment values
+speculative-pr-<pull-request-number>
 ```
 
-The speculative delivery template is maintained in:
+The API determines eligibility, assigns capacity, identifies the requested revision, and dispatches the appropriate delivery workflow.
 
-`amiasea/.github/terraform/delivery/strata/speculative`
-
-The delivery workflow checks out the required repository revisions, assembles the Terraform configuration, creates the configuration archive, and uploads it to the HCP Terraform workspace as a configuration version.
-
-The speculative workspace therefore does not need to observe GitHub directly.
+The delivery workflow performs bounded mechanical operations such as creating and configuring the HCP Terraform workspace.
 
 ```text
 Pull request
@@ -283,80 +235,86 @@ Pull request
     ▼
 Amiasea API
     │
+    ├── determine eligibility
     ├── assign Speculative slot
     ├── identify revision
-    └── dispatch delivery workflow
-              │
-              ├── checkout Strata revision
-              ├── checkout delivery template
-              ├── assemble configuration
-              └── upload configuration version
-                         │
-                         ▼
-                  HCP Terraform workspace
-                         │
-                         ▼
-                  speculative run
+    └── dispatch workflow
+             │
+             ├── create workspace
+             ├── configure VCS
+             └── configure variables
 ```
 
-The workspace persists for the lifecycle of the pull request.
+The workflow does not decide whether the pull request is eligible or which capacity it receives.
 
-When the pull request receives a new commit, the API repeats the configuration-version process against the new revision rather than creating a new workspace.
+The API coordinates the lifecycle through the resulting events.
 
-This preserves the workspace and run history across revisions.
+The workspace receives the environment assignments associated with its Speculative slot. These assignments are workspace-specific configuration rather than reusable project-wide configuration.
 
-The speculative workspace represents the paired graph:
+# Speculative Workspace Lifecycle
+
+The API coordinates the speculative workspace lifecycle through events and bounded commands.
 
 ```text
-Speculative workspace
-├── Hosting
-└── Collective
+PR created
+    │
+    ▼
+eligibility determined
+    │
+    ▼
+Speculative slot assigned
+    │
+    ▼
+workspace created
+    │
+    ▼
+Terraform execution
+    │
+    ▼
+successful realization
+    │
+    ▼
+environment reserved
+    │
+    ▼
+candidate remains active
+    │
+    ▼
+workspace destroyed
+    │
+    ▼
+environment released
 ```
 
-Both receive the environment assignments established by the same Speculative slot.
+The successful Terraform execution event establishes that the candidate has successfully realized against its assigned Speculative environment.
 
-HCP Terraform's VCS-driven pull-request speculative-run mechanism is therefore not part of this flow. The API and delivery workflow explicitly construct and execute the speculative realization.
+The API may use this observation to establish the corresponding environment association.
 
-# Execution
+Workspace destruction or release produces the corresponding observation that allows the API to release the environment.
+
+# Execution Boundary
 
 The API coordinates execution but does not directly execute Terraform.
 
-When a platform capability requires execution, the API may dispatch an appropriate workflow or invoke another bounded execution mechanism.
-
-For Strata promotion:
+For Strata Promotion:
 
 ```text
 event
   ↓
 Amiasea API
   ↓
-Strata promotion decision
+promotion decision
   ↓
-GitHub delivery workflow
+GitHub workflow
   ↓
 HCP Terraform
   ↓
 Terraform
 ```
 
-The delivery workflow is an execution mechanism used by the Strata Promotion capability.
+The workflow is an execution mechanism, not the authority for the decision that caused it to run.
 
-The workflow does not become the authority for the decision that caused it to execute.
-
-For Speculative realization, the workflow is responsible for mechanical delivery operations such as:
-
-* checking out the requested Strata revision;
-* checking out the applicable delivery template;
-* composing the Terraform configuration;
-* creating a configuration archive;
-* creating or updating the HCP Terraform configuration version; and
-* initiating the required HCP Terraform run.
-
-The workflow does not decide whether a pull request is eligible, which capacity slot it receives, or what promotional stage applies.
-
-Workflow responsibilities are documented in:
-
-`strata/promotion/orchestration/workflows.md`
+The API remains responsible for interpreting resulting events and advancing the capability lifecycle.
 
 # Delivery Boundary
 
@@ -368,11 +326,13 @@ Amiasea delivery infrastructure contains the templates and workflows used to rea
 
 ```text
 Strata repository
+
 └── terraform/
     ├── hosting/
     └── collective/
 
 amiasea/.github
+
 └── terraform/
     └── delivery/
         └── strata/
@@ -380,9 +340,9 @@ amiasea/.github
             └── prospective/
 ```
 
-The speculative template provides the root Terraform configuration required to compose the Hosting and Collective implementations for Speculative execution.
+The delivery machinery is an implementation primitive of the Strata Promotion capability.
 
-The delivery workflow composes that template with the requested Strata revision rather than requiring the Strata repository to contain Amiasea-specific delivery machinery.
+It is not itself the authority for promotional decisions.
 
 # Prospective Promotion
 
@@ -392,23 +352,37 @@ The modules may therefore evolve independently even though they are validated to
 
 ```text
 Speculative
+
 ────────────────────
+
 one pull request
+
         │
+
         ├── Hosting
         └── Collective
+
         │
+
         ▼
+
 paired speculative graph
 
 
 Prospective
+
 ────────────────────
+
 Hosting@version
+
         +
+
 Collective@version
+
         │
+
         ▼
+
 prospective Stack
 ```
 
@@ -416,46 +390,11 @@ The prospective delivery definition is maintained in:
 
 `amiasea/.github/terraform/delivery/strata/prospective`
 
-The prospective configuration publishes or references the individual PMR modules independently and composes them into the prospective Stack.
-
-A change to one module does not require a new version of the other module when no change occurred.
-
-The Stack therefore explicitly determines which Hosting and Collective versions form the prospective realization.
-
-# Capacity and Execution
-
-The SCM should consume platform capacity through stable semantic interfaces rather than directly manipulating provider-specific resources.
-
-For example, the SCM should reason about:
-
-```text
-Speculative slot available
-Speculative slot assigned
-Hosting environment assigned
-Collective environment assigned
-environment released
-```
-
-rather than:
-
-```text
-Azure resource group exists
-Terraform resource created
-Terraform apply completed
-resource ID discovered
-```
-
-The latter are implementation details of the platform machinery.
-
-This separation allows the underlying capacity implementation to evolve without requiring the orchestration model to change.
-
-The API governs the relationship between pull requests and capacity while platform infrastructure establishes the mechanisms through which capacity exists.
+The Stack explicitly determines which Hosting and Collective versions form the prospective realization.
 
 # User Interface
 
-The Amiasea API is the backend interface for the eventual Amiasea UI.
-
-The UI is a consumer of the API rather than an independent control plane.
+The Amiasea API is the backend boundary for the eventual Amiasea UI.
 
 ```text
 Amiasea UI
@@ -463,15 +402,12 @@ Amiasea UI
     ▼
 Amiasea API
     │
-    ├── platform state
     └── platform capabilities
 ```
 
-The UI does not directly coordinate GitHub, HCP Terraform, Terraform, or other infrastructure systems.
+The UI does not directly coordinate GitHub, HCP Terraform, Azure, or other infrastructure systems.
 
 User-initiated actions are expressed through the API and evaluated through the same capability boundaries and authorization mechanisms used by automated activity.
-
-The eventual UI may expose multiple platform capabilities without changing the API's common platform boundary.
 
 # Strata Relationship
 
@@ -479,11 +415,13 @@ The API participates in Strata promotion but is not part of the Strata ontology.
 
 ```text
 Strata
+
 ├── Speculative
 ├── Prospective
 └── Operative
 
 Amiasea API
+
 └── Strata Promotion
     └── Speculative Capacity Manager
 ```
@@ -493,9 +431,7 @@ Strata defines:
 * Hosting;
 * Collective;
 * environments;
-* logical cluster domains;
-* resources;
-* capabilities; and
+* resources; and
 * promotional stages.
 
 The API provides machinery for coordinating activity within those semantics.
@@ -523,15 +459,10 @@ The API architecture should therefore avoid making Strata-specific concepts foun
 The Amiasea API provides:
 
 * event ingress;
-* platform state;
+* platform coordination state;
 * capability interfaces;
-* coordination decisions;
-* responsibility implementation; and
-* action dispatch.
-
-For Strata Promotion, this includes orchestration of Speculative capacity, pull-request activity, workspace lifecycle, and promotional execution through the Speculative Capacity Manager.
-
-The API does not necessarily own every mechanism used by that responsibility.
+* coordination decisions; and
+* bounded action dispatch.
 
 The API does not own:
 
@@ -539,9 +470,10 @@ The API does not own:
 * GitHub workflow execution;
 * HCP Terraform execution;
 * Terraform state;
-* provider infrastructure;
-* Strata infrastructure as a semantic domain;
-* application workloads; or
-* the semantic definition of the domains it coordinates.
+* Azure infrastructure;
+* Strata's semantic ontology; or
+* application workloads.
 
-> **The Amiasea API is the common control-plane primitive through which Amiasea capabilities operate; its roles govern platform activity through platform primitives without becoming coupled to their implementation details.**
+The API should not become a polling-based synchronization layer or a second state system for its integrated platforms.
+
+> **The Amiasea API is the common control-plane primitive through which Amiasea capabilities coordinate platform activity without becoming the system of record for the systems they integrate with.**
