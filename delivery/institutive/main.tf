@@ -15,13 +15,13 @@ data "azurerm_resource_group" "sovereign" {
 
 resource "azurerm_container_app_environment" "api" {
   name                = "amiasea-api"
-  location            = azurerm_resource_group.sovereign.location
-  resource_group_name = azurerm_resource_group.sovereign.name
+  location            = data.azurerm_resource_group.sovereign.location
+  resource_group_name = data.azurerm_resource_group.sovereign.name
 }
 
 data "azurerm_user_assigned_identity" "amiasea_workload" {
   name                = "amiasea-workload"
-  resource_group_name = azurerm_resource_group.sovereign.name
+  resource_group_name = data.azurerm_resource_group.sovereign.name
 }
 
 # data "azuread_application" "amiasea_app" {
@@ -31,7 +31,7 @@ data "azurerm_user_assigned_identity" "amiasea_workload" {
 resource "azurerm_container_app" "api" {
   name                         = "amiasea-api"
   container_app_environment_id = azurerm_container_app_environment.api.id
-  resource_group_name          = azurerm_resource_group.sovereign.name
+  resource_group_name          = data.azurerm_resource_group.sovereign.name
   revision_mode                = "Single"
 
   identity {
