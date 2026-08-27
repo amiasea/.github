@@ -1,170 +1,147 @@
-# Work Streams
+**Work Streams**
 
-A work stream is a distinct body of engineering work within the Amiasea engineering model.
+A work stream is a distinct body of engineering work within the Amiasea engineering model. Work streams describe what is being engineered, not the repositories, Terraform configurations, workspaces, subscriptions, projects, workflows, APIs, or other mechanisms through which the work is realized.
 
-Work streams describe **what is being engineered**, not the repositories, Terraform configurations, Terraform workspaces, subscriptions, projects, workflows, APIs, or other mechanisms through which that work is realized.
+The three primary work streams remain **Institutive, Strata, and Kitting**.
 
-The current delivery model has three primary work streams:
+### Institutive
 
-* Institutive
-* Strata
-* Kitting
+Institutive establishes the Amiasea engineering model itself: the control-plane machinery, delivery structures, repositories, GitHub integration, HCP Terraform integration, APIs, identity, authorization, orchestration, webhooks, and other mechanisms necessary to operate the model.
 
-These work streams are semantic boundaries. They may use the same implementation mechanisms while performing conceptually different work.
+Institutive is therefore about establishing the machinery that allows the other work streams and their promotion lifecycles to operate. It is not a stage or part of the Strata or Kitting lifecycle.
 
-## Institutive
+### Strata
 
-Institutive is the work stream through which the Amiasea delivery model itself is established.
+Strata engineers the **Strata hosting model**.
 
-Institutive establishes the machinery through which engineering work can be developed, promoted, and operated.
+The product of Strata is a **Strata artifact**, represented as one image. That image encompasses the hosting model together with the networking and collective capabilities required to establish the hosting environment.
 
-This includes work such as:
+The hosting model is bounded by hosting domains and may contain multiple clusters. A cluster is therefore an implementation boundary within the hosting model, not a promotional stage.
 
-* delivery and promotion structures;
-* repositories and control-plane organization;
-* Terraform and HCP Terraform mechanisms;
-* GitHub workflows and integrations;
-* the Amiasea API and UI;
-* API orchestration;
-* webhook integration;
-* identity and authorization mechanisms; and
-* other machinery required to operate the engineering delivery model.
+The Collective Model represents shared cloud capabilities that transcend an individual hosting domain.
 
-Institutive is therefore concerned with establishing the **delivery model**, rather than delivering a particular hosted application solution.
+Consequently, a Strata artifact should be understood as something like:
 
-The Amiasea API is an example of Institutive work. Its orchestration of Strata and Kitting promotion does not make the API itself Strata or Kitting work.
+**Strata image = Networking + Hosting Model + Collective Model**
 
-Institutive is not a stage of Strata. The fact that Institutive work may establish infrastructure used by Strata does not make that work part of Strata.
+It is not:
 
-## Strata
+**Strata image = speculative cluster + prospective cluster + operative cluster**
 
-Strata is the work stream through which the hosting model is established.
+Those are different concepts.
 
-Strata does not itself host application solutions. It establishes the infrastructure, boundaries, and promotion model through which hosting can be provided to application solutions.
+The capacity, scaling characteristics, replication, and other production-tier characteristics of a realization of the Strata image are also separate concerns from the identity of the Strata artifact.
 
-Strata establishes concepts such as:
+### Strata promotion
 
-* Hosting;
-* Collective services;
-* logical hosting domains;
-* cluster boundaries;
-* cloud services required by the hosting model; and
-* other infrastructure required to establish hosting capacity.
+The Strata artifact has its own lifecycle and may progress through Speculative, Prospective, and Operative promotion.
 
-Strata's promotion model provides a controlled progression through which changes to the hosting model can be established and validated.
+Those stages describe the **state of the Strata artifact in its lifecycle**, not different kinds of Strata infrastructure.
 
-Strata may use representative application workloads to validate its hosting model. A Kitting release may therefore be deployed into a Strata promotional environment for validation without that Kitting work becoming part of Strata.
+A candidate Strata image can be realized in a speculative environment to establish that the hosting model actually works. It can then progress through more mature validation until it becomes an operative Strata image.
 
-Strata has jurisdiction over the hosting boundaries it establishes, including the logical domains within its Hosting and Collective scopes.
+A successful Terraform apply is therefore only part of the validation. The meaningful test is whether the resulting hosting model can actually provide the capabilities that Kitting requires.
 
-Strata promotion is independent of the promotion lifecycle of the application solutions that consume Strata capabilities.
+This is where Kitting becomes useful to Strata.
 
-For example, Strata may remain unchanged while application solutions are independently released into its established hosting model. Conversely, Strata may change its hosting model while an application solution continues to operate from an established release.
+A Kitting Artifact can be deliberately constructed as a representative or synthetic workload and deployed into a candidate Strata image. That workload is effectively a test instrument for the hosting model.
 
-## Kitting
+It does not become Strata work merely because Strata uses it for validation.
 
-Kitting is the work stream through which application solutions and other domain workloads are delivered into the hosting model established by Strata.
+### Kitting
 
-Kitting consumes Strata capabilities rather than defining the hosting model itself.
+Kitting is the work through which an application solution is packaged into a **Kitting Artifact**.
 
-Kitting has its own delivery and promotion lifecycle.
+That distinction is important: **Kitting is the packaging process; the Kitting Artifact is the resulting product.**
 
-Its promotional stages are therefore not synchronized with Strata's promotional stages merely because both may use terms such as Speculative, Prospective, and Operative.
+The Kitting Artifact then has its own promotion lifecycle.
 
-Kitting may use different realization mechanisms depending on the hosting model. Terraform, Kubernetes, Ansible, or other mechanisms may participate in Kitting without changing the semantic identity of the work as Kitting.
+That lifecycle can also use Speculative, Prospective, and Operative stages, but those stages belong to the Kitting Artifact's lifecycle, not the Strata artifact's lifecycle.
 
-For example, Terraform may establish infrastructure required by an application solution, while Ansible may subsequently realize application configuration within a Kubernetes cluster. Both mechanisms can therefore participate in the same Kitting work.
+A real Kitting Artifact represents an actual application solution. It is promoted through an established Strata hosting model.
 
-Kitting may also be used as a representative workload by Strata for validation. That does not cause Kitting to become part of Strata's promotional lifecycle.
+So the two relationships are different:
 
-## Delivery
+Strata promotion asks:
 
-Delivery is the implementation structure through which the Amiasea engineering model is established and its work streams are realized.
+**"Is this version of the hosting model ready to provide hosting?"**
 
-Delivery is not itself a work stream. It is the machinery through which work streams are established, promoted, and operated.
+Kitting promotion asks:
 
-The delivery implementation may contain mechanisms for multiple work streams:
+**"Is this application solution ready to be hosted?"**
 
-```text
-delivery/
-├── _bootstrap/
-├── institutive/
-├── strata/
-└── kitting/
-```
+### The two promotion streams
 
-The organization of these directories reflects the conceptual responsibility of the work being implemented, rather than the implementation technology used.
+This is the part I think the document most needs to make explicit.
 
-For example, Terraform may be used in all three work streams while performing fundamentally different work:
+There are two independent artifact lifecycles:
 
-```text
-Institutive
-    │
-    └── Terraform establishes the delivery model
+**Strata artifact → Strata promotion → Speculative → Prospective → Operative**
 
-Strata
-    │
-    └── Terraform establishes and promotes the hosting model
+and
 
-Kitting
-    │
-    └── Terraform realizes application solution infrastructure
-```
+**Kitting artifact → Kitting promotion → Speculative → Prospective → Operative**
 
-The use of Terraform does not therefore make these activities one work stream.
+They are independent, but they are not unrelated.
 
-Likewise, GitHub, HCP Terraform, Kubernetes, Ansible, Azure services, and the Amiasea application may participate in multiple aspects of delivery without defining the semantic boundaries of those work streams.
+A Kitting Artifact fundamentally depends upon Strata. Therefore, a real Kitting Artifact is promoted against an established Strata image.
 
-## Work Stream Boundaries
+At the same time, Strata promotion can use Kitting Artifacts as validation workloads.
 
-Work-stream boundaries are semantic boundaries.
+That produces a useful feedback relationship:
 
-They do not require corresponding infrastructure boundaries.
+**Strata PR → candidate Strata image → validation Kitting Artifact**
 
-A repository may contain mechanisms used by more than one work stream. A Terraform configuration may establish infrastructure used by another work stream. A Terraform workspace, HCP Terraform project, GitHub repository, Azure subscription, resource group, API endpoint, or Kubernetes cluster does not therefore define the semantic boundary of a work stream.
+while independently:
 
-The same implementation mechanism may realize different work streams.
+**Kitting PR → candidate Kitting Artifact → established Strata image**
 
-Conceptually:
+This means the two artifacts can evolve independently while continuously testing their integration.
 
-```text
-                         Amiasea
-                Engineering Delivery Model
-                           │
-                           ▼
-                        Delivery
-                           │
-             ┌─────────────┼─────────────┐
-             │             │             │
-        Institutive      Strata        Kitting
-             │             │             │
-       establishes     establishes     delivers
-       the delivery    the hosting     application
-       model           model           solutions
-```
+A candidate Strata image might even be tested against an existing operative Kitting Artifact. That is not the Kitting Artifact being promoted through its lifecycle; it is the existing artifact being used as a workload against which the candidate Strata image is validated.
 
-The delivery machinery may use many technologies:
+Likewise, a Kitting PR is not testing a Strata PR simply because both happen to be in a speculative environment. It is testing against an established Strata image appropriate to that Kitting promotion stage.
 
-```text
-GitHub
-   │
-HCP Terraform
-   │
-Terraform
-   │
-Kubernetes
-   │
-Ansible
-   │
-Azure
-   │
-Amiasea API / UI
-```
+### Delivery
 
-These technologies are mechanisms within the engineering model. None of them independently defines a work stream.
+I would also change the treatment of Delivery.
 
-The purpose of Amiasea is to provide a coherent engineering-delivery model across these mechanisms—something that the release-management capabilities of any individual mechanism, including GitHub, do not provide by themselves.
+**Delivery is not a fourth work stream.**
 
-> **A work stream defines the work; delivery defines the machinery through which that work is established and promoted.**
+It is the machinery through which the work streams and their artifact promotion mechanisms are established and operated.
 
-> **Implementation mechanisms do not define architectural boundaries. The same mechanism may participate in multiple work streams while performing conceptually different work.**
+That means a promotion implementation can coordinate both Strata and Kitting without implying that Strata and Kitting are one work stream.
+
+This is also where HCP Terraform belongs conceptually.
+
+HCP Terraform supplies institutional and execution primitives—workspaces, stacks, runs, state, configuration versions, variables, VCS integration, policies, approvals, etc.
+
+Amiasea composes those primitives into its own promotion mechanics.
+
+So HCP Terraform does not define "Speculative" or "Prospective" in the Amiasea sense. Amiasea does.
+
+### The resulting boundary
+
+I think the cleanest conceptual model is now:
+
+**Institutive** establishes the engineering system.
+
+**Strata** produces the hosting model artifact.
+
+**Kitting** produces application-solution artifacts.
+
+**Promotion** advances those artifacts through their respective lifecycles.
+
+**Delivery** is the machinery that makes all of that possible.
+
+And most importantly:
+
+**Strata and Kitting have separate lifecycles.**
+
+The dependency is directional:
+
+**Kitting depends on Strata as its hosting substrate.**
+
+But Strata can use Kitting as a validation workload.
+
+That distinction explains the seemingly strange situation where a speculative Strata PR and a speculative Kitting PR may both exist at the same time while meaning completely different things. One is asking whether the **hosting model** works; the other is asking whether the **application solution** works on an established hosting model.

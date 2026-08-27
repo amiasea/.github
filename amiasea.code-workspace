@@ -1,0 +1,30 @@
+{
+  "folders": [
+    {
+      "name": ".github",
+      "path": "."
+    },
+    {
+      "name": "strata-artifact",
+      "path": "../strata-artifact"
+    },
+    {
+      "name": "amiasea-app-api-artifact",
+      "path": "../amiasea-app-api-artifact"
+    },
+    {
+      "name": "amiasea-app-api-delivery",
+      "path": "../amiasea-app-api-delivery"
+    },
+    {
+      "path": "../amiasea-artifact-promotion"
+    }
+  ],
+	"settings": {
+		"terminal.integrated.env.windows": {
+			"GITHUB_APP_ID": "2670685",
+			"GITHUB_APP_INSTALLATION_ID": "105130264",
+      "TF_VAR_strata_artifact_workspace": "${workspaceFolder:strata-artifact}"
+		}
+	}
+}
