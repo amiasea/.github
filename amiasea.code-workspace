@@ -9,15 +9,18 @@
       "path": "../strata-artifact"
     },
     {
-      "name": "amiasea-app-api-artifact",
-      "path": "../amiasea-app-api-artifact"
+      "name": "institutive-artifacts",
+      "path": "../amiasea-institutive-artifacts"
     },
     {
-      "name": "amiasea-app-api-delivery",
-      "path": "../amiasea-app-api-delivery"
+      "name": "institutive-delivery",
+      "path": "../amiasea-institutive-delivery"
     },
     {
       "path": "../amiasea-artifact-promotion"
+    },
+    {
+      "path": "../kitting-artifact"
     }
   ],
 	"settings": {
