@@ -35,23 +35,25 @@ resource "tfe_variable" "institutive_azure_client_id" {
 }
 
 resource "tfe_variable" "github_app_id" {
-  key             = "github_app_id"
+  key             = "institutive_github_app_id"
   value           = "2670685"
   category        = "terraform"
   variable_set_id = tfe_variable_set.institutive.id
 }
 
 resource "tfe_variable" "github_app_installation_id" {
-  key             = "github_app_installation_id"
+  key             = "institutive_github_app_installation_id"
   value           = "105130264"
   category        = "terraform"
   variable_set_id = tfe_variable_set.institutive.id
 }
 
 resource "tfe_stack" "institutive" {
-  name         = "institutive"
-  description  = "Stack for managing the Amiasea Institutive delivery mechanics"
-  project_id   = tfe_project.institutive.id
+  name                = "institutive"
+  description         = "Stack for managing the Amiasea Institutive delivery mechanics"
+  project_id          = tfe_project.institutive.id
+  speculative_enabled = true
+  trigger_patterns    = ["**/*"]
 
   vcs_repo {
     identifier                 = "${var.organization_name}/institutive-delivery"
