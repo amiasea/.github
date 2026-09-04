@@ -5,6 +5,6 @@
   "features": {
     "ghcr.io/devcontainers/features/powershell:1": {}
   },
-  "onCreateCommand": "pwsh -NoProfile -Command \"$modulePath = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Documents/PowerShell/Modules/AmiaseaWorkspace'; New-Item -ItemType Directory -Path $modulePath -Force | Out-Null; Copy-Item .devcontainer/AmiaseaWorkspace.psd1, .devcontainer/AmiaseaWorkspace.psm1, .devcontainer/Workspace.Discovery.ps1, .devcontainer/Workspace.Provisioning.ps1 -Destination $modulePath -Force\"",
-  "postCreateCommand": "Discover-AmiaseaWorkspace | Provision-AmiaseaWorkspace"
+  "onCreateCommand": "pwsh -NoProfile -Command '$modulePath = Join-Path ([Environment]::GetFolderPath(\"UserProfile\")) \"Documents/PowerShell/Modules/AmiaseaWorkspace\"; New-Item -ItemType Directory -Path $modulePath -Force | Out-Null; Copy-Item .devcontainer/AmiaseaWorkspace.psd1, .devcontainer/AmiaseaWorkspace.psm1, .devcontainer/Workspace.Discovery.ps1, .devcontainer/Workspace.Provisioning.ps1 -Destination $modulePath -Force'",
+  "postCreateCommand": "pwsh -NoProfile -Command 'Import-Module AmiaseaWorkspace; Discover-AmiaseaWorkspace | Provision-AmiaseaWorkspace'"
 }
