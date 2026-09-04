@@ -1,5 +1,5 @@
 using Amiasea.API;
-using Amiasea.API.Infrastructure; // The Sovereign Theater Engine
+using Amiasea.API.Infrastructure; // The Institutive Theater Engine
 using Amiasea.Data.Service;
 using Azure.Identity;
 using Azure.Security.KeyVault.Keys.Cryptography;
@@ -22,7 +22,7 @@ if (builder.Environment.IsDevelopment())
 
     if (File.Exists(devKeyPath))
     {
-        builder.Services.AddSingleton<ISovereignSigner>(new LocalFileSigner(devKeyPath));
+        builder.Services.AddSingleton<IInstitutiveSigner>(new LocalFileSigner(devKeyPath));
     }
     else
     {
@@ -42,7 +42,7 @@ else
         new DefaultAzureCredential());
 
     builder.Services.AddSingleton(cryptoClient);
-    builder.Services.AddSingleton<ISovereignSigner, KeyVaultSigner>();
+    builder.Services.AddSingleton<IInstitutiveSigner, KeyVaultSigner>();
 }
 
 // builder.Services.AddHttpClient<AirportService>(client =>

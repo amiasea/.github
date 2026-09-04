@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Http; // Add this
 
 namespace Amiasea.Intent;
 
-public record SovereignContext
+public record InstitutiveContext
 {
     public string AviatorId { get; }
     public string Tier { get; }
 
-    public SovereignContext(IHttpContextAccessor accessor)
+    public InstitutiveContext(IHttpContextAccessor accessor)
     {
         var principal = accessor.HttpContext?.User;
 

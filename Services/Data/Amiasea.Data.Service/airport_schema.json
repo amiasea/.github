@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org",
   "title": "Aviator Substrate Manifest",
-  "description": "The canonical schema for validating Airport Sovereign Intent manifests and GitOps infrastructure declarations.",
+  "description": "The canonical schema for validating Airport Institutive Intent manifests and GitOps infrastructure declarations.",
   "type": "object",
   "required": [
     "resource"
@@ -31,7 +31,7 @@
         },
         "aviator_plane": {
           "type": "object",
-          "description": "Represents a unique sovereign trust domain within an Airport.",
+          "description": "Represents a unique institutive trust domain within an Airport.",
           "required": [
             "airport_id",
             "type"
@@ -58,7 +58,7 @@
         },
         "aviator_signal_surface": {
           "type": "object",
-          "description": "Defines a unique telemetry or event boundary on a Sovereign Plane.",
+          "description": "Defines a unique telemetry or event boundary on a Institutive Plane.",
           "required": [
             "name",
             "description",
@@ -90,7 +90,7 @@
         },
         "aviator_capability_binding": {
           "type": "object",
-          "description": "Maps a Sovereign Plane to a Signal Surface via a mandatory Rationale.",
+          "description": "Maps a Institutive Plane to a Signal Surface via a mandatory Rationale.",
           "required": [
             "plane_id",
             "signal_surface_id",

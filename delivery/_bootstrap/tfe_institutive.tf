@@ -36,14 +36,14 @@ resource "tfe_variable" "institutive_azure_client_id" {
 
 resource "tfe_variable" "github_app_id" {
   key             = "institutive_github_app_id"
-  value           = "2670685"
+  value           = var.github_app_id
   category        = "terraform"
   variable_set_id = tfe_variable_set.institutive.id
 }
 
 resource "tfe_variable" "github_app_installation_id" {
   key             = "institutive_github_app_installation_id"
-  value           = "105130264"
+  value           = var.github_app_installation_id
   category        = "terraform"
   variable_set_id = tfe_variable_set.institutive.id
 }
@@ -56,7 +56,7 @@ resource "tfe_stack" "institutive" {
   trigger_patterns    = ["**/*"]
 
   vcs_repo {
-    identifier                 = "${var.organization_name}/institutive-delivery"
+    identifier                 = "${var.organization_name}/institutive-artifacts-delivery"
     branch                     = "main"
     github_app_installation_id = data.tfe_github_app_installation.gha_installation.id
   }

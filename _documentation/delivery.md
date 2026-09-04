@@ -453,9 +453,9 @@ They do not define the semantic identity of the candidate or promotional stage.
 
 HCP Terraform is itself part of the broader engineering delivery machinery rather than being synonymous with any particular work stream.
 
-## Sovereign Variable Set
+## Institutive Variable Set
 
-The sovereign variable set provides authoritative context to applicable Terraform execution workspaces.
+The institutive variable set provides authoritative context to applicable Terraform execution workspaces.
 
 The variable set is not itself the authority.
 
@@ -517,7 +517,7 @@ Institutive is the work stream concerned with the **institutional aspects of est
 
 Institutive is not synonymous with the `delivery/institutive` directory.
 
-The `delivery/institutive` directory contains selected Institutive infrastructure, including infrastructure for the Amiasea application surface and associated institutional capabilities such as the sovereign Key Vault.
+The `delivery/institutive` directory contains selected Institutive infrastructure, including infrastructure for the Amiasea application surface and associated institutional capabilities such as the institutive Key Vault.
 
 Other Institutive artifacts may be realized elsewhere.
 

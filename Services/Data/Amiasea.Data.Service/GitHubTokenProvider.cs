@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Amiasea.Data.Service;
 
-public class GitHubTokenProvider(IConfiguration config, ISovereignSigner signer) : IGitHubTokenProvider
+public class GitHubTokenProvider(IConfiguration config, IInstitutiveSigner signer) : IGitHubTokenProvider
 {
     public async Task<string> GetTokenAsync()
     {

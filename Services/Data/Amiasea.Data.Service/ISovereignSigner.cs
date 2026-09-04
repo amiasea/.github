@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Amiasea.Data.Service;
 
-public interface ISovereignSigner
+public interface IInstitutiveSigner
 {
     Task<byte[]> SignDataAsync(byte[] data);
 }

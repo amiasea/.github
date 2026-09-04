@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Amiasea.Data.Document;
 
-public class ActionDocument : SovereignDocument
+public class ActionDocument : InstitutiveDocument
 {
     public override string Type => "action";
 

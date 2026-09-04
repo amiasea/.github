@@ -2,7 +2,7 @@ name: 'Get Aviator App Token'
 description: 'Fetches PEM from Key Vault and generates a GitHub App Token'
 inputs:
   key_vault_name:
-    description: 'Name of the Sovereign Key Vault'
+    description: 'Name of the Institutive Key Vault'
     required: true
   private_key_name:
     description: 'Name of the secret in Key Vault'
@@ -18,7 +18,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Fetch Sovereign Private Key
+    - name: Fetch Institutive Private Key
       shell: bash
       run: |
         PEM_VALUE=$(az keyvault secret show \

@@ -2,7 +2,7 @@
 
 namespace Amiasea.Data.Document;
 
-public abstract class SovereignDocument
+public abstract class InstitutiveDocument
 {
     [JsonProperty("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();

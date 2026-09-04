@@ -5,7 +5,7 @@ namespace Amiasea.Data.Service;
 
 public static class GitHubJwtFactory
 {
-    public static async Task<string> CreateAsync(string appId, ISovereignSigner signer)
+    public static async Task<string> CreateAsync(string appId, IInstitutiveSigner signer)
     {
         var now = DateTimeOffset.UtcNow;
         var header = new { alg = "RS256", typ = "JWT" };

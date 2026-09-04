@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Amiasea.Data.Document;
 
-public class SessionDocument : SovereignDocument
+public class SessionDocument : InstitutiveDocument
 {
     public override string Type => "session";
 

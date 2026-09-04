@@ -291,7 +291,7 @@ Delivery owns the question:
 
 Permissions may be intentionally different for different Delivery contexts.
 
-For example, an identity used by Institutive execution may have access to a sovereign Key Vault, while an identity used by Speculative execution may have Contributor access to a speculative subscription.
+For example, an identity used by Institutive execution may have access to a institutive Key Vault, while an identity used by Speculative execution may have Contributor access to a speculative subscription.
 
 The Landing Zone establishes those permissions; Delivery consumes them.
 

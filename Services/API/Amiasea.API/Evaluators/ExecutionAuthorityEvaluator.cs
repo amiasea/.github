@@ -28,7 +28,7 @@ public static class ExecutionAuthorityEvaluator
         if (string.IsNullOrEmpty(workspace) || workspace != expectedWorkspace)
         {
             // ERROR: The ExecutionAuthority is attempting to act outside its scope.
-            return Results.Extensions.SovereignError("COHERENCE_FAILURE: Unauthorized Execution Context.");
+            return Results.Extensions.InstitutiveError("COHERENCE_FAILURE: Unauthorized Execution Context.");
         }
 
         // 3. THE BIT-FLIP: Attest the Execution Plane.

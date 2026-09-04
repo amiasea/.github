@@ -18,13 +18,13 @@ public class StartupAttestations : IHostedLifecycleService
     // 1. THE RESTRAINING ORDER: This executes BEFORE Kestrel turns on its listeners
     public async Task StartingAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("⏳ Initiating blocking Sovereign Theater Attestation Sequence...");
+        _logger.LogInformation("⏳ Initiating blocking Institutive Theater Attestation Sequence...");
 
         try
         {
             // Open our temporary court session to resolve scoped resources safely
             using var scope = _scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<SovereignContext>();
+            var context = scope.ServiceProvider.GetRequiredService<InstitutiveContext>();
             var attestment = scope.ServiceProvider.GetRequiredService<IAttestmentContext>();
 
             _logger.LogDebug("Evaluating system coherence markers against Source Authority...");
@@ -46,17 +46,17 @@ public class StartupAttestations : IHostedLifecycleService
         catch (TimeoutException)
         {
             _logger.LogCritical("🛑 CRITICAL TIMEOUT: GitHub/SourceAuthority failed to respond within 5 seconds.");
-            throw new TimeoutException("Sovereign Theater startup was aborted due to a network attestation timeout.");
+            throw new TimeoutException("Institutive Theater startup was aborted due to a network attestation timeout.");
         }
         // This catches if the cloud orchestrator or Ctrl+C explicitly cancels the boot process
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning("Sovereign Theater startup sequence was aborted by the host application environment.");
+            _logger.LogWarning("Institutive Theater startup sequence was aborted by the host application environment.");
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "🛑 CRITICAL MALFUNCTION: Sovereign Theater Attestation failed.");
+            _logger.LogCritical(ex, "🛑 CRITICAL MALFUNCTION: Institutive Theater Attestation failed.");
             throw; // Hard crash the app before it opens bad ports to the public
         }
     }
@@ -64,7 +64,7 @@ public class StartupAttestations : IHostedLifecycleService
     // 2. The standard startup hook (executes as the host starts up, after StartingAsync)
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Sovereign Theater background worker is online.");
+        _logger.LogInformation("Institutive Theater background worker is online.");
         return Task.CompletedTask;
     }
 
@@ -74,7 +74,7 @@ public class StartupAttestations : IHostedLifecycleService
     
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Sovereign Theater Attestation service shutting down.");
+        _logger.LogInformation("Institutive Theater Attestation service shutting down.");
         return Task.CompletedTask;
     }
 

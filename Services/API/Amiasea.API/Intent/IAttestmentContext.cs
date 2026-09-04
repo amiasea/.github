@@ -1,7 +1,7 @@
 ﻿namespace Amiasea.Intent;
 
 /// <summary>
-/// The Sovereign Scorecard: A stateless bit-flip registry for signal verification.
+/// The Institutive Scorecard: A stateless bit-flip registry for signal verification.
 /// It tracks the "Coherence" of the Mesh without a persistent database.
 /// </summary>
 public interface IAttestmentContext
