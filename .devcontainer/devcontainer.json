@@ -14,5 +14,8 @@
         }
       }
     }
+  },
+  "postCreateCommand": {
+    "install-proxies": "pwsh -NoProfile -Command \"Install-PSResource Amiasea.Proxies -Scope CurrentUser -TrustRepository; Import-Module Amiasea.Proxies\""
   }
 }
