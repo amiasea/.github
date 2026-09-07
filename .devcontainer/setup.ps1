@@ -9,8 +9,14 @@ if ([string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
     throw 'GITHUB_TOKEN is not available in this Codespace.'
 }
 
+Write-Host '1: Installing SecretManagement'
 Install-PSResource -Name Microsoft.PowerShell.SecretManagement
+Write-Host '2: Installing SecretStore'
 Install-PSResource -Name Microsoft.PowerShell.SecretStore
+Write-Host '3: Secret modules installed'
+Write-Host '4: Checking vault'
+Get-SecretVault -Name $VaultName -ErrorAction SilentlyContinue
+Write-Host '5: Registering vault if necessary'
 
 Import-Module Microsoft.PowerShell.SecretManagement
 Import-Module Microsoft.PowerShell.SecretStore
