@@ -1,15 +1,74 @@
-$repositoryName = 'Amiasea'
-$repositoryUri = 'https://nuget.pkg.github.com/Amiasea/index.json'
+$ErrorActionPreference = 'Stop'
 
-if (-not (Get-PSResourceRepository -Name $repositoryName -ErrorAction SilentlyContinue)) {
+$RepositoryName = 'Amiasea'
+$RepositoryUri  = 'https://nuget.pkg.github.com/Amiasea/index.json'
+$VaultName      = 'AmiaseaCodespace'
+$SecretName     = 'GitHubPackages'
+
+if ([string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
+    throw 'GITHUB_TOKEN is not available in this Codespace.'
+}
+
+Import-Module Microsoft.PowerShell.SecretManagement
+Import-Module Microsoft.PowerShell.SecretStore
+
+if (-not (Get-SecretVault -Name $VaultName -ErrorAction SilentlyContinue)) {
+    Register-SecretVault `
+        -Name $VaultName `
+        -ModuleName Microsoft.PowerShell.SecretStore `
+        -DefaultVault
+}
+
+Set-SecretStoreConfiguration `
+    -Authentication None `
+    -Interaction None `
+    -Confirm:$false
+
+$secureToken = ConvertTo-SecureString `
+    $env:GITHUB_TOKEN `
+    -AsPlainText `
+    -Force
+
+$credential = [PSCredential]::new(
+    'CodespaceUser',
+    $secureToken
+)
+
+Set-Secret `
+    -Vault $VaultName `
+    -Name $SecretName `
+    -Secret $credential
+
+$credentialInfo =
+    [Microsoft.PowerShell.PSResourceGet.UtilClasses.PSCredentialInfo]::new(
+        $VaultName,
+        $SecretName
+    )
+
+$repository = Get-PSResourceRepository `
+    -Name $RepositoryName `
+    -ErrorAction SilentlyContinue
+
+if ($repository) {
+    Set-PSResourceRepository `
+        -Name $RepositoryName `
+        -Uri $RepositoryUri `
+        -ApiVersion V3 `
+        -CredentialInfo $credentialInfo `
+        -Trusted
+}
+else {
     Register-PSResourceRepository `
-        -Name $repositoryName `
-        -Uri $repositoryUri
+        -Name $RepositoryName `
+        -Uri $RepositoryUri `
+        -ApiVersion V3 `
+        -CredentialInfo $credentialInfo `
+        -Trusted
 }
 
 Install-PSResource `
-    -Name Amiasea.Proxies `
-    -Repository $repositoryName `
+    -Name 'Amiasea.Proxies' `
+    -Repository $RepositoryName `
     -Scope CurrentUser `
     -TrustRepository
 
