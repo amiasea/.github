@@ -1,6 +1,9 @@
 {
   "name": "Amiasea Development",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/powershell:1": {}
+  },
   "customizations": {
     "codespaces": {
       "repositories": {
