@@ -5,16 +5,32 @@
       "path": "."
     },
     {
-      "name": "amiasea-imperatiave",
+      "name": "amiasea-devcontainer-features",
+      "path": "../amiasea-devcontainer-features"
+    },
+    {
+      "name": "amiasea-devcontainer-templates",
+      "path": "../amiasea-devcontainer-templates"
+    },
+    {
+      "name": "amiasea-imperative",
       "path": "../amiasea-imperative"
+    },
+    {
+      "name": "amiasea-powershell",
+      "path": "../amiasea-powershell"
     },
     {
       "name": "strata-artifact",
       "path": "../strata-artifact"
     },
     {
-      "name": "institutive-tools",
-      "path": "../amiasea-institutive-tools"
+      "name": "institutive-tool-release-policy",
+      "path": "../amiasea-institutive-tool-release-policy"
+    },
+    {
+      "name": "institutive-tool-github-app-dispatcher",
+      "path": "../amiasea-institutive-tool-github-app-dispatcher"
     },
     {
       "name": "institutive-artifacts",
