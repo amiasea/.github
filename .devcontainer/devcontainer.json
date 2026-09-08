@@ -19,3 +19,4 @@
     "setup-powershell": "pwsh -NoProfile -File .devcontainer/setup.ps1"
   }
 }
+
