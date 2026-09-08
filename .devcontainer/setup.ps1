@@ -6,86 +6,100 @@ $VaultName      = 'AmiaseaCodespace'
 $SecretName     = 'GitHubPackages'
 
 if ([string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
-    throw 'GITHUB_TOKEN is not available in this Codespace.'
+throw 'GITHUB_TOKEN is not available in this Codespace.'
 }
-
 
 Write-Host '1: Installing SecretManagement'
-Install-PSResource `
-    -Name Microsoft.PowerShell.SecretManagement `
-    -Repository PSGallery `
-    -TrustRepository
+
+Install-PSResource `    -Name Microsoft.PowerShell.SecretManagement`
+-Repository PSGallery `    -TrustRepository`
+-Scope CurrentUser
+
 Write-Host '2: Installing SecretStore'
-Install-PSResource `
-    -Name Microsoft.PowerShell.SecretStore `
-    -Repository PSGallery `
-    -TrustRepository
+
+Install-PSResource `    -Name Microsoft.PowerShell.SecretStore`
+-Repository PSGallery `    -TrustRepository`
+-Scope CurrentUser
+
 Write-Host '3: Secret modules installed'
-Write-Host '4: Checking vault'
-Get-SecretVault -Name $VaultName -ErrorAction SilentlyContinue
-Write-Host '5: Registering vault if necessary'
 
-Import-Module Microsoft.PowerShell.SecretManagement
-Import-Module Microsoft.PowerShell.SecretStore
+Import-Module Microsoft.PowerShell.SecretManagement -Force
+Import-Module Microsoft.PowerShell.SecretStore -Force
 
-if (-not (Get-SecretVault -Name $VaultName -ErrorAction SilentlyContinue)) {
-    Register-SecretVault `
-        -Name $VaultName `
-        -ModuleName Microsoft.PowerShell.SecretStore `
-        -DefaultVault
-}
+Write-Host '4: Configuring SecretStore'
 
-Set-SecretStoreConfiguration `
-    -Authentication None `
-    -Interaction None `
-    -Confirm:$false
+Set-SecretStoreConfiguration `    -Authentication None`
+-Interaction None `
+-Confirm:$false
 
-$secureToken = ConvertTo-SecureString `
-    $env:GITHUB_TOKEN `
-    -AsPlainText `
-    -Force
+Write-Host '5: Checking vault'
 
-$credential = [PSCredential]::new(
-    'CodespaceUser',
-    $secureToken
-)
+$vault = Get-SecretVault `    -Name $VaultName`
+-ErrorAction SilentlyContinue
 
-Set-Secret `
-    -Vault $VaultName `
-    -Name $SecretName `
-    -Secret $credential
+if (-not $vault) {
+Write-Host '6: Registering vault'
 
-$credentialInfo =
-    [Microsoft.PowerShell.PSResourceGet.UtilClasses.PSCredentialInfo]::new(
-        $VaultName,
-        $SecretName
-    )
+```
+Register-SecretVault `
+    -Name $VaultName `
+    -ModuleName Microsoft.PowerShell.SecretStore `
+    -DefaultVault
+```
 
-$repository = Get-PSResourceRepository `
-    -Name $RepositoryName `
-    -ErrorAction SilentlyContinue
-
-if ($repository) {
-    Set-PSResourceRepository `
-        -Name $RepositoryName `
-        -Uri $RepositoryUri `
-        -ApiVersion V3 `
-        -CredentialInfo $credentialInfo `
-        -Trusted
 }
 else {
-    Register-PSResourceRepository `
-        -Name $RepositoryName `
-        -Uri $RepositoryUri `
-        -ApiVersion V3 `
-        -CredentialInfo $credentialInfo `
-        -Trusted
+Write-Host '6: Vault already registered'
 }
 
-Install-PSResource `
-    -Name 'Amiasea.Proxies' `
-    -Repository $RepositoryName `
-    -Scope CurrentUser `
-    -TrustRepository
+Write-Host '7: Creating GitHub Packages credential'
 
-Import-Module Amiasea.Proxies
+$secureToken = ConvertTo-SecureString `    $env:GITHUB_TOKEN`
+-AsPlainText `
+-Force
+
+$credential = [PSCredential]::new(
+'x-access-token',
+$secureToken
+)
+
+Set-Secret `    -Vault $VaultName`
+-Name $SecretName `    -Secret $credential`
+-Force
+
+Write-Host '8: Creating PSResourceGet credential info'
+
+$credentialInfo =
+[Microsoft.PowerShell.PSResourceGet.UtilClasses.PSCredentialInfo]::new(
+$VaultName,
+$SecretName
+)
+
+Write-Host '9: Configuring Amiasea repository'
+
+$repository = Get-PSResourceRepository `    -Name $RepositoryName`
+-ErrorAction SilentlyContinue
+
+if ($repository) {
+Set-PSResourceRepository `        -Name $RepositoryName`
+-Uri $RepositoryUri `        -ApiVersion V3`
+-CredentialInfo $credentialInfo `        -Trusted
+}
+else {
+    Register-PSResourceRepository`
+-Name $RepositoryName `        -Uri $RepositoryUri`
+-ApiVersion V3 `        -CredentialInfo $credentialInfo`
+-Trusted
+}
+
+Write-Host '10: Installing Amiasea.Proxies'
+
+Install-PSResource `    -Name 'Amiasea.Proxies'`
+-Repository $RepositoryName `    -Scope CurrentUser`
+-TrustRepository
+
+Write-Host '11: Importing Amiasea.Proxies'
+
+Import-Module Amiasea.Proxies -Force
+
+Write-Host '12: Done'
